@@ -30,7 +30,7 @@ def open_position(df_warning, df_vol, dt_date):
     amt_premium = df_vol.loc[dt_date, 'amt_premium']
     amt_1std = df_vol.loc[dt_date, 'amt_1std']
     # iv_percentile = df_vol.loc[dt_date,'iv_percentile']
-    # if iv_percentile > 90:
+    # if iv_percentile > 95:
     #     return False
     if amt_premium > amt_1std:
         return True
@@ -46,7 +46,7 @@ def close_position(df_warning,df_vol, dt_maturity, optionset):
     dt_date = optionset.eval_date
     amt_premium = df_vol.loc[dt_date, 'amt_premium']
     # iv_percentile = df_vol.loc[dt_date,'iv_percentile']
-    # if iv_percentile > 90:
+    # if iv_percentile > 95:
     #     print(optionset.eval_date,'iv warning')
     #     return True
     if amt_premium < 0:
@@ -56,10 +56,10 @@ def close_position(df_warning,df_vol, dt_maturity, optionset):
 
 
 pu = PlotUtil()
-start_date = datetime.date(2015, 2, 1)
+start_date = datetime.date(2016, 1, 1)
 end_date = datetime.date.today()
-dt_histvol = start_date - datetime.timedelta(days=90)
-min_holding = 15  # 20 sharpe ratio较优
+dt_histvol = start_date - datetime.timedelta(days=300)
+min_holding = 20  # 20 sharpe ratio较优
 init_fund = c.Util.BILLION
 slippage = 0
 m = 1  # 期权notional倍数
@@ -73,10 +73,6 @@ df_future_c1_daily = get_data.get_mktdata_future_c1_daily(dt_histvol, end_date, 
 df_futures_all_daily = get_data.get_mktdata_future_daily(start_date, end_date,
                                                          name_code)  # daily data of all future contracts
 
-d = max(df_future_c1_daily[c.Util.DT_DATE].values[0], df_metrics[c.Util.DT_DATE].values[0])
-df_metrics = df_metrics[df_metrics[c.Util.DT_DATE] >= d].reset_index(drop=True)
-df_c1 = df_future_c1_daily[df_future_c1_daily[c.Util.DT_DATE] >= d].reset_index(drop=True)
-df_c_all = df_futures_all_daily[df_futures_all_daily[c.Util.DT_DATE] >= d].reset_index(drop=True)
 
 df_future_c1_daily['amt_hv'] = histvol.hist_vol(df_future_c1_daily[c.Util.AMT_CLOSE])
 
@@ -94,16 +90,18 @@ df_data = df_iv_htbr.reset_index(drop=True).rename(columns={c.Util.PCT_IMPLIED_V
 df_vol = pd.merge(df_data[[c.Util.DT_DATE, 'amt_iv']], df_future_c1_daily[[c.Util.DT_DATE, 'amt_hv']],
                   on=c.Util.DT_DATE)
 df_vol['amt_premium'] = df_vol['amt_iv'] - df_vol['amt_hv']
-df_vol['amt_1std'] = c.Statistics.standard_deviation(df_vol['amt_premium'], n=60)
-df_vol['amt_2std'] = 2*c.Statistics.standard_deviation(df_vol['amt_premium'], n=60)
+h = 90
+df_vol['amt_1std'] = c.Statistics.standard_deviation(df_vol['amt_premium'], n=h)
+df_vol['amt_2std'] = 2*c.Statistics.standard_deviation(df_vol['amt_premium'], n=h)
 df_vol = df_vol.set_index(c.Util.DT_DATE)
 df_vol['iv_percentile'] = c.Statistics.standard_deviation(df_vol['amt_iv'],n=252)
-
+df_vol.to_csv('../../accounts_data/implied_vol_premium.csv')
 print('premium mean : ',df_vol['amt_premium'].sum()/len(df_vol['amt_premium']))
 dates = list(df_vol.index)
-pu.plot_line_chart(dates, [list(df_vol['amt_premium']), list(df_vol['amt_1std']),list(df_vol['amt_2std'])], ['隐含波动率溢价','1倍标准差','2倍标准差'])
+pu.plot_line_chart(dates, [list(df_vol['amt_premium']), list(df_vol['amt_1std']),list(df_vol['amt_2std'])],
+                   ['隐含与历史波动率价差','基于'+str(h)+'日移动平均的1倍标准差','基于'+str(h)+'日移动平均的2倍标准差'])
 
-plt.show()
+# plt.show()
 
 """ Risk Monitor """
 # df_warning = pd.read_excel('../../../data/risk_monitor.xlsx')
@@ -117,6 +115,12 @@ df_warning['date'] = df_warning['DT_DATE'].apply(lambda x: x.date())
 df_warning = df_warning.set_index('date')
 
 df_holding_period = pd.DataFrame()
+
+d = max(df_future_c1_daily[c.Util.DT_DATE].values[0], df_metrics[c.Util.DT_DATE].values[0])
+df_metrics = df_metrics[df_metrics[c.Util.DT_DATE] >= d].reset_index(drop=True)
+df_c1 = df_future_c1_daily[df_future_c1_daily[c.Util.DT_DATE] >= d].reset_index(drop=True)
+df_c_all = df_futures_all_daily[df_futures_all_daily[c.Util.DT_DATE] >= d].reset_index(drop=True)
+
 
 optionset = BaseOptionSet(df_metrics)
 optionset.init()
