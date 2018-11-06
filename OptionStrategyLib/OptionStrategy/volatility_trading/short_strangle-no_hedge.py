@@ -11,27 +11,33 @@ import pandas as pd
 from Utilities.timebase import LLKSR, KALMAN, LLT
 from back_test.model.trade import Order
 
+# def stop_loss(call, put):
+#     spot = call.underlying_last_close()
+#     if spot is None:
+#         return False
+#     if call.strike() < spot or put.strike() > spot:
+#         print(call.eval_date,' stop loss')
+#         return True
+#     else:
+#         return False
 
-def stop_loss(call, put):
-    spot = call.underlying_last_close()
-    if spot is None:
-        return False
-    if call.strike() < spot or put.strike() > spot:
-        print(call.eval_date,' stop loss')
+def close_position(dt_maturity, optionset,call,put):
+    # stop_loss(call,put)
+    if (dt_maturity - optionset.eval_date).days <= 5:
         return True
     else:
         return False
 
 
 pu = PlotUtil()
-start_date = datetime.date(2015, 2, 1)
+start_date = datetime.date(2016, 1, 1)
 end_date = datetime.date(2018, 10, 8)
 dt_histvol = start_date - datetime.timedelta(days=90)
 min_holding = 20  # 20 sharpe ratio较优
 init_fund = c.Util.BILLION
 slippage = 0
 m = 1  # 期权notional倍数
-moneyness_rank = -2
+moneyness_rank = -3
 cd_trade_price = c.CdTradePrice.VOLUME_WEIGHTED
 
 """ 50ETF option """
@@ -81,7 +87,7 @@ while optionset.eval_date <= end_date:
         break
 
     # 平仓
-    if not empty_position and ((maturity1 - optionset.eval_date).days <= 8 or stop_loss(atm_call, atm_put)):
+    if not empty_position and close_position(maturity1, optionset,atm_call,atm_put):
         for option in account.dict_holding.values():
             order = account.create_close_order(option, cd_trade_price=cd_trade_price)
             record = option.execute_order(order, slippage=slippage)

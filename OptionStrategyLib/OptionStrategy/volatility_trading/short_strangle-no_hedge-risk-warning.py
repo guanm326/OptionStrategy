@@ -11,27 +11,60 @@ import pandas as pd
 from Utilities.timebase import LLKSR, KALMAN, LLT
 from back_test.model.trade import Order
 
+# def stop_loss(call, put):
+#     spot = call.underlying_last_close()
+#     if spot is None:
+#         return False
+#     if call.strike() < spot or put.strike() > spot:
+#         print(call.eval_date,' stop loss')
+#         return True
+#     else:
+#         return False
 
-def stop_loss(call, put):
-    spot = call.underlying_last_close()
-    if spot is None:
+
+def risk_warning(df_warning, dt_date):
+    if dt_date not in df_warning.index:
         return False
-    if call.strike() < spot or put.strike() > spot:
-        print(call.eval_date,' stop loss')
+    else:
+        if df_warning.loc[dt_date, 'pre_warned'] >= 2:
+            return True
+        else:
+            return False
+
+
+def open_position(df_warning, dt_date):
+    if dt_date in df_warning.index:
+        if risk_warning(df_warning, optionset.eval_date):
+            print(optionset.eval_date, 'risk warning, NOT OPEN')
+            return False
+        else:
+            return True
+    else:
+        return True
+
+
+
+def close_position(df_warning, dt_maturity, optionset,call, put):
+
+    if risk_warning(df_warning, optionset.eval_date):
+        print(optionset.eval_date, 'risk warning, CLOSE')
+        return True
+    # stop_loss(call, put)
+    if (dt_maturity - optionset.eval_date).days <= 5:
         return True
     else:
         return False
 
 
 pu = PlotUtil()
-start_date = datetime.date(2015, 2, 1)
+start_date = datetime.date(2016, 1, 1)
 end_date = datetime.date(2018, 10, 8)
 dt_histvol = start_date - datetime.timedelta(days=90)
 min_holding = 20  # 20 sharpe ratio较优
 init_fund = c.Util.BILLION
 slippage = 0
 m = 1  # 期权notional倍数
-moneyness_rank = -2
+moneyness_rank = -3
 cd_trade_price = c.CdTradePrice.VOLUME_WEIGHTED
 
 """ 50ETF option """
@@ -50,6 +83,9 @@ df_metrics = df_metrics[df_metrics[c.Util.DT_DATE] >= d].reset_index(drop=True)
 df_c1 = df_future_c1_daily[df_future_c1_daily[c.Util.DT_DATE] >= d].reset_index(drop=True)
 df_c_all = df_futures_all_daily[df_futures_all_daily[c.Util.DT_DATE] >= d].reset_index(drop=True)
 
+df_warning = pd.read_excel('../../../data/volatility_risk_monitor.xlsx')
+df_warning['date'] = df_warning['DT_DATE'].apply(lambda x: x.date())
+df_warning = df_warning.set_index('date')
 df_holding_period = pd.DataFrame()
 
 optionset = BaseOptionSet(df_metrics)
@@ -81,7 +117,7 @@ while optionset.eval_date <= end_date:
         break
 
     # 平仓
-    if not empty_position and ((maturity1 - optionset.eval_date).days <= 8 or stop_loss(atm_call, atm_put)):
+    if not empty_position and close_position(df_warning, maturity1, optionset,atm_call,atm_put):
         for option in account.dict_holding.values():
             order = account.create_close_order(option, cd_trade_price=cd_trade_price)
             record = option.execute_order(order, slippage=slippage)
@@ -90,13 +126,14 @@ while optionset.eval_date <= end_date:
 
     # 开仓：距到期1M
     # if empty_position and (maturity1 - optionset.eval_date).days <= 30:
-    if empty_position:
+    if empty_position and open_position(df_warning,optionset.eval_date):
         maturity1 = optionset.select_maturity_date(nbr_maturity=0, min_holding=min_holding)
         option_trade_times += 1
         buy_write = c.BuyWrite.WRITE
         long_short = c.LongShort.SHORT
         list_atm_call, list_atm_put = optionset.get_options_list_by_moneyness_mthd1(moneyness_rank=moneyness_rank,
-                                                                                    maturity=maturity1,cd_price=c.CdPriceType.OPEN)
+                                                                                    maturity=maturity1,
+                                                                                    cd_price=c.CdPriceType.OPEN)
         atm_call = optionset.select_higher_volume(list_atm_call)
         atm_put = optionset.select_higher_volume(list_atm_put)
         if atm_call is None or atm_put is None:
@@ -127,5 +164,5 @@ print(res)
 
 dates = list(account.account.index)
 npv = list(account.account[c.Util.PORTFOLIO_NPV])
-pu.plot_line_chart(dates, [npv], ['npv'])
+pu.plot_line_chart(dates, [npv], ['npv with risk warning'])
 plt.show()

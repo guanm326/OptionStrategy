@@ -272,7 +272,7 @@ class BaseAccount():
             return base_product.mktprice_open()
         elif cd_trade_price == CdTradePrice.VOLUME_WEIGHTED:
             p = base_product.mktprice_volume_weighted()
-            if p is None:
+            if p is None or p == Util.NAN_VALUE or np.isnan(p):
                 p = base_product.mktprice_close()
             return p
         else:

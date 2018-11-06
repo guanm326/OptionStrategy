@@ -63,7 +63,7 @@ min_holding = 15  # 20 sharpe ratio较优
 init_fund = c.Util.BILLION
 slippage = 0
 m = 1  # 期权notional倍数
-cd_trade_price = c.CdTradePrice.VOLUME_WEIGHTED
+cd_trade_price = c.CdTradePrice.CLOSE
 cd_hedge_price = c.CdTradePrice.CLOSE
 
 name_code = c.Util.STR_M
@@ -102,7 +102,7 @@ print('premium mean : ',df_vol['amt_premium'].sum()/len(df_vol['amt_premium']))
 dates = list(df_vol.index)
 pu.plot_line_chart(dates, [list(df_vol['amt_premium']), list(df_vol['amt_1std']),list(df_vol['amt_2std'])], ['隐含波动率溢价','1倍标准差','2倍标准差'])
 
-plt.show()
+# plt.show()
 
 # """ Risk Monitor """
 # df_warning = pd.read_excel('../../../data/risk_monitor.xlsx')
@@ -188,6 +188,7 @@ while optionset.eval_date <= end_date:
     # 开仓：距到期1M
     if empty_position and open_position(df_vol, optionset.eval_date):
         maturity1 = optionset.select_maturity_date(nbr_maturity=0, min_holding=min_holding)
+        if (maturity1-optionset.eval_date).days >=40: continue
         option_trade_times += 1
         buy_write = c.BuyWrite.WRITE
         long_short = c.LongShort.SHORT
@@ -232,8 +233,8 @@ while optionset.eval_date <= end_date:
     optionset.next()
     hedging.next()
 
-account.account.to_csv('../../accounts_data/iv_hv_account.csv')
-account.trade_records.to_csv('../../accounts_data/iv_hv_record.csv')
+# account.account.to_csv('../../accounts_data/iv_hv_account.csv')
+# account.trade_records.to_csv('../../accounts_data/iv_hv_record.csv')
 res = account.analysis()
 res['期权平均持仓天数'] = len(account.account) / option_trade_times
 print(res)
