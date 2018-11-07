@@ -16,7 +16,7 @@ def open_signal(dt_date, df_status):
     return write_signal_tangent(dt_date, df_status)
 
 def close_signal(dt_date,option_maturity, df_status):
-    if dt_date >= option_maturity - datetime.timedelta(days=8):
+    if dt_date >= option_maturity - datetime.timedelta(days=5):
         print('3.到期', dt_date)
         return True
     else:
@@ -63,8 +63,9 @@ dt_histvol = start_date - datetime.timedelta(days=90)
 min_holding = 20 # 20 sharpe ratio较优
 init_fund = c.Util.BILLION
 slippage = 0
+moneyness_rank = 0
 m = 1 # 期权notional倍数
-cd_trade_price=c.CdTradePrice.CLOSE
+cd_trade_price=c.CdTradePrice.VOLUME_WEIGHTED
 
 """ 50ETF option """
 name_code = c.Util.STR_IH
@@ -79,12 +80,12 @@ df_ivix = df_iv[df_iv[c.Util.CD_OPTION_TYPE]=='ivix']
 df_iv_call = df_iv[df_iv[c.Util.CD_OPTION_TYPE]=='call']
 df_iv_put = df_iv[df_iv[c.Util.CD_OPTION_TYPE]=='put']
 df_iv_htbr = df_iv[df_iv[c.Util.CD_OPTION_TYPE]=='put_call_htbr']
-df_data = df_iv_call[[c.Util.DT_DATE,c.Util.PCT_IMPLIED_VOL]].rename(columns={c.Util.PCT_IMPLIED_VOL:'iv_call'})
-df_data = df_data.join(df_iv_put[[c.Util.DT_DATE,c.Util.PCT_IMPLIED_VOL]].set_index(c.Util.DT_DATE),on=c.Util.DT_DATE,how='outer')\
-    .rename(columns={c.Util.PCT_IMPLIED_VOL:'iv_put'})
-df_data = df_data.dropna().reset_index(drop=True)
-df_data.loc[:,'average_iv'] = (df_data.loc[:,'iv_call'] + df_data.loc[:,'iv_put'])/2
-# df_data = df_iv_htbr.reset_index(drop=True).rename(columns={c.Util.PCT_IMPLIED_VOL:'average_iv'})
+# df_data = df_iv_call[[c.Util.DT_DATE,c.Util.PCT_IMPLIED_VOL]].rename(columns={c.Util.PCT_IMPLIED_VOL:'iv_call'})
+# df_data = df_data.join(df_iv_put[[c.Util.DT_DATE,c.Util.PCT_IMPLIED_VOL]].set_index(c.Util.DT_DATE),on=c.Util.DT_DATE,how='outer')\
+#     .rename(columns={c.Util.PCT_IMPLIED_VOL:'iv_put'})
+# df_data = df_data.dropna().reset_index(drop=True)
+# df_data.loc[:,'average_iv'] = (df_data.loc[:,'iv_call'] + df_data.loc[:,'iv_put'])/2
+df_data = df_iv_htbr.reset_index(drop=True).rename(columns={c.Util.PCT_IMPLIED_VOL:'average_iv'})
 # df_data = df_ivix.reset_index(drop=True).rename(columns={c.Util.PCT_IMPLIED_VOL:'average_iv'})
 df_data['iv_htbr'] = df_iv_htbr.reset_index(drop=True)[c.Util.PCT_IMPLIED_VOL]
 # df_data.to_csv('iv.csv')
@@ -138,9 +139,9 @@ while optionset.eval_date <= end_date:
         option_trade_times += 1
         buy_write = c.BuyWrite.WRITE
         long_short = c.LongShort.SHORT
-        list_atm_call, list_atm_put = optionset.get_options_list_by_moneyness_mthd1(moneyness_rank=0,
+        list_atm_call, list_atm_put = optionset.get_options_list_by_moneyness_mthd1(moneyness_rank=moneyness_rank,
                                                                                     maturity=maturity1,
-                                                                                    cd_price=c.CdPriceType.CLOSE)
+                                                                                    cd_price=c.CdPriceType.OPEN)
         atm_call = optionset.select_higher_volume(list_atm_call)
         atm_put = optionset.select_higher_volume(list_atm_put)
         atm_strike = atm_call.strike()
