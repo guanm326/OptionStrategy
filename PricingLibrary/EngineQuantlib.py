@@ -80,6 +80,10 @@ class QlBAW(AbstractOptionPricingEngine):
         self.reset_vol(implied_vol)
         return self.ql_option.gamma()
 
+    def Vega(self,implied_vol:float) -> float:
+        self.reset_vol(implied_vol)
+        return self.ql_option.vega()
+
     def reset_vol(self, vol):
         self.flat_vol_ts = ql.BlackVolTermStructureHandle(
             ql.BlackConstantVol(self.settlement, self.calendar, vol, self.day_count)
@@ -182,6 +186,10 @@ class QlBinomial(AbstractOptionPricingEngine):
         self.reset_vol(implied_vol)
         return self.ql_option.gamma()
 
+    def Vega(self,implied_vol:float) -> float:
+        self.reset_vol(implied_vol)
+        return self.ql_option.vega()
+
     def reset_vol(self, vol):
         self.flat_vol_ts = ql.BlackVolTermStructureHandle(
             ql.BlackConstantVol(self.settlement, self.calendar, vol, self.day_count)
@@ -277,6 +285,10 @@ class QlBlackFormula(AbstractOptionPricingEngine):
     def Gamma(self,implied_vol:float) -> float:
         self.reset_vol(implied_vol)
         return self.ql_option.gamma()
+
+    def Vega(self,implied_vol:float) -> float:
+        self.reset_vol(implied_vol)
+        return self.ql_option.vega()
 
     def reset_vol(self, vol):
         self.flat_vol_ts = ql.BlackVolTermStructureHandle(

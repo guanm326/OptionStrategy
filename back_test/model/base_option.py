@@ -285,9 +285,10 @@ class BaseOption(BaseProduct):
         # TODO
         return
 
-    def get_vega(self) -> Union[float, None]:
-        # TODO
-        return
+    def get_vega(self, implied_vol: float) -> Union[float, None]:
+        self._set_pricing_engine()
+        vega = self.pricing_engine.Vega(implied_vol)
+        return vega
 
     def get_rho(self) -> Union[float, None]:
         # TODO

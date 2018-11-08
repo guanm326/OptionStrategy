@@ -53,8 +53,8 @@ def close_option_position(account):
     return True
 
 pu = PlotUtil()
-start_date = datetime.date(2015, 2, 1)
-end_date = datetime.date(2018, 10, 8)
+start_date = datetime.date(2016, 1, 1)
+end_date = datetime.date(2018, 11, 1)
 dt_histvol = start_date - datetime.timedelta(days=90)
 min_holding = 10
 cd_price = c.CdTradePrice.CLOSE
@@ -79,8 +79,8 @@ optionset.init()
 index = BaseInstrument(df_index)
 index.init()
 account = BaseAccount(init_fund=c.Util.BILLION, leverage=1.0, rf=0.03)
-maturity1 = optionset.select_maturity_date(nbr_maturity=0, min_holding=min_holding)
-maturity2 = optionset.select_maturity_date(nbr_maturity=1, min_holding=min_holding)
+maturity1 = optionset.select_maturity_date(nbr_maturity=1, min_holding=0)
+maturity2 = optionset.select_maturity_date(nbr_maturity=1, min_holding=0)
 
 # 标的指数开仓
 unit_index =  np.floor(m*account.cash/index.mktprice_close()/index.multiplier())
@@ -111,13 +111,13 @@ while optionset.has_next():
             empty_position = close_option_position(account)
         elif call is not None:
             spot = call.underlying_close()
-            if call.strike() - spot <= 0.05:
+            if call.strike() - spot <= 0.05 or put.strike() > spot:
                 empty_position = close_option_position(account)
 
     # 开仓
     if empty_position:
-        maturity1 = optionset.select_maturity_date(nbr_maturity=0, min_holding=min_holding)
-        maturity2 = optionset.select_maturity_date(nbr_maturity=1, min_holding=min_holding)
+        maturity1 = optionset.select_maturity_date(nbr_maturity=1, min_holding=0)
+        maturity2 = optionset.select_maturity_date(nbr_maturity=1, min_holding=0)
         call = select_target_moneyness_option(c.OptionType.CALL,optionset,moneyness_call,maturity1)
         put = select_target_moneyness_option(c.OptionType.PUT,optionset,moneyness_put,maturity2)
         if call is not None:
@@ -136,6 +136,7 @@ while optionset.has_next():
     optionset.next()
     index.next()
 
+account.account['base_npv'] = benchmark
 account.account.to_csv('../../accounts_data/collar_account_sh50.csv')
 account.trade_records.to_csv('../../accounts_data/collar_records_sh50.csv')
 res = account.analysis()

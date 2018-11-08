@@ -24,7 +24,9 @@ def buy_put(moneyness, maturity1):
         list_atm_put = optionset.get_deepest_otm_put_list(maturity1)
     atm_put = optionset.select_higher_volume(list_atm_put)
     # unit = unit_underlying * underlying.multiplier()/atm_put.multiplier() # 50ETF
-    unit = equal_50etf_unit * underlying.multiplier()/atm_put.multiplier() # 沪深300指数
+    # equal_50etf_unit = unit_underlying * underlying.mktprice_close() / atm_put.strike()
+    equal_50etf_unit = unit_underlying*underlying.mktprice_close()/optionset.eligible_options[0].underlying_close()
+    unit = np.floor(equal_50etf_unit * underlying.multiplier()/atm_put.multiplier())
     order = account.create_trade_order(atm_put, c.LongShort.LONG, unit)
     record = atm_put.execute_order(order, slippage=slippage)
     account.add_record(record, atm_put)
@@ -47,7 +49,7 @@ df = pd.DataFrame()
 
 ##############
 # alpha = 0.0
-moneyness = -5
+moneyness = -2
 #################
 
 # Base index : fundamental 50
@@ -99,7 +101,6 @@ while d2 <= end_date:
     record_underlying = underlying.execute_order(order_underlying, slippage=slippage)
     account.add_record(record_underlying, underlying)
     maturity1 = optionset.select_maturity_date(nbr_maturity=nbr_maturity, min_holding=min_holding)
-    equal_50etf_unit = unit_underlying*underlying.mktprice_close()/optionset.eligible_options[0].underlying_close()
     atm_put,premium = buy_put(moneyness,maturity1)
 
     # SH300指数
@@ -138,11 +139,12 @@ while d2 <= end_date:
     analysis_50ETF = account.get_netvalue_analysis(df_underlying_1['npv_50etf'])
     # df_underlying_with_alpha.loc[:,'npv_50etf_alpha'] = df_underlying_with_alpha.loc[:,c.Util.AMT_CLOSE]/df_underlying_with_alpha.loc[0,c.Util.AMT_CLOSE]
     # analysis_50ETF_alpha = account.get_netvalue_analysis(df_underlying_with_alpha['npv_50etf_alpha'])
-
+    print(d1)
+    print(analysis)
     df[str(d1)+':hedged'] = analysis
     df[str(d1)+':etf'] = analysis_50ETF
     df[str(d1)+':etf_alpha'] = None
-    print(df)
+    # print(df)
     d1 = calendar.firstBusinessDayNextMonth(d1)
     d2 = d1 + datetime.timedelta(days=365)
 print(df)

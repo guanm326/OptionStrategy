@@ -89,7 +89,7 @@ df_data = df_iv_htbr.reset_index(drop=True).rename(columns={c.Util.PCT_IMPLIED_V
 # df_data.loc[:, 'amt_iv'] = (df_data.loc[:, 'iv_call'] + df_data.loc[:, 'iv_put']) / 2
 df_vol = pd.merge(df_data[[c.Util.DT_DATE, 'amt_iv']], df_future_c1_daily[[c.Util.DT_DATE, 'amt_hv']],
                   on=c.Util.DT_DATE)
-df_vol['amt_premium'] = df_vol['amt_iv'] - df_vol['amt_hv']
+df_vol['amt_premium'] = (df_vol['amt_iv'] - df_vol['amt_hv']).shift()
 h = 90
 df_vol['amt_1std'] = c.Statistics.standard_deviation(df_vol['amt_premium'], n=h)
 df_vol['amt_2std'] = 2*c.Statistics.standard_deviation(df_vol['amt_premium'], n=h)
