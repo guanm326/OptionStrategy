@@ -515,6 +515,20 @@ class BaseOptionSet(AbstractBaseProductSet):
             iv = pricing_engine.estimate_vol(P)
         return iv
 
+    def get_option_closest_strike(self,option_type:OptionType, target:float, maturity: datetime.date):
+        mdt_calls, mdt_puts = self.get_orgnized_option_dict_for_moneyness_ranking()
+        if option_type == OptionType.CALL:
+            mdt_options_dict = mdt_calls.get(maturity)
+        else:
+            mdt_options_dict = mdt_puts.get(maturity)
+        option = None
+        min_diff = 100
+        for k in mdt_options_dict.keys():
+            if abs(k-target) < min_diff:
+                min_diff = abs(k-target)
+                option = mdt_options_dict[k]
+        return option
+
     def get_option_by_strike(self,option_type:OptionType, strike:float, maturity: datetime.date):
         mdt_calls, mdt_puts = self.get_orgnized_option_dict_for_moneyness_ranking()
         if option_type ==OptionType.CALL:

@@ -22,7 +22,6 @@ def open_position(df_index, dt_date):
     else:
         return False
 
-
 def close_position(df_index, strategy_res, dt_date):
     dt_maturity = None
     for option in strategy_res.keys():
@@ -36,28 +35,6 @@ def close_position(df_index, strategy_res, dt_date):
         return True
     else:
         return False
-
-
-def collar():
-    name = 'collar'
-    maturity0 = optionset.select_maturity_date(nbr_maturity=0, min_holding=20)
-    maturity1 = optionset.select_maturity_date(nbr_maturity=1, min_holding=20)
-
-    list_call, xx = optionset.get_options_list_by_moneyness_mthd1(moneyness_rank=-2,
-                                                                  maturity=maturity0,
-                                                                  cd_price=c.CdPriceType.OPEN)
-    xxx, list_put = optionset.get_options_list_by_moneyness_mthd1(moneyness_rank=-2,
-                                                                  maturity=maturity1,
-                                                                  cd_price=c.CdPriceType.OPEN)
-    call = optionset.select_higher_volume(list_call)
-    put = optionset.select_higher_volume(list_put)
-    if put is None:
-        xxx, list_put = optionset.get_options_list_by_moneyness_mthd1(moneyness_rank=0,
-                                                                      maturity=maturity1,
-                                                                      cd_price=c.CdPriceType.OPEN)
-        put = optionset.select_higher_volume(list_put)
-    # res = {call: c.LongShort.SHORT, put: c.LongShort.LONG}
-    return [call,put],name
 
 def bull_spread():
     name = 'bull_spread'
@@ -73,85 +50,6 @@ def bull_spread():
     put_short = optionset.select_higher_volume(list_put2)
     # res = {put0: c.LongShort.LONG, put2: c.LongShort.SHORT}
     return [put_long,put_short],name
-
-def bull_spread_vol(dt_date):
-    name = 'bull_spread_vol'
-    maturity = optionset.select_maturity_date(nbr_maturity=0, min_holding=min_holding)
-    xx, list_put0 = optionset.get_options_list_by_moneyness_mthd1(moneyness_rank=0,
-                                                                  maturity=maturity,
-                                                                  cd_price=c.CdPriceType.OPEN)
-    put_long = optionset.select_higher_volume(list_put0)
-    # if put_long is None:
-    #     xxx, list_put0 = optionset.get_options_list_by_moneyness_mthd1(moneyness_rank=0,
-    #                                                                   maturity=maturity,
-    #                                                                   cd_price=c.CdPriceType.OPEN)
-    #     put_long = optionset.select_higher_volume(list_put0)
-    std_close = df_index1.loc[dt_date,'std_close']
-    k_target = put_long.strike()-std_close
-    put_short = optionset.select_higher_volume(optionset.get_option_closest_strike(c.OptionType.PUT, k_target, maturity))
-    return [put_long,put_short],name
-
-def three_way(dt_date):
-    name = 'three_way'
-    maturity = optionset.select_maturity_date(nbr_maturity=0, min_holding=20)
-    xxx, list_put0 = optionset.get_options_list_by_moneyness_mthd1(moneyness_rank=0,
-                                                                  maturity=maturity,
-                                                                  cd_price=c.CdPriceType.OPEN)
-    put_long = optionset.select_higher_volume(list_put0)
-    std_close = df_index1.loc[dt_date, 'std_close']
-    k_low = np.floor(put_long.strike() - std_close)
-    put_short = optionset.select_higher_volume(optionset.get_option_by_strike(c.OptionType.PUT, k_low, maturity))
-    k_high = np.floor(put_long.strike() + std_close)
-    call_short = optionset.select_higher_volume(optionset.get_option_by_strike(c.OptionType.CALL, k_high, maturity))
-    return [put_long,put_short,call_short],name
-
-def buy_put():
-    name = 'buy_put'
-    maturity = optionset.select_maturity_date(nbr_maturity=0, min_holding=min_holding)
-
-    xx, list_put0 = optionset.get_options_list_by_moneyness_mthd1(moneyness_rank=-2,
-                                                                  maturity=maturity,
-                                                                  cd_price=c.CdPriceType.OPEN)
-    put = optionset.select_higher_volume(list_put0)
-    if put is None:
-        xxx, list_put = optionset.get_options_list_by_moneyness_mthd1(moneyness_rank=0,
-                                                                      maturity=maturity,
-                                                                      cd_price=c.CdPriceType.OPEN)
-        put = optionset.select_higher_volume(list_put)
-    return [put],name
-
-def excute(strategy_res, unit_index):
-    for option in strategy_res.keys():
-        if option is None:
-            continue
-        unit = unit_index / option.multiplier()
-        order = account.create_trade_order(option, strategy_res[option], unit, cd_trade_price=cd_trade_price)
-        record = option.execute_order(order, slippage=slippage)
-        account.add_record(record, option)
-
-def excute_delta(strategy_res, unit_index):
-    delta = 0
-    multiplier = None
-    for option in strategy_res.keys():
-        if option is None:
-            continue
-        delta += option.get_delta(option.get_implied_vol())*strategy_res[option].value
-        multiplier = option.multiplier()
-    unit = unit_index / multiplier/abs(delta)
-    for option in strategy_res.keys():
-        if option is None:
-            continue
-        order = account.create_trade_order(option, strategy_res[option], unit, cd_trade_price=cd_trade_price)
-        record = option.execute_order(order, slippage=slippage)
-        account.add_record(record, option)
-
-
-def close_all_options(account):
-    for option in account.dict_holding.values():
-        if isinstance(option, BaseOption):
-            order = account.create_close_order(option, cd_trade_price=cd_trade_price)
-            record = option.execute_order(order, slippage=slippage)
-            account.add_record(record, option)
 
 def shift_bull_spread(option_long,option_short,spot):
     if option_short is None:
@@ -172,6 +70,23 @@ def shift_bull_spread(option_long,option_short,spot):
         else:
             return False
 
+def bull_spread_vol(dt_date):
+    name = 'bull_spread_vol'
+    maturity = optionset.select_maturity_date(nbr_maturity=0, min_holding=min_holding)
+    xx, list_put0 = optionset.get_options_list_by_moneyness_mthd1(moneyness_rank=0,
+                                                                  maturity=maturity,
+                                                                  cd_price=c.CdPriceType.OPEN)
+    put_long = optionset.select_higher_volume(list_put0)
+    # if put_long is None:
+    #     xxx, list_put0 = optionset.get_options_list_by_moneyness_mthd1(moneyness_rank=0,
+    #                                                                   maturity=maturity,
+    #                                                                   cd_price=c.CdPriceType.OPEN)
+    #     put_long = optionset.select_higher_volume(list_put0)
+    std_close = df_index1.loc[dt_date,'std_close']
+    k_target = put_long.strike()-std_close
+    put_short = optionset.select_higher_volume(optionset.get_option_closest_strike(c.OptionType.PUT, k_target, maturity))
+    return [put_long,put_short],name
+
 def shift_bull_spread_vol(option_long,option_short,spot,dt_date):
     if option_short is None:
         maturity = optionset.select_maturity_date(nbr_maturity=0, min_holding=20)
@@ -191,49 +106,21 @@ def shift_bull_spread_vol(option_long,option_short,spot,dt_date):
         else:
             return False
 
-def shift_buy_put(put,spot):
-    if spot <= put.strike():
-        return True
+def excute(strategy_res, unit_index):
+    for option in strategy_res.keys():
+        if option is None:
+            continue
+        unit = unit_index / option.multiplier()
+        order = account.create_trade_order(option, strategy_res[option], unit, cd_trade_price=cd_trade_price)
+        record = option.execute_order(order, slippage=slippage)
+        account.add_record(record, option)
 
-def shift_collar(call,put,spot):
-    k_call = call.strike()
-    k_put = put.strike()
-    if call is None:
-        maturity = optionset.select_maturity_date(nbr_maturity=0, min_holding=20)
-        list_call, xxx = optionset.get_options_list_by_moneyness_mthd1(moneyness_rank=-2,
-                                                                       maturity=maturity,
-                                                                       cd_price=c.CdPriceType.OPEN)
-        call = optionset.select_higher_volume(list_call)
-        if call is None:
-            return False
-        else:
-            print(optionset.eval_date,' shift')
-            return True
-    else:
-        if k_call - spot <= 0.05 or k_put >= spot:
-            print(optionset.eval_date, ' shift')
-            return True
-        else:
-            return False
-
-def shift_three_way(put_long,put_short,call_short,spot,dt_date):
-    if put_short is None or call_short is None:
-        maturity = optionset.select_maturity_date(nbr_maturity=0, min_holding=20)
-        std_close = df_index1.loc[dt_date, 'std_close']
-        k_low = np.floor(put_long.strike() - std_close)
-        put_short = optionset.select_higher_volume(optionset.get_option_by_strike(c.OptionType.PUT, k_low, maturity))
-        k_high = np.floor(put_long.strike() + std_close)
-        call_short = optionset.select_higher_volume(optionset.get_option_by_strike(c.OptionType.CALL, k_high, maturity))
-        if call_short is not None and put_short is not None:
-            return True
-        else:
-            return False
-    else:
-        if spot > call_short.strike() or spot < put_short.strike():
-            return True
-        else:
-            return False
-
+def close_all_options(account):
+    for option in account.dict_holding.values():
+        if isinstance(option, BaseOption):
+            order = account.create_close_order(option, cd_trade_price=cd_trade_price)
+            record = option.execute_order(order, slippage=slippage)
+            account.add_record(record, option)
 
 start_date = datetime.date(2015, 1, 1)
 end_date = datetime.date(2018, 11, 1)
