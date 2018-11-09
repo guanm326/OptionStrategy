@@ -174,15 +174,16 @@ def shift_bull_spread(option_long,option_short,spot):
 
 def shift_bull_spread_vol(option_long,option_short,spot,dt_date):
     if option_short is None:
-        maturity = optionset.select_maturity_date(nbr_maturity=0, min_holding=20)
-        std_close = df_index1.loc[dt_date, 'std_close']
-        k_target = put_long.strike() - std_close
-        put_short = optionset.select_higher_volume(optionset.get_option_closest_strike(c.OptionType.PUT, k_target, maturity))
-        if put_short is None:
-            return False
-        else:
-            print(optionset.eval_date,' shift')
-            return True
+        return False
+        # maturity = optionset.select_maturity_date(nbr_maturity=0, min_holding=1)
+        # std_close = df_index1.loc[dt_date, 'std_close']
+        # k_target = put_long.strike() - std_close
+        # put_short = optionset.select_higher_volume(optionset.get_option_closest_strike(c.OptionType.PUT, k_target, maturity))
+        # if put_short is None:
+        #     return False
+        # else:
+        #     print(optionset.eval_date,' shift')
+        #     return True
     else:
         if spot <= (option_long.strike()+option_short.strike())/2:
         # if spot <= option_short.strike():
@@ -323,8 +324,8 @@ while optionset.eval_date <= end_date:
 res = account.analysis()
 print(res)
 account.account['base_npv'] = base_npv
-account.account.to_csv('../../accounts_data/hedge_by_option_account--'+name+'.csv')
-account.trade_records.to_csv('../../accounts_data/hedge_by_option_records--'+name+'.csv')
+account.account.to_csv('../../accounts_data/hedge_by_option_account_1--'+name+'.csv')
+account.trade_records.to_csv('../../accounts_data/hedge_by_option_records_1--'+name+'.csv')
 
 pu = PlotUtil()
 dates = list(account.account.index)

@@ -36,35 +36,50 @@ def close_position(df_index, strategy_res, dt_date):
     else:
         return False
 
-def bull_spread():
-    name = 'bull_spread'
+def bull_spread_vol_1(dt_date):
+    name = 'bull_spread_vol'
     maturity = optionset.select_maturity_date(nbr_maturity=0, min_holding=min_holding)
-
     xx, list_put0 = optionset.get_options_list_by_moneyness_mthd1(moneyness_rank=0,
                                                                   maturity=maturity,
                                                                   cd_price=c.CdPriceType.OPEN)
-    xxx, list_put2 = optionset.get_options_list_by_moneyness_mthd1(moneyness_rank=-2,
-                                                                  maturity=maturity,
-                                                                  cd_price=c.CdPriceType.OPEN)
     put_long = optionset.select_higher_volume(list_put0)
-    put_short = optionset.select_higher_volume(list_put2)
-    # res = {put0: c.LongShort.LONG, put2: c.LongShort.SHORT}
-    return [put_long,put_short],name
+    # if put_long is None:
+    #     xxx, list_put0 = optionset.get_options_list_by_moneyness_mthd1(moneyness_rank=0,
+    #                                                                   maturity=maturity,
+    #                                                                   cd_price=c.CdPriceType.OPEN)
+    #     put_long = optionset.select_higher_volume(list_put0)
+    spot_open = put_long.get_underlying_price(cd_price=c.CdPriceType.OPEN)
+    k_target = spot_open*(1-df_index1.loc[dt_date,'vol'])
+    option_short = optionset.select_higher_volume(optionset.get_option_closest_strike(c.OptionType.PUT, k_target, maturity))
+    if option_short.strike() >= (k_target+put_long.strike())/2:
+        option_short = None
+    return [put_long,option_short],name
 
-def shift_bull_spread(option_long,option_short,spot):
+
+
+def shift_bull_spread_vol_1(option_long,option_short,spot,dt_date):
     if option_short is None:
-        maturity = optionset.select_maturity_date(nbr_maturity=0, min_holding=20)
-        xxx, list_put2 = optionset.get_options_list_by_moneyness_mthd1(moneyness_rank=-2,
-                                                                       maturity=maturity,
-                                                                       cd_price=c.CdPriceType.OPEN)
-        put2 = optionset.select_higher_volume(list_put2)
-        if put2 is None:
+        if spot < option_long.strike() -0.05:
             return False
         else:
-            print(optionset.eval_date,' shift')
             return True
+        # maturity = optionset.select_maturity_date(nbr_maturity=0, min_holding=20)
+        # std_close = df_index1.loc[dt_date, 'std_close']
+        # k_target = put_long.strike() - std_close
+        # put_short = optionset.select_higher_volume(optionset.get_option_closest_strike(c.OptionType.PUT, k_target, maturity))
+        # if put_short is None:
+        #     return False
+        # else:
+        #     print(optionset.eval_date,' shift')
+        #     return True
+    # elif option_short.strike()>option_long.strike():# short position is call
+    #     if spot >= (option_long.strike()+option_short.strike())/2:
+    #         return True
+    #     else:
+    #         return False
     else:
-        if spot < option_long.strike():
+        if spot <= (option_long.strike()+option_short.strike())/2:
+        # if spot <= option_short.strike():
             print(optionset.eval_date, ' shift')
             return True
         else:
@@ -82,14 +97,16 @@ def bull_spread_vol(dt_date):
     #                                                                   maturity=maturity,
     #                                                                   cd_price=c.CdPriceType.OPEN)
     #     put_long = optionset.select_higher_volume(list_put0)
-    std_close = df_index1.loc[dt_date,'std_close']
-    k_target = put_long.strike()-std_close
-    put_short = optionset.select_higher_volume(optionset.get_option_closest_strike(c.OptionType.PUT, k_target, maturity))
-    return [put_long,put_short],name
+    spot_open = put_long.get_underlying_price(cd_price=c.CdPriceType.OPEN)
+    k_target = spot_open*(1-df_index1.loc[dt_date,'vol'])
+    option_short = optionset.select_higher_volume(optionset.get_option_closest_strike(c.OptionType.PUT, k_target, maturity))
+    # if option_short.strike() >= (k_target+put_long.strike())/2:
+    #     option_short = None
+    return [put_long,option_short],name
 
 def shift_bull_spread_vol(option_long,option_short,spot,dt_date):
     if option_short is None:
-        maturity = optionset.select_maturity_date(nbr_maturity=0, min_holding=20)
+        maturity = optionset.select_maturity_date(nbr_maturity=0, min_holding=min_holding)
         std_close = df_index1.loc[dt_date, 'std_close']
         k_target = put_long.strike() - std_close
         put_short = optionset.select_higher_volume(optionset.get_option_closest_strike(c.OptionType.PUT, k_target, maturity))
@@ -135,7 +152,7 @@ df_index['ma_5'] = c.Statistics.moving_average(df_index[c.Util.AMT_CLOSE], n=5).
 df_index['ma_60'] = c.Statistics.moving_average(df_index[c.Util.AMT_CLOSE], n=60).shift()
 df_index['ma_120'] = c.Statistics.moving_average(df_index[c.Util.AMT_CLOSE], n=120).shift()
 df_index['std_close'] = c.Statistics.standard_deviation(df_index[c.Util.AMT_CLOSE], n=20).shift()
-df_index['histvol_20'] = histvol.hist_vol(df_index[c.Util.AMT_CLOSE]).shift()
+df_index['vol'] = histvol.hist_vol(df_index[c.Util.AMT_CLOSE]).shift()*np.sqrt(1.0/12.0)
 df_index.to_csv('../../accounts_data/df_index.csv')
 dt_start = max(df_metrics[c.Util.DT_DATE].values[0], df_index[c.Util.DT_DATE].values[0])
 df_metrics = df_metrics[df_metrics[c.Util.DT_DATE] >= dt_start].reset_index(drop=True)
@@ -164,6 +181,9 @@ init_index = df_index[c.Util.AMT_CLOSE].values[0]
 base_npv = []
 maturity1 = optionset.select_maturity_date(nbr_maturity=0, min_holding=min_holding)
 while optionset.eval_date <= end_date:
+
+    if optionset.eval_date == datetime.date(2015,8,21):
+        print('')
     if maturity1 > end_date:  # Final close out all.
         close_out_orders = account.creat_close_out_order()
         for order in close_out_orders:
