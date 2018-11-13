@@ -286,7 +286,7 @@ def implied_vol_vw(last_week, end_date, df_metrics, df_res, name_code):
 
 end_date = datetime.date.today()
 start_date = datetime.date(2015, 1, 1)
-last_week = datetime.date(2018,10,26)
+last_week = datetime.date(2018,11,2)
 dt_histvol = datetime.date(2014,1,1)
 min_holding = 5
 
