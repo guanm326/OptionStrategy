@@ -2,7 +2,7 @@ from OptionStrategyLib.OptionStrategy.protective_put.hedging import *
 
 
 start_date = datetime.date(2015, 1, 1)
-end_date = datetime.date(2018, 11, 1)
+end_date = datetime.date(2015, 11, 1)
 dt_histvol = start_date - datetime.timedelta(days=500)
 init_fund = c.Util.BILLION
 
@@ -38,6 +38,8 @@ init_index = df_index[c.Util.AMT_CLOSE].values[0]
 base_npv = []
 maturity1 = optionset.select_maturity_date(nbr_maturity=0, min_holding=min_holding)
 while optionset.eval_date <= end_date:
+    if optionset.eval_date >= datetime.date(2015, 9, 18):
+        print('')
     if maturity1 > end_date:  # Final close out all.
         close_out_orders = account.creat_close_out_order()
         for order in close_out_orders:

@@ -127,13 +127,10 @@ class HedgeIndexByOptions(object):
         option_short = self.dict_strategy[c.LongShort.SHORT]
         option_long = self.dict_strategy[c.LongShort.LONG]
         if option_short is None:
-            # return self.strategy()
-            return None
-
+            return self.strategy()
         else:
-            if self.index.mktprice_open() <= (option_long.strike() + option_short.strike()) / 2:
+            if self.index.mktprice_last_close() <= (option_long.strike() + option_short.strike()) / 2:
                 return self.strategy()
-
             else:
                 return None
 
@@ -175,8 +172,8 @@ class HedgeIndexByOptions(object):
         maturity1 = self.optionset.select_maturity_date(nbr_maturity=self.nbr_maturity, min_holding=self.min_holding)
         end_date = datetime.date(2018,11,1)
         while self.optionset.eval_date <= end_date:
-            print(self.optionset.eval_date)
-            # if self.optionset.eval_date >= datetime.date(2016,1,25):
+            # print(self.optionset.eval_date)
+            # if self.optionset.eval_date >= datetime.date(2015,9,18):
             #     print('')
             if maturity1 > end_date:  # Final close out all.
                 close_out_orders = self.account.creat_close_out_order()
@@ -198,10 +195,10 @@ class HedgeIndexByOptions(object):
                     if strategy is not None:
                         self.close_all_options()
                         self.excute(strategy)
-            else:
-                if self.open_signal():
-                    self.excute(self.strategy())
-                    empty_position = False
+
+            if empty_position and self.open_signal():
+                self.excute(self.strategy())
+                empty_position = False
 
             self.account.daily_accounting(self.optionset.eval_date)
             base_npv.append(self.index.mktprice_close() / init_index)

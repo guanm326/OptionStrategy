@@ -80,6 +80,8 @@ def bull_spread_vol(df_index, optionset,spot):
     k_target = spot - std_close
     put_short = optionset.select_higher_volume(
         optionset.get_option_closest_strike(c.OptionType.PUT, k_target, maturity))
+    if put_short.id_instrument() == put_long.id_instrument():
+        put_short = None
     return [put_long, put_short], name
 
 def bull_spread_vol_1(df_index, optionset):
