@@ -104,7 +104,7 @@ class HedgeIndexByOptions(object):
         dt_date = self.optionset.eval_date
         dt_maturity = None
         for option in self.account.dict_holding.values():
-            if isinstance(option, BaseOption):
+            if isinstance(option, BaseOption) and option is not None:
                 dt_maturity = option.maturitydt()
                 break
         if (dt_maturity - dt_date).days <= 5:
@@ -130,8 +130,11 @@ class HedgeIndexByOptions(object):
         #     put_long = optionset.select_higher_volume(list_put0)
         put_short = self.optionset.select_higher_volume(
             self.optionset.get_option_closest_strike(c.OptionType.PUT, k_short, maturity))
-        if put_short.id_instrument() == put_long.id_instrument():
-            put_short = None
+        if put_short is not None:
+            if put_short.strike() >= (k_short+put_long.strike())/2.0:
+                put_short = None
+            elif put_short.id_instrument() == put_long.id_instrument():
+                put_short = None
         return put_long, put_short
 
     def shift_bull_spread(self):
@@ -169,11 +172,6 @@ class HedgeIndexByOptions(object):
         self.dict_strategy = {}
 
     def close_out(self):
-        # for option in self.account.dict_holding.values():
-        #     if isinstance(option, BaseOption):
-        #         order = self.account.create_close_order(option, cd_trade_price=self.cd_trade_price)
-        #         record = option.execute_order(order, slippage=self.slippage)
-        #         self.account.add_record(record, option)
         close_out_orders = self.account.creat_close_out_order(cd_trade_price=c.CdTradePrice.CLOSE)
         for order in close_out_orders:
             execution_record = self.account.dict_holding[order.id_instrument] \
@@ -181,18 +179,20 @@ class HedgeIndexByOptions(object):
             self.account.add_record(execution_record, self.account.dict_holding[order.id_instrument])
 
     def back_test(self):
+
         self.unit_index = np.floor(self.account.cash / self.index.mktprice_close() / self.index.multiplier())
 
         order_index = self.account.create_trade_order(self.index, c.LongShort.LONG, self.unit_index,
                                                  cd_trade_price=c.CdTradePrice.CLOSE)
         record_index = self.index.execute_order(order_index, slippage=self.slippage)
         self.account.add_record(record_index, self.index)
-
         empty_position = True
         init_index = self.index.mktprice_close()
         base_npv = []
         while self.optionset.eval_date <= self.end_date:
-
+            if self.optionset.eval_date == datetime.date(2016,5,20):
+                print('')
+            print(self.optionset.eval_date)
             if self.optionset.eval_date >= self.end_date:  # Final close out all.
                 close_out_orders = self.account.creat_close_out_order()
                 for order in close_out_orders:

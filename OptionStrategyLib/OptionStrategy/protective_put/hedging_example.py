@@ -24,26 +24,28 @@ df_res = pd.DataFrame()
 # for cd_std in ['std_5','std_10','std_15','std_20']:
 for cd_std in ['std_10']:
 
-    # hedging1 = HedgeIndexByOptions(df_index, df_metrics,
-    #                               cd_direction_timing=cd_direction_timing,
-    #                               cd_strategy=cd_strategy, cd_volatility=cd_volatility,
-    #                               cd_short_ma=cd_short_ma, cd_long_ma=cd_long_ma, cd_std=cd_std)
-    # account1 = hedging1.back_test()
-    df_account = pd.read_excel('../../accounts_data/hedge_account_'+cd_short_ma+'_'+cd_long_ma+'_'+cd_std+'.xlsx')
-    df_account['date'] = df_account[c.Util.DT_DATE].apply(lambda x: x.date())
-    hedging = HedgeIndexByOptions(df_index, df_metrics,
+    hedging1 = HedgeIndexByOptions(df_index, df_metrics,
                                   cd_direction_timing=cd_direction_timing,
                                   cd_strategy=cd_strategy, cd_volatility=cd_volatility,
                                   cd_short_ma=cd_short_ma, cd_long_ma=cd_long_ma, cd_std=cd_std)
-    shift_drawdown = df_account[['date',c.Util.DRAWDOWN]].set_index('date')
-    account = hedging.back_test_with_stop_loss(shift_drawdown)
+    account = hedging1.back_test()
+    # df_account = pd.read_excel('../../accounts_data/hedge_account_'+cd_short_ma+'_'+cd_long_ma+'_'+cd_std+'.xlsx')
+    # df_account['date'] = df_account[c.Util.DT_DATE].apply(lambda x: x.date())
+    # hedging = HedgeIndexByOptions(df_index, df_metrics,
+    #                               cd_direction_timing=cd_direction_timing,
+    #                               cd_strategy=cd_strategy, cd_volatility=cd_volatility,
+    #                               cd_short_ma=cd_short_ma, cd_long_ma=cd_long_ma, cd_std=cd_std)
+    # shift_drawdown = df_account[['date',c.Util.DRAWDOWN]].set_index('date')
+    # account = hedging.back_test_with_stop_loss(shift_drawdown)
+    # res = account.analysis()
+    # res['nbr_timing'] = account.nbr_timing
+    # print(cd_std)
+    # print(res)
+    # df_res[cd_std] = res
+    # account.account.to_csv('../../accounts_data/hedge_account_sl_'+cd_short_ma+'_'+cd_long_ma+'_'+cd_std+'.csv')
+    # account.trade_records.to_csv('../../accounts_data/hedge_records_sl_'+cd_short_ma+'_'+cd_long_ma+'_'+cd_std+'.csv')
     res = account.analysis()
-    res['nbr_timing'] = account.nbr_timing
-    print(cd_std)
     print(res)
-    df_res[cd_std] = res
-    account.account.to_csv('../../accounts_data/hedge_account_sl_'+cd_short_ma+'_'+cd_long_ma+'_'+cd_std+'.csv')
-    account.trade_records.to_csv('../../accounts_data/hedge_records_sl_'+cd_short_ma+'_'+cd_long_ma+'_'+cd_std+'.csv')
     pu = PlotUtil()
     dates = list(account.account.index)
     hedged_npv = list(account.account[c.Util.PORTFOLIO_NPV])
