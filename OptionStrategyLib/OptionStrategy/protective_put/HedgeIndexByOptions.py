@@ -6,21 +6,22 @@ import data_access.get_data as get_data
 import back_test.model.constant as c
 import datetime
 import numpy as np
-from Utilities.PlotUtil import PlotUtil
-import matplotlib.pyplot as plt
+
 import pandas as pd
 from OptionStrategyLib.VolatilityModel.historical_volatility import HistoricalVolatilityModels as histvol
 
 
 class HedgeIndexByOptions(object):
     def __init__(self, df_baseindex, df_option_metrics,
-                 cd_direction_timing='ma_5_60',
-                 cd_strategy='bull_spread', cd_volatility='close_std'):
+                 cd_direction_timing='ma',
+                 cd_strategy='bull_spread', cd_volatility='close_std',
+                 cd_short_ma = 'ma_5',cd_long_ma = 'ma_60',cd_std = 'std_10'):
         self.min_holding = 20
         self.slippage = 0
         self.nbr_maturity = 0
         self.cd_trade_price = c.CdTradePrice.VOLUME_WEIGHTED
         dt_start = max(df_option_metrics[c.Util.DT_DATE].values[0], df_baseindex[c.Util.DT_DATE].values[0])
+        self.end_date = min(df_option_metrics[c.Util.DT_DATE].values[-1], df_baseindex[c.Util.DT_DATE].values[-1])
         df_metrics = df_option_metrics[df_option_metrics[c.Util.DT_DATE] >= dt_start].reset_index(drop=True)
         df_index = df_baseindex[df_baseindex[c.Util.DT_DATE] >= dt_start].reset_index(drop=True)
         self.optionset = BaseOptionSet(df_metrics)
@@ -30,17 +31,19 @@ class HedgeIndexByOptions(object):
         self.account = BaseAccount(init_fund=c.Util.BILLION, leverage=1.0, rf=0.03)
         self.prepare_timing(df_baseindex)
         self.cd_direction_timing = cd_direction_timing
-        # self.cd_strike_spread = cd_strike_spread
         self.cd_strategy = cd_strategy
         self.cd_volatility = cd_volatility
-        self.cd_short_ma = 'ma_5'
-        self.cd_long_ma = 'ma_60'
-        self.cd_std = 'std_10'
+        self.cd_short_ma = cd_short_ma
+        self.cd_long_ma = cd_long_ma
+        self.cd_std = cd_std
         self.unit_index = None
         self.dict_strategy = {}
+        self.nbr_timing = 0
+        self.strategy_pause = False
 
     def prepare_timing(self, df_index):
         df_index['ma_5'] = c.Statistics.moving_average(df_index[c.Util.AMT_CLOSE], n=5).shift()
+        df_index['ma_30'] = c.Statistics.moving_average(df_index[c.Util.AMT_CLOSE], n=30).shift()
         df_index['ma_60'] = c.Statistics.moving_average(df_index[c.Util.AMT_CLOSE], n=60).shift()
         df_index['ma_120'] = c.Statistics.moving_average(df_index[c.Util.AMT_CLOSE], n=120).shift()
         df_index['std_5'] = c.Statistics.standard_deviation(df_index[c.Util.AMT_CLOSE], n=5).shift()
@@ -56,15 +59,22 @@ class HedgeIndexByOptions(object):
         # df_index = df_index.set_index(c.Util.DT_DATE)
         df_index.to_csv('../../accounts_data/df_index1.csv')
         self.df_timing = df_index.set_index(c.Util.DT_DATE)
-        # return df_index
 
     def open_signal(self):
-        if self.cd_direction_timing == 'ma_5_60':
+        if self.cd_direction_timing == 'ma':
             return self.open_position_ma()
 
     def close_signal(self):
-        if self.cd_direction_timing == 'ma_5_60':
+        if self.cd_direction_timing == 'ma':
             return self.close_position_ma()
+
+    def stop_loss_beg(self, drawdown):
+        if drawdown.loc[self.optionset.eval_date,c.Util.DRAWDOWN] <= -0.07:
+            return True
+
+    def stop_loss_end(self, drawdown):
+        if drawdown.loc[self.optionset.eval_date,c.Util.DRAWDOWN] > -0.06:
+            return True
 
     def strategy(self):
         if self.cd_strategy == 'bull_spread':
@@ -102,6 +112,7 @@ class HedgeIndexByOptions(object):
         ma_5 = self.df_timing.loc[dt_date, self.cd_short_ma]
         ma_60 = self.df_timing.loc[dt_date, self.cd_long_ma]
         if ma_5 > ma_60:
+            self.nbr_timing += 1
             return True
         else:
             return False
@@ -157,6 +168,17 @@ class HedgeIndexByOptions(object):
                 self.account.add_record(record, option)
         self.dict_strategy = {}
 
+    def close_out(self):
+        # for option in self.account.dict_holding.values():
+        #     if isinstance(option, BaseOption):
+        #         order = self.account.create_close_order(option, cd_trade_price=self.cd_trade_price)
+        #         record = option.execute_order(order, slippage=self.slippage)
+        #         self.account.add_record(record, option)
+        close_out_orders = self.account.creat_close_out_order(cd_trade_price=c.CdTradePrice.CLOSE)
+        for order in close_out_orders:
+            execution_record = self.account.dict_holding[order.id_instrument] \
+                .execute_order(order, slippage=self.slippage, execute_type=c.ExecuteType.EXECUTE_ALL_UNITS)
+            self.account.add_record(execution_record, self.account.dict_holding[order.id_instrument])
 
     def back_test(self):
         self.unit_index = np.floor(self.account.cash / self.index.mktprice_close() / self.index.multiplier())
@@ -169,13 +191,9 @@ class HedgeIndexByOptions(object):
         empty_position = True
         init_index = self.index.mktprice_close()
         base_npv = []
-        maturity1 = self.optionset.select_maturity_date(nbr_maturity=self.nbr_maturity, min_holding=self.min_holding)
-        end_date = datetime.date(2018,11,1)
-        while self.optionset.eval_date <= end_date:
-            # print(self.optionset.eval_date)
-            # if self.optionset.eval_date >= datetime.date(2015,9,18):
-            #     print('')
-            if maturity1 > end_date:  # Final close out all.
+        while self.optionset.eval_date <= self.end_date:
+
+            if self.optionset.eval_date >= self.end_date:  # Final close out all.
                 close_out_orders = self.account.creat_close_out_order()
                 for order in close_out_orders:
                     execution_record = self.account.dict_holding[order.id_instrument] \
@@ -201,21 +219,92 @@ class HedgeIndexByOptions(object):
                 empty_position = False
 
             self.account.daily_accounting(self.optionset.eval_date)
+            # if not self.strategy_pause:
+            #     self.account_1.account.loc[self.optionset.eval_date] = self.account_1.account.loc[self.optionset.eval_date]
             base_npv.append(self.index.mktprice_close() / init_index)
             if not self.optionset.has_next(): break
             self.optionset.next()
             self.index.next()
-
-        res = self.account.analysis()
-        print(res)
         self.account.account['base_npv'] = base_npv
-        self.account.account.to_csv('../../accounts_data/hedge_by_option_account_' + self.cd_strategy + '.csv')
-        self.account.trade_records.to_csv('../../accounts_data/hedge_by_option_records_' + self.cd_strategy + '.csv')
-        pu = PlotUtil()
-        dates = list(self.account.account.index)
-        hedged_npv = list(self.account.account[c.Util.PORTFOLIO_NPV])
-        pu.plot_line_chart(dates, [hedged_npv, base_npv], ['hedged_npv', 'base_npv'])
-        plt.show()
+        self.account.nbr_timing = self.nbr_timing
+        return self.account
+
+    def back_test_with_stop_loss(self, drawdown):
+        stop_loss_paused = False
+        self.unit_index = np.floor(self.account.cash / self.index.mktprice_close() / self.index.multiplier())
+
+        order_index = self.account.create_trade_order(self.index, c.LongShort.LONG, self.unit_index,
+                                                 cd_trade_price=c.CdTradePrice.CLOSE)
+        record_index = self.index.execute_order(order_index, slippage=self.slippage)
+        self.account.add_record(record_index, self.index)
+
+        empty_position = True
+        init_index = self.index.mktprice_close()
+        base_npv = []
+        while self.optionset.eval_date <= self.end_date:
+            # if self.optionset.eval_date == datetime.date(2015,7,28):
+            #     print('')
+            if self.optionset.eval_date >= self.end_date:  # Final close out all.
+                self.close_out()
+                self.account.daily_accounting(self.optionset.eval_date)
+                base_npv.append(self.index.mktprice_close() / init_index)
+                print(self.optionset.eval_date, ' close out ')
+                break
+
+            # 止损平仓
+            if not stop_loss_paused and self.stop_loss_beg(drawdown):
+                self.close_out()
+                self.account.daily_accounting(self.optionset.eval_date)
+                base_npv.append(self.index.mktprice_close() / init_index)
+                print(self.optionset.eval_date, ' stop loss ')
+                if not self.optionset.has_next(): break
+                self.optionset.next()
+                self.index.next()
+                stop_loss_paused = True
+                empty_position = True
+                continue
+            # 止损后空仓
+            if stop_loss_paused and not self.stop_loss_end(drawdown):
+                self.account.daily_accounting(self.optionset.eval_date)
+                base_npv.append(self.index.mktprice_close() / init_index)
+                if not self.optionset.has_next(): break
+                self.optionset.next()
+                self.index.next()
+                continue
+            # 止损信号解除
+            if stop_loss_paused and self.stop_loss_end(drawdown):
+                # TODO: UNIT INDEX CHANGE?
+                # self.unit_index = np.floor(self.account.cash / self.index.mktprice_close() / self.index.multiplier())
+                order_index = self.account.create_trade_order(self.index, c.LongShort.LONG, self.unit_index,
+                                                              cd_trade_price=c.CdTradePrice.CLOSE)
+                record_index = self.index.execute_order(order_index, slippage=self.slippage)
+                self.account.add_record(record_index, self.index)
+                print(self.optionset.eval_date, ' stop loss end ')
+                stop_loss_paused = False
+
+            if not empty_position:
+                if self.close_signal():
+                    self.close_all_options()
+                    empty_position = True
+                else:
+                    strategy = self.shift()
+                    if strategy is not None:
+                        self.close_all_options()
+                        self.excute(strategy)
+
+            if empty_position and self.open_signal():
+                self.excute(self.strategy())
+                empty_position = False
+
+            self.account.daily_accounting(self.optionset.eval_date)
+            base_npv.append(self.index.mktprice_close() / init_index)
+            if not self.optionset.has_next(): break
+            self.optionset.next()
+            self.index.next()
+        self.account.account['base_npv'] = base_npv
+        self.account.nbr_timing = self.nbr_timing
+        return self.account
+
 
 # def bull_spread_vol_1(df_index, optionset):
 #     name = 'bull_spread_vol'

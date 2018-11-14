@@ -896,6 +896,7 @@ class Util:
     NONMARGIN_UNREALIZED_PNL = 'nonmargin_unrealized_pnl'
     PORTFOLIO_DELTA = 'portfolio_delta'
     TURNOVER = 'turnover'
+    DRAWDOWN = 'drawdown'
     DAILY_EXCECUTED_AMOUNT = 'daily_executed_amount'  # abs value
     BILLION = 1000000000.0
     TRADE_BOOK_COLUMN_LIST = [DT_DATE, TRADE_LONG_SHORT, TRADE_UNIT,

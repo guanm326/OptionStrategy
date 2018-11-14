@@ -60,7 +60,7 @@ class BaseAccount():
                     if base_product.is_margin_trade(trade_long_short):
                         # 开仓为保证金交易，将已实现损益加入现金账户
                         self.cash += book_series[Util.TRADE_MARGIN_CAPITAL] + realized_pnl
-                    else: # 无保证金交易（期权买方、股票等）最终平仓收入（- execution_record[Util.TRADE_BOOK_VALUE]）加入现金账户
+                    else:  # 无保证金交易（期权买方、股票等）最终平仓收入（- execution_record[Util.TRADE_BOOK_VALUE]）加入现金账户
                         self.cash += - execution_record[Util.TRADE_BOOK_VALUE]
                     position_current_value = 0.0
                     # self.dict_holding.pop(id_instrument, None)
@@ -83,7 +83,7 @@ class BaseAccount():
                     if base_product.is_margin_trade(trade_long_short):
                         # 开仓为保证金交易，将已实现损益加入现金账户
                         self.cash += realized_pnl + margin_released
-                    else: # 无保证金交易（期权买方、股票等）最终平仓收入（- execution_record[Util.TRADE_BOOK_VALUE]）加入现金账户。
+                    else:  # 无保证金交易（期权买方、股票等）最终平仓收入（- execution_record[Util.TRADE_BOOK_VALUE]）加入现金账户。
                         self.cash += - execution_record[Util.TRADE_BOOK_VALUE]
                     position_current_value = self.get_position_value(id_instrument, trade_unit,
                                                                      trade_long_short
@@ -167,7 +167,7 @@ class BaseAccount():
                 Util.TRADE_LONG_SHORT: trade_long_short,
                 Util.AVERAGE_POSITION_COST: average_position_cost,
                 Util.TRADE_REALIZED_PNL: 0.0,
-                'mtm_cashed_unrealized_pnl':0.0,
+                'mtm_cashed_unrealized_pnl': 0.0,
                 Util.NBR_MULTIPLIER: base_product.multiplier()
             })
             realized_pnl = 0.0
@@ -185,8 +185,7 @@ class BaseAccount():
         execution_record[Util.CASH] = self.cash
         execution_record[Util.ABS_TRADE_BOOK_VALUE] = abs(execution_record[Util.TRADE_BOOK_VALUE])
         # self.list_records.append(execution_record)
-        self.trade_records = self.trade_records.append(execution_record,ignore_index=True)
-
+        self.trade_records = self.trade_records.append(execution_record, ignore_index=True)
 
     # 用于衡量投资组合中非保证金交易部分的市值。
     def get_position_value(self, id_instrument, trade_unit, long_short):
@@ -220,11 +219,11 @@ class BaseAccount():
         return investable_cash * self.max_leverage
 
     def create_trade_order_check_leverage(self, base_product,
-                           # trade_type: TradeType,
-                           long_short: LongShort,
-                           trade_unit: int = None,
-                           trade_price: float = None,
-                           ):
+                                          # trade_type: TradeType,
+                                          long_short: LongShort,
+                                          trade_unit: int = None,
+                                          trade_price: float = None,
+                                          ):
         trade_unit = abs(trade_unit)  # unit的正负取绝对值，方向主要看trade type
         dt_trade = base_product.eval_date
         id_instrument = base_product.id_instrument()
@@ -265,7 +264,7 @@ class BaseAccount():
                           time_signal, long_short)
             return order
 
-    def get_trade_price(self, cd_trade_price:CdTradePrice, base_product:BaseProduct):
+    def get_trade_price(self, cd_trade_price: CdTradePrice, base_product: BaseProduct):
         if cd_trade_price == CdTradePrice.CLOSE:
             return base_product.mktprice_close()
         elif cd_trade_price == CdTradePrice.OPEN:
@@ -278,7 +277,7 @@ class BaseAccount():
         else:
             return
 
-    def create_trade_order(self, base_product:BaseProduct,
+    def create_trade_order(self, base_product: BaseProduct,
                            long_short: LongShort,
                            trade_unit: int = None,
                            cd_trade_price: CdTradePrice = CdTradePrice.CLOSE
@@ -286,21 +285,21 @@ class BaseAccount():
         trade_unit = abs(trade_unit)  # unit的正负取绝对值，方向主要看trade type
         dt_trade = base_product.eval_date
         id_instrument = base_product.id_instrument()
-        trade_price = self.get_trade_price(cd_trade_price,base_product)
+        trade_price = self.get_trade_price(cd_trade_price, base_product)
         time_signal = base_product.eval_datetime
         order = Order(dt_trade, id_instrument, trade_unit, trade_price,
-                          time_signal, long_short)
+                      time_signal, long_short)
         return order
 
-    def create_close_order(self, base_product:BaseProduct, cd_trade_price: CdTradePrice = CdTradePrice.CLOSE):
+    def create_close_order(self, base_product: BaseProduct, cd_trade_price: CdTradePrice = CdTradePrice.CLOSE):
         id_instrument = base_product.id_instrument()
         if id_instrument not in self.trade_book.index:
             return
         else:
             trade_price = self.get_trade_price(cd_trade_price, base_product)
-            trade_unit = self.trade_book.loc[id_instrument,Util.TRADE_UNIT]
+            trade_unit = self.trade_book.loc[id_instrument, Util.TRADE_UNIT]
             if trade_unit == 0: return
-            if self.trade_book.loc[id_instrument,Util.TRADE_LONG_SHORT] == LongShort.LONG:
+            if self.trade_book.loc[id_instrument, Util.TRADE_LONG_SHORT] == LongShort.LONG:
                 long_short = LongShort.SHORT
             else:
                 long_short = LongShort.LONG
@@ -339,17 +338,17 @@ class BaseAccount():
             trade_unit = row[Util.TRADE_UNIT]
             trade_long_short = row[Util.TRADE_LONG_SHORT]
             price = base_product.mktprice_close()
-            if isinstance(base_product,BaseOption):
+            if isinstance(base_product, BaseOption):
                 iv = base_product.get_implied_vol()
                 if iv is None: iv = 0.2
-                delta = trade_unit*base_product.multiplier()*base_product.get_delta(iv)*trade_long_short.value
+                delta = trade_unit * base_product.multiplier() * base_product.get_delta(iv) * trade_long_short.value
             else:
                 delta = 0
             portfolio_delta += delta
             if trade_long_short == LongShort.SHORT:
-                total_short_scale -= trade_unit*price*base_product.multiplier()
+                total_short_scale -= trade_unit * price * base_product.multiplier()
             else:
-                total_long_scale += trade_unit*price*base_product.multiplier()
+                total_long_scale += trade_unit * price * base_product.multiplier()
             unrealized_pnl = trade_long_short.value * (price - row[Util.AVERAGE_POSITION_COST]) * row[Util.TRADE_UNIT] * \
                              row[Util.NBR_MULTIPLIER]
             if base_product.is_margin_trade(trade_long_short):
@@ -366,18 +365,18 @@ class BaseAccount():
             self.trade_book.loc[id_instrument, Util.DT_DATE] = eval_date
             if row[Util.TRADE_UNIT] == 0.0: self.dict_holding.pop(id_instrument, None)
 
-
         self.trade_book_daily = self.trade_book_daily.append(self.trade_book)
         portfolio_margin_capital = self.get_portfolio_margin_capital()
         portfolio_trades_value = self.get_portfolio_trades_value()
         portfolio_total_value = self.cash + portfolio_margin_capital + \
                                 portfolio_trades_value + margin_unrealized_pnl
         total_realized_pnl = self.trade_book[Util.TRADE_REALIZED_PNL].sum()
-        self.realized_pnl_from_closed_out_positions += self.trade_book[self.trade_book[Util.TRADE_UNIT] == 0.0][Util.TRADE_REALIZED_PNL].sum()
+        self.realized_pnl_from_closed_out_positions += self.trade_book[self.trade_book[Util.TRADE_UNIT] == 0.0][
+            Util.TRADE_REALIZED_PNL].sum()
         # self.cashed_unrealized_pnl_from_mtm_positions += self.trade_book[self.trade_book[Util.TRADE_UNIT] == 0.0]['mtm_cashed_unrealized_pnl'].sum()
         tmp = self.cash + portfolio_margin_capital
         portfolio_total_value2 = self.init_fund + margin_unrealized_pnl + nonmargin_unrealized_pnl + \
-                                 total_realized_pnl+ self.realized_pnl_from_closed_out_positions
+                                 total_realized_pnl + self.realized_pnl_from_closed_out_positions
 
         portfolio_total_scale = self.get_portfolio_total_scale()
         npv = portfolio_total_value / self.init_fund
@@ -388,10 +387,11 @@ class BaseAccount():
             daily_executed_amount = 0.0
             turnover = 0.0
         else:
-            daily_executed_amount = self.trade_records[self.trade_records[Util.DT_TRADE]==eval_date][Util.ABS_TRADE_BOOK_VALUE].sum()
-            turnover = daily_executed_amount/self.portfolio_total_value
+            daily_executed_amount = self.trade_records[self.trade_records[Util.DT_TRADE] == eval_date][
+                Util.ABS_TRADE_BOOK_VALUE].sum()
+            turnover = daily_executed_amount / self.portfolio_total_value
         actual_leverage = portfolio_total_scale / portfolio_total_value
-        self.cash = self.cash*(1+self.rf*(1.0/252.0))
+        self.cash = self.cash * (1 + self.rf * (1.0 / 252.0))
         account_today = pd.Series({
             Util.DT_DATE: eval_date,
             Util.CASH: self.cash,
@@ -399,23 +399,24 @@ class BaseAccount():
             Util.PORTFOLIO_TRADES_VALUE: portfolio_trades_value,
             Util.PORTFOLIO_VALUE: portfolio_total_value,
             Util.PORTFOLIO_NPV: npv,
-            Util.PORTFOLIO_UNREALIZED_PNL: margin_unrealized_pnl+nonmargin_unrealized_pnl,
+            Util.PORTFOLIO_UNREALIZED_PNL: margin_unrealized_pnl + nonmargin_unrealized_pnl,
             Util.PORTFOLIO_LEVERAGE: actual_leverage,
             Util.TRADE_REALIZED_PNL: self.realized_pnl,
-            Util.PORTFOLIO_LONG_POSITION_SCALE:total_long_scale,
-            Util.PORTFOLIO_SHORT_POSITION_SCALE:total_short_scale,
-            Util.MARGIN_UNREALIZED_PNL:margin_unrealized_pnl,
-            Util.NONMARGIN_UNREALIZED_PNL:nonmargin_unrealized_pnl,
-            Util.PORTFOLIO_DELTA:portfolio_delta,
+            Util.PORTFOLIO_LONG_POSITION_SCALE: total_long_scale,
+            Util.PORTFOLIO_SHORT_POSITION_SCALE: total_short_scale,
+            Util.MARGIN_UNREALIZED_PNL: margin_unrealized_pnl,
+            Util.NONMARGIN_UNREALIZED_PNL: nonmargin_unrealized_pnl,
+            Util.PORTFOLIO_DELTA: portfolio_delta,
             Util.DAILY_EXCECUTED_AMOUNT: daily_executed_amount,
-            Util.TURNOVER:turnover
+            Util.TURNOVER: turnover
         })
         self.account.loc[eval_date] = account_today
         # REMOVE CLEARED TRADES FROM TRADING BOOK
         self.trade_book = self.trade_book[self.trade_book[Util.TRADE_UNIT] != 0.0]
         self.realized_pnl = 0.0
         self.portfolio_total_value = portfolio_total_value
-
+        self.account.loc[eval_date, Util.DRAWDOWN] = (self.account.loc[eval_date, Util.PORTFOLIO_NPV] - max(
+            self.account[Util.PORTFOLIO_NPV])) / max(self.account[Util.PORTFOLIO_NPV])
 
     """ getters from trade book """
 
@@ -477,8 +478,7 @@ class BaseAccount():
                    * self.trade_book[Util.NBR_MULTIPLIER]).sum()
         return res
 
-
-    def get_maxdrawdown(self,netvalue):
+    def get_maxdrawdown(self, netvalue):
         '''
         最大回撤率计算
         '''
@@ -489,7 +489,6 @@ class BaseAccount():
                 maxdrawdowns.iloc[i] = 0
             else:
                 maxdrawdowns.iloc[i] = netvalue.iloc[i] / highpoint - 1
-
         return maxdrawdowns
 
     def get_netvalue_analysis(self, netvalue, freq='D'):
@@ -542,11 +541,11 @@ class BaseAccount():
 
         return r
 
-    def get_monthly_turnover(self, df_account:pd.DataFrame):
-        df_account['year_month'] = df_account[Util.DT_DATE].apply(lambda x: str(x.year)+str(x.month))
+    def get_monthly_turnover(self, df_account: pd.DataFrame):
+        df_account['year_month'] = df_account[Util.DT_DATE].apply(lambda x: str(x.year) + str(x.month))
         trade_amount = df_account.groupby(['year_month'])[Util.DAILY_EXCECUTED_AMOUNT].sum()
         init_portfolio_value = df_account.groupby(['year_month'])[Util.PORTFOLIO_VALUE].first()
-        turnover_monthly = trade_amount/init_portfolio_value
+        turnover_monthly = trade_amount / init_portfolio_value
         turnover_avg = turnover_monthly.mean()
         return turnover_avg
 
