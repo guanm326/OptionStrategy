@@ -327,7 +327,29 @@ class BaseAccount():
                 order_list.append(order)
             return order_list
 
-    def daily_accounting(self, eval_date):
+    def estimate_npv(self):
+        margin_unrealized_pnl = 0.0
+        nonmargin_unrealized_pnl = 0.0
+        portfolio_trades_value = 0.0
+        for (id_instrument, row) in self.trade_book.iterrows():
+            base_product = self.dict_holding[id_instrument]
+            trade_long_short = row[Util.TRADE_LONG_SHORT]
+            price = base_product.mktprice_close()
+            unrealized_pnl = trade_long_short.value * (price - row[Util.AVERAGE_POSITION_COST]) * row[Util.TRADE_UNIT] * \
+                             row[Util.NBR_MULTIPLIER]
+            if base_product.is_margin_trade(trade_long_short):
+                margin_unrealized_pnl += unrealized_pnl
+            else:
+                nonmargin_unrealized_pnl += unrealized_pnl
+            portfolio_trades_value += self.get_position_value(id_instrument, row[Util.TRADE_UNIT], trade_long_short)
+        portfolio_margin_capital = self.get_portfolio_margin_capital()
+        portfolio_total_value = self.cash + portfolio_margin_capital + \
+                                portfolio_trades_value + margin_unrealized_pnl
+        npv = portfolio_total_value / self.init_fund
+        return npv
+
+
+    def daily_accounting(self, eval_date,flag_interest=True):
         margin_unrealized_pnl = 0.0
         total_short_scale = 0.0
         total_long_scale = 0.0
@@ -391,7 +413,8 @@ class BaseAccount():
                 Util.ABS_TRADE_BOOK_VALUE].sum()
             turnover = daily_executed_amount / self.portfolio_total_value
         actual_leverage = portfolio_total_scale / portfolio_total_value
-        self.cash = self.cash * (1 + self.rf * (1.0 / 252.0))
+        if flag_interest:
+            self.cash = self.cash * (1 + self.rf * (1.0 / 252.0))
         account_today = pd.Series({
             Util.DT_DATE: eval_date,
             Util.CASH: self.cash,
