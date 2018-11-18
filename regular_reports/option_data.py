@@ -284,9 +284,9 @@ def implied_vol_vw(last_week, end_date, df_metrics, df_res, name_code):
 
 """"""
 
-end_date = datetime.date.today()
+end_date = datetime.date(2018,11,16)
 start_date = datetime.date(2015, 1, 1)
-last_week = datetime.date(2018,11,2)
+last_week = datetime.date(2018,11,9)
 dt_histvol = datetime.date(2014,1,1)
 min_holding = 5
 
@@ -312,7 +312,7 @@ for (idx, name_code) in enumerate(name_codes):
     else:
         df_res = pcr_commodity_option(dt_start, end_date, name_code, df_res,min_holding)
     df_res = implied_vol(dt_start, end_date, df_metrics, df_res, name_code)
-
+    df_res.to_csv('df.csv')
     df_res.to_excel(writer, name_code)
     dt_end = df_metrics[c.Util.DT_DATE].unique()[-1]
     dt_yesterday = df_metrics[c.Util.DT_DATE].unique()[-2]

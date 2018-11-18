@@ -31,8 +31,8 @@ df_5_1 = df_5.iloc[:,0:29]
 df_5_2 = df_5.iloc[:,30:]
 # print(df_5_1.columns.values)
 # print(df_5_2.columns.values)
-data = [df_1,df_2,df_3_1,df_3_2,df_3_3,df_4_1,df_4_2,df_5_1,df_5_2]
-# data = [df_3_2,df_3_3,df_4_1,df_4_2,df_5_1,df_5_2]
+# data = [df_1,df_2,df_3_1,df_3_2,df_3_3,df_4_1,df_4_2,df_5_1,df_5_2]
+data = [df_5_2]
 
 list_res = []
 df_1 = df_3_1
@@ -51,7 +51,8 @@ for df_1 in data:
     for (i, row) in df_1.iterrows():
         for c in column_names:
             if c == 'dt_date': continue
-            if pd.isna(row[c]) or row[c] is None: continue
+            if pd.isnull(row['dt_date']) or pd.isnull(row[c]) or row[c]==0: continue
+            print(row)
             id = c + '_' + str(row['dt_date'].strftime("%Y%m%d"))
             df_res = df_res.append({'id': id, 'cd_name': c, 'dt_date': row['dt_date'], 'amt_value': row[c],
                            'timestamp': datetime.datetime.now()}, ignore_index=True)
