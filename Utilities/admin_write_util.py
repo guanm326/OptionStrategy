@@ -111,3 +111,6 @@ def table_cf_minute_1():
 
 def table_cf_daily():
     return Table('cf_day',metadata_dzqh, autoload=True)
+
+def table_option_data():
+    return Table('option_data',metadata_dzqh, autoload=True)
