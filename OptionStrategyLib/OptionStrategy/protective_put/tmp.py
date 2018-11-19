@@ -20,3 +20,6 @@ account = BaseAccount(init_fund=c.Util.BILLION, leverage=1.0, rf=0.03)
 s = data['npv']
 res  = account.get_netvalue_analysis(data['npv'])
 print(res)
+df_res = pd.DataFrame()
+df_res['lowvol'] = res
+df_res.to_csv('../../accounts_data/hedge_res_lowvol.csv')
