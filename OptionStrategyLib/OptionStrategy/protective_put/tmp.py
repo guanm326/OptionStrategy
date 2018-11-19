@@ -19,7 +19,29 @@ data = pd.read_excel('../../../data/low_vol.xlsx')
 account = BaseAccount(init_fund=c.Util.BILLION, leverage=1.0, rf=0.03)
 s = data['npv']
 res  = account.get_netvalue_analysis(data['npv'])
+
+# res['turnover'] = account.get_monthly_turnover(data)
 print(res)
 df_res = pd.DataFrame()
 df_res['lowvol'] = res
+
+# Base index
+data = pd.read_excel('../../../data/50etf.xlsx')
+account = BaseAccount(init_fund=c.Util.BILLION, leverage=1.0, rf=0.03)
+s = data['npv']
+res  = account.get_netvalue_analysis(data['npv'])
+
+# res['turnover'] = account.get_monthly_turnover(data)
+print(res)
+df_res['50etf'] = res
+
+data = pd.read_excel('../../../data/base_low_vol.xlsx')
+account = BaseAccount(init_fund=c.Util.BILLION, leverage=1.0, rf=0.03)
+s = data['npv']
+res  = account.get_netvalue_analysis(data['npv'])
+
+# res['turnover'] = account.get_monthly_turnover(data)
+print(res)
+df_res['base_low_vol'] = res
+
 df_res.to_csv('../../accounts_data/hedge_res_lowvol.csv')

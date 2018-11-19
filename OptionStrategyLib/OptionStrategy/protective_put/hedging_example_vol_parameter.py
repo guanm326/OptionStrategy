@@ -20,7 +20,7 @@ cd_short_ma = 'ma_3'
 cd_long_ma = 'ma_20'
 df_res = pd.DataFrame()
 
-for cd_std in ['std_5','std_10','std_15','std_20']:
+for cd_std in ['std_10','std_5','std_15','std_20']:
 # for cd_std in ['std_10']:
     hedging = HedgeIndexByOptions(df_index, df_metrics,
                                   cd_direction_timing=cd_direction_timing,
