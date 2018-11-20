@@ -17,7 +17,13 @@ class BaseFutureCoutinuous(BaseProduct):
                  df_future_c2: pd.DataFrame = None,  # future c2
                  df_futures_all_daily: pd.DataFrame = None,
                  df_underlying_index_daily: pd.DataFrame = None,
-                 rf: float = 0.03, frequency: FrequentType = FrequentType.MINUTE):
+                 rf: float = 0.03, frequency: FrequentType = FrequentType.DAILY):
+        name_code = df_future_c1.loc[0, Util.ID_INSTRUMENT].split('_')[0].lower()
+        df_future_c1 = df_future_c1.rename(columns={Util.ID_INSTRUMENT: Util.ID_FUTURE})
+        df_future_c1.loc[:, Util.ID_INSTRUMENT] = name_code
+        if df_futures_all_daily is not None:
+            df_futures_all_daily = df_futures_all_daily.rename(columns={Util.ID_INSTRUMENT: Util.ID_FUTURE})
+            df_futures_all_daily.loc[:, Util.ID_INSTRUMENT] = name_code
         super().__init__(df_future_c1, df_future_c1_daily, rf, frequency)
         self._multiplier = Util.DICT_CONTRACT_MULTIPLIER[self.name_code()]
         self.fee_rate = Util.DICT_TRANSACTION_FEE_RATE[self.name_code()]
@@ -28,6 +34,7 @@ class BaseFutureCoutinuous(BaseProduct):
         self.df_all_futures_daily = df_futures_all_daily
         self.idx_underlying_index = -1
         self.underlying_state_daily = None
+        self.id_future = df_future_c1.loc[0, Util.ID_FUTURE]
 
     def __repr__(self) -> str:
         return 'BaseInstrument(id_instrument: {0},eval_date: {1},frequency: {2})' \
@@ -173,3 +180,36 @@ class BaseFutureCoutinuous(BaseProduct):
             close_execution_record = self.execute_order(close_order, slippage, execute_type)
             open_execution_record = self.execute_order(open_order, slippage, execute_type)
             return close_execution_record, open_execution_record
+
+
+    def shift_contract_month(self,account,slippage):
+        # 移仓换月: 成交量加权均价
+        if self.id_future != self.current_state[Util.ID_FUTURE]:
+            for holding in account.dict_holding.values():
+                if isinstance(holding, BaseFutureCoutinuous):
+                    # close previous contract
+                    df = self.df_all_futures_daily[
+                        (self.df_all_futures_daily[Util.DT_DATE] == self.eval_date) & (
+                            self.df_all_futures_daily[Util.ID_FUTURE] == self.id_future)]
+                    trade_unit = account.trade_book.loc[self.name_code(), Util.TRADE_UNIT]
+                    position_direction = account.trade_book.loc[self.name_code(), Util.TRADE_LONG_SHORT]
+                    if position_direction == LongShort.LONG:
+                        long_short = LongShort.SHORT
+                    else:
+                        long_short = LongShort.LONG
+                    trade_price = df[Util.AMT_TRADING_VALUE].values[0] / df[Util.AMT_TRADING_VOLUME].values[
+                        0] / self.multiplier()
+                    order = Order(holding.eval_date, self.name_code(), trade_unit, trade_price,
+                                  holding.eval_datetime, long_short)
+                    record = self.execute_order(order, slippage=slippage)
+                    account.add_record(record, holding)
+
+                    # open
+                    trade_price = self.mktprice_volume_weighted()
+                    order = Order(holding.eval_date, self.name_code(), trade_unit, trade_price,
+                                  holding.eval_datetime, position_direction)
+                    record = self.execute_order(order, slippage=slippage)
+                    account.add_record(record, holding)
+
+            self.id_future = self.current_state[Util.ID_FUTURE]
+

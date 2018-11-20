@@ -2,6 +2,7 @@ from back_test.model.base_option_set import BaseOptionSet
 from back_test.model.base_option import BaseOption
 from back_test.model.base_account import BaseAccount
 from back_test.model.base_instrument import BaseInstrument
+from back_test.model.base_future_coutinuous import BaseFutureCoutinuous
 import data_access.get_data as get_data
 import back_test.model.constant as c
 import datetime
@@ -12,7 +13,7 @@ from OptionStrategyLib.VolatilityModel.historical_volatility import HistoricalVo
 
 
 class HedgeIndexByOptions(object):
-    def __init__(self, df_baseindex, df_option_metrics,df_index=None,
+    def __init__(self, df_baseindex, df_option_metrics,df_c1=None,df_all=None,
                  cd_direction_timing='ma',
                  cd_strategy='bull_spread', cd_volatility='close_std',
                  cd_short_ma='ma_5', cd_long_ma='ma_60', cd_std='std_10'):
@@ -22,14 +23,22 @@ class HedgeIndexByOptions(object):
         self.moneyness_rank = 0
         self.cd_trade_price = c.CdTradePrice.VOLUME_WEIGHTED
         # self.cd_trade_price = c.CdTradePrice.CLOSE
-        dt_start = max(df_option_metrics[c.Util.DT_DATE].values[0], df_baseindex[c.Util.DT_DATE].values[0])
-        self.end_date = min(df_option_metrics[c.Util.DT_DATE].values[-1], df_baseindex[c.Util.DT_DATE].values[-1])
-        df_metrics = df_option_metrics[df_option_metrics[c.Util.DT_DATE] >= dt_start].reset_index(drop=True)
-        df_baseindex = df_baseindex[df_baseindex[c.Util.DT_DATE] >= dt_start].reset_index(drop=True)
-        if df_index is not None:
-            self.df_index = df_index = df_index[df_index[c.Util.DT_DATE] >= dt_start].reset_index(drop=True)
-            self.active_portfolio = BaseInstrument(df_index)  # e.g., top 50 low volatility index
-            self.active_portfolio.init()
+        if df_c1 is None:
+            dt_start = max(df_option_metrics[c.Util.DT_DATE].values[0], df_baseindex[c.Util.DT_DATE].values[0])
+            self.end_date = min(df_option_metrics[c.Util.DT_DATE].values[-1], df_baseindex[c.Util.DT_DATE].values[-1])
+            df_metrics = df_option_metrics[df_option_metrics[c.Util.DT_DATE] >= dt_start].reset_index(drop=True)
+            df_baseindex = df_baseindex[df_baseindex[c.Util.DT_DATE] >= dt_start].reset_index(drop=True)
+            self.invst_portfolio = BaseInstrument(df_baseindex)  # e.g., top 50 low volatility index
+            self.invst_portfolio.init()
+        else:
+            dt_start = max(df_option_metrics[c.Util.DT_DATE].values[0], df_baseindex[c.Util.DT_DATE].values[0], df_c1[c.Util.DT_DATE].values[0])
+            self.end_date = min(df_option_metrics[c.Util.DT_DATE].values[-1], df_baseindex[c.Util.DT_DATE].values[-1], df_c1[c.Util.DT_DATE].values[-1])
+            df_metrics = df_option_metrics[df_option_metrics[c.Util.DT_DATE] >= dt_start].reset_index(drop=True)
+            df_baseindex = df_baseindex[df_baseindex[c.Util.DT_DATE] >= dt_start].reset_index(drop=True)
+            df_c1 = df_c1[df_c1[c.Util.DT_DATE] >= dt_start].reset_index(drop=True)
+            df_all = df_all[df_all[c.Util.DT_DATE] >= dt_start].reset_index(drop=True)
+            self.invst_portfolio = BaseFutureCoutinuous(df_c1,df_futures_all_daily=df_all)  # e.g., top 50 low volatility index
+            self.invst_portfolio.init()
         self.optionset = BaseOptionSet(df_metrics)
         self.index = BaseInstrument(df_baseindex)
         self.optionset.init()
@@ -227,16 +236,17 @@ class HedgeIndexByOptions(object):
             self.account.add_record(execution_record, self.account.dict_holding[order.id_instrument])
 
     def back_test(self):
-
         self.unit_index = np.floor(self.account.cash / self.index.mktprice_close() / self.index.multiplier())
 
-        order_index = self.account.create_trade_order(self.index, c.LongShort.LONG, self.unit_index,
-                                                      cd_trade_price=c.CdTradePrice.CLOSE)
-        record_index = self.index.execute_order(order_index, slippage=self.slippage)
-        self.account.add_record(record_index, self.index)
+        unit_portfolio = np.floor(self.account.cash / self.invst_portfolio.mktprice_close() / self.invst_portfolio.multiplier())
+        order_index = self.account.create_trade_order(self.invst_portfolio, c.LongShort.LONG, unit_portfolio,
+                                                          cd_trade_price=c.CdTradePrice.CLOSE)
+        record_index = self.invst_portfolio.execute_order(order_index, slippage=self.slippage)
+        self.account.add_record(record_index, self.invst_portfolio)
         empty_position = True
-        init_index = self.index.mktprice_close()
-        base_npv = [] # 50ETF
+        init_index = self.invst_portfolio.mktprice_close()
+
+        base_npv = []
         while self.optionset.eval_date <= self.end_date:
             # if self.optionset.eval_date == datetime.date(2016,5,20):
             #     print('')
@@ -248,7 +258,7 @@ class HedgeIndexByOptions(object):
                         .execute_order(order, slippage=self.slippage, execute_type=c.ExecuteType.EXECUTE_ALL_UNITS)
                     self.account.add_record(execution_record, self.account.dict_holding[order.id_instrument])
                 self.account.daily_accounting(self.optionset.eval_date)
-                base_npv.append(self.index.mktprice_close() / init_index)
+                base_npv.append(self.invst_portfolio.mktprice_close() / init_index)
                 print(self.optionset.eval_date, ' close out ')
                 break
 
@@ -266,15 +276,20 @@ class HedgeIndexByOptions(object):
                 self.excute(self.strategy())
                 empty_position = False
 
+            #TODO:移仓换月
+            self.invst_portfolio.shift_contract_month(self.account,self.slippage)
 
             self.account.daily_accounting(self.optionset.eval_date)
             self.account.account.loc[self.optionset.eval_date,'unit_index'] = self.unit_index
             self.account.account.loc[self.optionset.eval_date,'close_index'] = self.index.mktprice_close()
             # print(self.optionset.eval_date,estimated_npv1,estimated_npv2,estimated_npv3,self.account.account.loc[self.optionset.eval_date,c.Util.PORTFOLIO_NPV])
-            base_npv.append(self.index.mktprice_close() / init_index)
+            base_npv.append(self.invst_portfolio.mktprice_close() / init_index)
+            print(self.invst_portfolio.eval_date, self.account.account.loc[self.optionset.eval_date,c.Util.PORTFOLIO_NPV],
+                  self.invst_portfolio.mktprice_close() / init_index)
             if not self.optionset.has_next(): break
             self.optionset.next()
             self.index.next()
+            self.invst_portfolio.next()
         self.account.account['base_npv'] = base_npv
         # active_npv = self.df_index[self.df_index[c.Util.DT_DATE]<=self.optionset.eval_date].reset_index(drop=True)
         # self.account.account['active_npv'] = active_npv[c.Util.AMT_CLOSE]
