@@ -70,7 +70,7 @@ plt.show()
 #                                   cd_strategy=cd_strategy, cd_volatility=cd_volatility,
 #                                   cd_short_ma=cd_short_ma, cd_long_ma=cd_long_ma, cd_std=cd_std)
 #     drawdown = df_account[['date', c.Util.DRAWDOWN, c.Util.PORTFOLIO_NPV]].set_index('date')
-#     account = hedging.back_test_with_stop_loss_1(drawdown, P_mdd)
+#     account = hedging.back_test_with_stop_loss(drawdown, P_mdd)
 #     print(P_mdd)
 #     res = account.analysis()
 #     res['nbr_timing'] = account.nbr_timing

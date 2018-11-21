@@ -126,7 +126,7 @@ while optionset.eval_date <= end_date:
     if not optionset.has_next(): break
     optionset.next()
 
-account.account.to_csv('../../accounts_data/short_strangle_account_' + str(moneyness_rank) + '-no_hedge.csv')
+# account.account.to_csv('../../accounts_data/short_strangle_account_' + str(moneyness_rank) + '-no_hedge.csv')
 res = account.analysis()
 res['期权平均持仓天数'] = len(account.account) / option_trade_times
 print(res)

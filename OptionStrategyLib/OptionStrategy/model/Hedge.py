@@ -7,11 +7,9 @@ import back_test.model.constant as c
 import numpy as np
 
 
-class HedgeIndexByOptions(object):
+class HedgeByOptions(object):
     def __init__(self, df_baseindex, df_option_metrics,df_c1=None,df_all=None,
-                 cd_direction_timing='ma',
-                 cd_strategy='bull_spread', cd_volatility='close_std',
-                 cd_short_ma='ma_5', cd_long_ma='ma_60', cd_std='std_10'):
+                 ):
         self.min_holding = 20
         self.slippage = 0
         self.nbr_maturity = 0
@@ -40,12 +38,7 @@ class HedgeIndexByOptions(object):
         self.index.init()
         self.account = BaseAccount(init_fund=c.Util.BILLION, leverage=1.0, rf=0.03)
         self.prepare_timing(df_baseindex)
-        self.cd_direction_timing = cd_direction_timing
-        self.cd_strategy = cd_strategy
-        self.cd_volatility = cd_volatility
-        self.cd_short_ma = cd_short_ma
-        self.cd_long_ma = cd_long_ma
-        self.cd_std = cd_std
+
         self.dict_strategy = {}
         self.nbr_timing = 0
         self.nbr_stop_loss = 0
@@ -53,13 +46,16 @@ class HedgeIndexByOptions(object):
         self.sl_npv_high_point = 1.0
         # self.sl_npv = 1.0
         self.strategy_pause = False
-        # if df_baseindex is not None:
-        #     df_baseindex = df_baseindex[df_baseindex[c.Util.DT_DATE] >= dt_start].reset_index(drop=True)
-        #     init_base = df_baseindex[c.Util.AMT_CLOSE].values[0]
-        #     self.unit_index = np.floor(self.account.cash / self.index.mktprice_close() / self.index.multiplier()/init_base)
-        # else:
-        #     self.unit_index = np.floor(self.account.cash / self.index.mktprice_close() / self.index.multiplier())
 
+    def set_model_parameters(self,cd_direction_timing='ma',
+                 cd_strategy='bull_spread', cd_volatility='close_std',
+                 cd_short_ma='ma_3', cd_long_ma='ma_20', cd_std='std_10'):
+        self.cd_direction_timing = cd_direction_timing
+        self.cd_strategy = cd_strategy
+        self.cd_volatility = cd_volatility
+        self.cd_short_ma = cd_short_ma
+        self.cd_long_ma = cd_long_ma
+        self.cd_std = cd_std
 
     def prepare_timing(self, df_index):
         df_index['ma_3'] = c.Statistics.moving_average(df_index[c.Util.AMT_CLOSE], n=3).shift()
@@ -77,14 +73,7 @@ class HedgeIndexByOptions(object):
         df_index['std_15'] = c.Statistics.standard_deviation(df_index[c.Util.AMT_CLOSE], n=15).shift()
         df_index['std_20'] = c.Statistics.standard_deviation(df_index[c.Util.AMT_CLOSE], n=20).shift()
         df_index['ma_3-20'] = df_index['ma_3'] - df_index['ma_20']
-        # df_index['histvol_5'] = histvol.hist_vol(df_index[c.Util.AMT_CLOSE], n=5).shift() / np.sqrt(252)
-        # df_index['histvol_10'] = histvol.hist_vol(df_index[c.Util.AMT_CLOSE], n=10).shift() / np.sqrt(252)
-        # df_index['histvol_20'] = histvol.hist_vol(df_index[c.Util.AMT_CLOSE], n=20).shift() / np.sqrt(252)
-        # df_index['histvol_30'] = histvol.hist_vol(df_index[c.Util.AMT_CLOSE], n=30).shift() / np.sqrt(252)
-        # df_index['histvol_60'] = histvol.hist_vol(df_index[c.Util.AMT_CLOSE], n=60).shift() / np.sqrt(252)
-        # df_index['histvol_90'] = histvol.hist_vol(df_index[c.Util.AMT_CLOSE], n=90).shift() / np.sqrt(252)
-        # df_index = df_index.set_index(c.Util.DT_DATE)
-        df_index.to_csv('../../accounts_data/df_index1.csv')
+        # df_index.to_csv('../../accounts_data/df_index1.csv')
         self.df_timing = df_index.set_index(c.Util.DT_DATE)
 
     def open_signal(self):
@@ -98,13 +87,8 @@ class HedgeIndexByOptions(object):
     def stop_loss_beg(self, drawdown, P_mdd):
         if drawdown.loc[self.optionset.eval_date, c.Util.DRAWDOWN] <= P_mdd:
             return True
-        # elif self.account.account[c.Util.DRAWDOWN].values[-1] <= P_mdd:
-        #     return True
 
     def stop_loss_end(self, drawdown, P_mdd):
-        # drawdown_shift = drawdown.shift()
-        # if drawdown.loc[self.optionset.eval_date, c.Util.DRAWDOWN] > P_mdd:
-        # if drawdown.loc[self.optionset.eval_date, c.Util.DRAWDOWN] > P_mdd/2:
 
         if drawdown.loc[self.optionset.eval_date, c.Util.PORTFOLIO_NPV] >= self.account.account[c.Util.PORTFOLIO_NPV].values[-1] + self.nvp_adjustment:
             self.nvp_adjustment = drawdown.loc[self.optionset.eval_date, c.Util.PORTFOLIO_NPV]-self.account.account[c.Util.PORTFOLIO_NPV].values[-1]
@@ -112,10 +96,6 @@ class HedgeIndexByOptions(object):
             print(self.optionset.eval_date, ' stop loss end ')
             print(self.nvp_adjustment,self.account.account[c.Util.PORTFOLIO_NPV].values[-1],drawdown.loc[self.optionset.eval_date, c.Util.PORTFOLIO_NPV])
             return True
-
-        # if drawdown.loc[self.optionset.eval_date, c.Util.PORTFOLIO_NPV] > self.sl_npv + P_mdd/2:
-        #     print(self.optionset.eval_date, ' stop loss end ')
-        #     return True
 
     def strategy(self,cd_price=c.CdPriceType.OPEN):
         if self.cd_strategy == 'bull_spread':
