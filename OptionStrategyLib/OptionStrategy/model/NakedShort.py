@@ -1,5 +1,6 @@
 from back_test.model.base_option_set import BaseOptionSet
 from back_test.model.base_account import BaseAccount
+from back_test.model.base_option import BaseOption
 import data_access.get_data as get_data
 import back_test.model.constant as c
 import datetime
@@ -42,8 +43,13 @@ class NakedShort(object):
     #     else:
     #         return False
 
-    def close_position(self, dt_maturity):
+    def close_position(self):
         # stop_loss(call,put)
+        dt_maturity = None
+        for option in self.account.dict_holding.values():
+            if isinstance(option, BaseOption) and option is not None:
+                dt_maturity = option.maturitydt()
+                break
         if (dt_maturity - self.optionset.eval_date).days <= 5:
             return True
         else:
@@ -55,6 +61,13 @@ class NakedShort(object):
             execution_record = self.account.dict_holding[order.id_instrument] \
                 .execute_order(order, slippage=self.slippage, execute_type=c.ExecuteType.EXECUTE_ALL_UNITS)
             self.account.add_record(execution_record, self.account.dict_holding[order.id_instrument])
+
+    def close_all_options(self):
+        for option in self.account.dict_holding.values():
+            if isinstance(option, BaseOption):
+                order = self.account.create_close_order(option, cd_trade_price=self.cd_trade_price)
+                record = option.execute_order(order, slippage=self.slippage)
+                self.account.add_record(record, option)
 
     def short_straddle(self):
         maturity1 = self.optionset.select_maturity_date(nbr_maturity=self.nbr_maturity, min_holding=self.min_holding)
@@ -84,9 +97,9 @@ class NakedShort(object):
     def back_test(self):
 
         empty_position = True
-        maturity1 = self.optionset.select_maturity_date(nbr_maturity=self.nbr_maturity, min_holding=self.min_holding)
 
         while self.optionset.eval_date <= self.end_date:
+
             # print(optionset.eval_date)
             # if self.account.cash <= 0: break
             if self.optionset.eval_date >= self.end_date:  # Final close out all.
@@ -94,11 +107,8 @@ class NakedShort(object):
                 break
 
             # 平仓
-            if not empty_position and self.close_position(maturity1):
-                for option in self.account.dict_holding.values():
-                    order = self.account.create_close_order(option, cd_trade_price=self.cd_trade_price)
-                    record = option.execute_order(order, slippage=self.slippage)
-                    self.account.add_record(record, option)
+            if not empty_position and self.close_position():
+                self.close_all_options()
                 empty_position = True
 
             # 开仓
@@ -106,6 +116,7 @@ class NakedShort(object):
                 empty_position = self.excute(self.short_straddle())
 
             self.account.daily_accounting(self.optionset.eval_date)
+            print(self.optionset.eval_date,self.account.account.loc[self.optionset.eval_date,c.Util.PORTFOLIO_NPV])
             if not self.optionset.has_next(): break
             self.optionset.next()
 

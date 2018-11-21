@@ -123,11 +123,14 @@ while optionset.eval_date <= end_date:
         empty_position = False
 
     account.daily_accounting(optionset.eval_date)
+    print(optionset.eval_date, account.account.loc[optionset.eval_date, c.Util.PORTFOLIO_NPV])
+
     total_liquid_asset = account.cash + account.get_portfolio_margin_capital()
     if not optionset.has_next(): break
     optionset.next()
 
-# account.account.to_csv('../../accounts_data/short_strangle_account_' + str(moneyness_rank) + '-no_hedge.csv')
+account.account.to_csv('../../accounts_data/short_strangle_account_' + str(moneyness_rank) + '-no_hedge.csv')
+account.trade_records.to_csv('../../accounts_data/short_strangle_records_' + str(moneyness_rank) + '-no_hedge.csv')
 res = account.analysis()
 res['期权平均持仓天数'] = len(account.account) / option_trade_times
 print(res)
