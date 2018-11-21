@@ -17,7 +17,13 @@ class BaseFutureCoutinuous(BaseProduct):
                  df_future_c2: pd.DataFrame = None,  # future c2
                  df_futures_all_daily: pd.DataFrame = None,
                  df_underlying_index_daily: pd.DataFrame = None,
-                 rf: float = 0.03, frequency: FrequentType = FrequentType.MINUTE):
+                 rf: float = 0.03, frequency: FrequentType = FrequentType.DAILY):
+        name_code = df_future_c1.loc[0, Util.ID_INSTRUMENT].split('_')[0].lower()
+        df_future_c1 = df_future_c1.rename(columns={Util.ID_INSTRUMENT: Util.ID_FUTURE})
+        df_future_c1.loc[:, Util.ID_INSTRUMENT] = name_code
+        if df_futures_all_daily is not None:
+            df_futures_all_daily = df_futures_all_daily.rename(columns={Util.ID_INSTRUMENT: Util.ID_FUTURE})
+            df_futures_all_daily.loc[:, Util.ID_INSTRUMENT] = name_code
         super().__init__(df_future_c1, df_future_c1_daily, rf, frequency)
         self._multiplier = Util.DICT_CONTRACT_MULTIPLIER[self.name_code()]
         self.fee_rate = Util.DICT_TRANSACTION_FEE_RATE[self.name_code()]
@@ -28,6 +34,7 @@ class BaseFutureCoutinuous(BaseProduct):
         self.df_all_futures_daily = df_futures_all_daily
         self.idx_underlying_index = -1
         self.underlying_state_daily = None
+        self.id_future = df_future_c1.loc[0, Util.ID_FUTURE]
 
     def __repr__(self) -> str:
         return 'BaseInstrument(id_instrument: {0},eval_date: {1},frequency: {2})' \
@@ -87,16 +94,15 @@ class BaseFutureCoutinuous(BaseProduct):
             vwap = df_today['volume_price'].sum() / df_today[Util.AMT_TRADING_VOLUME].sum()
             return vwap
 
-    # TODO: 主力连续的仓换月周/日；移仓换月成本
 
-    def execute_order(self, order: Order, slippage=0, execute_type: ExecuteType = ExecuteType.EXECUTE_ALL_UNITS):
+    def execute_order(self, order: Order, slippage=0,slippage_rate=0.0, execute_type: ExecuteType = ExecuteType.EXECUTE_ALL_UNITS):
         if order is None or order.trade_unit == 0: return
-        if execute_type == ExecuteType.EXECUTE_ALL_UNITS:
-            order.trade_all_unit(slippage)
-        elif execute_type == ExecuteType.EXECUTE_WITH_MAX_VOLUME:
-            order.trade_with_current_volume(int(self.trading_volume()), slippage)
-        else:
-            return
+        # if execute_type == ExecuteType.EXECUTE_ALL_UNITS:
+        order.trade_all_unit(slippage=slippage,slippage_rate=slippage_rate)
+        # elif execute_type == ExecuteType.EXECUTE_WITH_MAX_VOLUME:
+        #     order.trade_with_current_volume(int(self.trading_volume()), slippage,slippage_rate)
+        # else:
+        #     return
         execution_record: pd.Series = order.execution_res
         # calculate margin requirement
         margin_requirement = self.get_initial_margin(order.long_short) * execution_record[Util.TRADE_UNIT]
@@ -120,7 +126,7 @@ class BaseFutureCoutinuous(BaseProduct):
             Util.TRADE_MARKET_VALUE] = 0.0  # Init value of a future trade is ZERO, except for transaction cost.
         return execution_record
 
-    # """ 高频数据下按照当日成交量加权均价开仓，结束后时间点移动到下一个交易日第一个时间点。 """
+    # """ 高频数据下按照当日成交量加权均价开仓，结束后时间点移动到本交易日的最后一个bar。 """
     def execute_order_by_VWAP(self, order: Order, slippage=0,
                               execute_type: ExecuteType = ExecuteType.EXECUTE_ALL_UNITS):
         if self.frequency in Util.LOW_FREQUENT:
@@ -128,7 +134,7 @@ class BaseFutureCoutinuous(BaseProduct):
         else:
             total_trade_value = 0.0
             total_volume_value = 0.0
-            while not self.is_last_minute():
+            while self.has_next_minute():
                 total_trade_value += self.mktprice_close() * self.trading_volume()
                 total_volume_value += self.trading_volume()
                 self.next()
@@ -174,3 +180,36 @@ class BaseFutureCoutinuous(BaseProduct):
             close_execution_record = self.execute_order(close_order, slippage, execute_type)
             open_execution_record = self.execute_order(open_order, slippage, execute_type)
             return close_execution_record, open_execution_record
+
+
+    def shift_contract_month(self,account,slippage):
+        # 移仓换月: 成交量加权均价
+        if self.id_future != self.current_state[Util.ID_FUTURE]:
+            for holding in account.dict_holding.values():
+                if isinstance(holding, BaseFutureCoutinuous):
+                    # close previous contract
+                    df = self.df_all_futures_daily[
+                        (self.df_all_futures_daily[Util.DT_DATE] == self.eval_date) & (
+                            self.df_all_futures_daily[Util.ID_FUTURE] == self.id_future)]
+                    trade_unit = account.trade_book.loc[self.name_code(), Util.TRADE_UNIT]
+                    position_direction = account.trade_book.loc[self.name_code(), Util.TRADE_LONG_SHORT]
+                    if position_direction == LongShort.LONG:
+                        long_short = LongShort.SHORT
+                    else:
+                        long_short = LongShort.LONG
+                    trade_price = df[Util.AMT_TRADING_VALUE].values[0] / df[Util.AMT_TRADING_VOLUME].values[
+                        0] / self.multiplier()
+                    order = Order(holding.eval_date, self.name_code(), trade_unit, trade_price,
+                                  holding.eval_datetime, long_short)
+                    record = self.execute_order(order, slippage=slippage)
+                    account.add_record(record, holding)
+
+                    # open
+                    trade_price = self.mktprice_volume_weighted()
+                    order = Order(holding.eval_date, self.name_code(), trade_unit, trade_price,
+                                  holding.eval_datetime, position_direction)
+                    record = self.execute_order(order, slippage=slippage)
+                    account.add_record(record, holding)
+
+            self.id_future = self.current_state[Util.ID_FUTURE]
+

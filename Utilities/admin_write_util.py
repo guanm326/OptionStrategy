@@ -34,6 +34,9 @@ def conn_intraday():
 def conn_metrics():
     return engine_metrics.connect()
 
+def conn_gc():
+    return engine_gc.connect()
+
 def session_dzqh():
     Session = sessionmaker(bind=engine_dzqh)
     return Session()
@@ -52,6 +55,9 @@ def session_metrics():
 
 def table_options_mktdata():
     return Table('options_mktdata', metadata, autoload=True)
+
+def table_options_mktdata_gc():
+    return Table('option_mktdata', metadata_gc, autoload=True)
 
 def table_futures_mktdata():
     return Table('futures_mktdata', metadata, autoload=True)
@@ -105,3 +111,6 @@ def table_cf_minute_1():
 
 def table_cf_daily():
     return Table('cf_day',metadata_dzqh, autoload=True)
+
+def table_option_data():
+    return Table('option_data',metadata_dzqh, autoload=True)

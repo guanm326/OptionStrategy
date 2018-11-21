@@ -60,7 +60,7 @@ def fun_pcp_adjusted_iv(df_series:pd.DataFrame, option_type:c.OptionType,rf:floa
 
 
 
-start_date = datetime.date(2018, 8, 20)
+start_date = datetime.date(2018, 7, 25)
 end_date = datetime.date(2018, 9, 8)
 rf = 0.03
 df_metrics = get_50option_mktdata(start_date, end_date)
@@ -68,21 +68,23 @@ pu = PlotUtil()
 
 optionset = BaseOptionSet(df_metrics)
 optionset.init()
-nbr_maturity = 1
+nbr_maturity = 0
 mdt1 = optionset.get_maturities_list()[nbr_maturity]
 
-htb_r = optionset.get_htb_rate(nbr_maturity)
+maturity = optionset.select_maturity_date(nbr_maturity,min_holding=5)
+print(maturity)
+htb_r = optionset.get_htb_rate(maturity)
 # TODO: OTM OPTION INPLIED VOL CURVE
-for option in optionset.get_dict_options_by_maturities()[mdt1]:
-    iv = option.get_implied_vol_adjusted_by_htbr(htb_r)
-    delta = option.get_delta(iv)
-    print(optionset.eval_date,option.id_instrument(),option.underlying_close(),iv,delta)
+# for option in optionset.get_dict_options_by_maturities()[mdt1]:
+#     iv = option.get_implied_vol_adjusted_by_htbr(htb_r)
+#     delta = option.get_delta(iv)
+    # print(optionset.eval_date,option.id_instrument(),option.underlying_close(),iv,delta)
 # optionset.next()
 # for option in optionset.get_dict_options_by_maturities()[mdt1]:
 #     iv = option.get_implied_vol_adjusted_by_htbr(htb_r)
 #     delta = option.get_delta(iv)
 #     print(optionset.eval_date,option.id_instrument(),option.underlying_close(),iv,delta)
-t_qupte = optionset.get_T_quotes(nbr_maturity)
+t_qupte = optionset.get_T_quotes(maturity,cd_option_price=c.CdPriceType.CLOSE)
 
 t_qupte[c.Util.AMT_HTB_RATE] = t_qupte.apply(lambda x: fun_htb_rate(x,rf),axis=1)
 
@@ -110,20 +112,20 @@ t_qupte['amt_iv_call'] = t_qupte.apply(lambda x: fun_iv(x,c.OptionType.CALL),axi
 t_qupte['amt_iv_put'] = t_qupte.apply(lambda x: fun_iv(x,c.OptionType.PUT),axis=1)
 # t_qupte['amt_iv_put_adjusted_rf'] = t_qupte.apply(lambda x: fun_calculate_iv(x,c.OptionType.PUT),axis=1)
 
-print(t_qupte)
-
-
-print('htb_r_vw : ',htb_r_vw)
-print('htb_r_mp : ',htb_r_mp)
+# print(t_qupte)
+#
+#
+# print('htb_r_vw : ',htb_r_vw)
+# print('htb_r_mp : ',htb_r_mp)
 print('htb_r_atm : ',htb_r_atm)
 
 
-df_otm_iv = optionset.get_otm_implied_vol_curve(nbr_maturity)
+df_otm_iv = optionset.get_otm_implied_vol_curve(maturity)
 
 Ks = df_otm_iv[c.Util.AMT_APPLICABLE_STRIKE]
 otm_vols = df_otm_iv[c.Util.PCT_IV_OTM_BY_HTBR]
-print(df_otm_iv)
-pu.plot_line_chart(Ks,[otm_vols],['otm_ivs'])
+# print(df_otm_iv)
+# pu.plot_line_chart(Ks,[otm_vols],['otm_ivs'])
 
 k = list(t_qupte['amt_strike'])
 iv_call = list(t_qupte['amt_iv_call'])
@@ -140,9 +142,9 @@ iv_adj_call_atm = list(t_qupte['amt_iv_adj_call_atm'])
 iv_adj_put_atm = list(t_qupte['amt_iv_adj_put_atm'])
 implied_ivs = list(t_qupte[c.Util.AMT_HTB_RATE])
 # plt.figure()
-pu.plot_line_chart(k,[iv_call,iv_put],['iv_call','iv_put'])
-pu.plot_line_chart(k,[iv_adj_call_atm,iv_adj_put_atm],['iv_adj_call_atm','iv_adj_put_atm'])
-pu.plot_line_chart(k,[iv_adj_call_vw,iv_adj_put_vw],['iv_adj_call_vw','iv_adj_put_vw'])
-pu.plot_line_chart(k,[implied_ivs],['implied_ivs'])
+pu.plot_line_chart(k,[iv_call,iv_put],['IV call','IV put'])
+pu.plot_line_chart(k,[iv_adj_call_atm,iv_adj_put_atm],['IV call adjusted','IV put adjusted'])
+# pu.plot_line_chart(k,[iv_adj_call_vw,iv_adj_put_vw],['iv_adj_call_vw','iv_adj_put_vw'])
+# pu.plot_line_chart(k,[implied_ivs],['implied_ivs'])
 
 plt.show()

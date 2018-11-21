@@ -1,6 +1,5 @@
 from back_test.model.base_option_set import BaseOptionSet
 from back_test.model.base_account import BaseAccount
-#from data_access import get_data
 import data_access.get_data as get_data
 import back_test.model.constant as c
 import datetime
@@ -26,9 +25,9 @@ def close_signal(dt_date,option_maturity, df_status):
 
 def open_signal_tangent(dt_date, df_status):
 
-    if df_status.loc[dt_date,'diff_20'] <= 0 and df_status.loc[dt_date,'diff_10'] <= 0 and df_status.loc[dt_date,'diff_5'] <= 0:
+    # if df_status.loc[dt_date,'diff_20'] <= 0 and df_status.loc[dt_date,'diff_10'] <= 0 and df_status.loc[dt_date,'diff_5'] <= 0:
     # if df_status.loc[dt_date,'last_diff_20'] <= 0 and df_status.loc[dt_date,'last_diff_10'] <= 0 and df_status.loc[dt_date,'last_diff_5'] <= 0:
-    # if df_status.loc[dt_date,'diff_5'] <= 0:
+    if df_status.loc[dt_date,'last_diff_5'] <= 0:
         print('1.open', dt_date)
         return True
     else:
@@ -36,11 +35,29 @@ def open_signal_tangent(dt_date, df_status):
 
 def close_signal_tangent(dt_date, df_status):
     # if df_status.loc[dt_date,'last_diff_5'] > 0:
-    if df_status.loc[dt_date,'diff_5'] > 0:
+    if df_status.loc[dt_date,'last_diff_5'] > 0:
         print('2.close', dt_date)
         return True
     else:
         return False
+
+
+def filtration(df_iv_stats, name_column):
+    """ Filtration : LLT """
+    df_iv_stats['LLT_20'] = LLT(df_iv_stats['average_iv'], 20)
+    df_iv_stats['LLT_10'] = LLT(df_iv_stats['average_iv'], 10)
+    df_iv_stats['LLT_5'] = LLT(df_iv_stats['average_iv'], 5)
+    df_iv_stats['LLT_3'] = LLT(df_iv_stats['average_iv'], 3)
+    df_iv_stats['diff_20'] = df_iv_stats['LLT_20'].diff()
+    df_iv_stats['diff_10'] = df_iv_stats['LLT_10'].diff()
+    df_iv_stats['diff_5'] = df_iv_stats['LLT_5'].diff()
+    df_iv_stats['diff_3'] = df_iv_stats['LLT_3'].diff()
+    df_iv_stats = df_iv_stats.set_index(c.Util.DT_DATE)
+    df_iv_stats['last_diff_20'] = df_iv_stats['diff_20'].shift()
+    df_iv_stats['last_diff_10'] = df_iv_stats['diff_10'].shift()
+    df_iv_stats['last_diff_5'] = df_iv_stats['diff_5'].shift()
+    df_iv_stats['last_diff_3'] = df_iv_stats['diff_3'].shift()
+    return df_iv_stats
 
 pu = PlotUtil()
 start_date = datetime.date(2015, 2, 1)
@@ -50,6 +67,7 @@ min_holding = 20 # 20 sharpe ratio较优
 init_fund = c.Util.BILLION
 slippage = 0
 m = 1 # 期权notional倍数
+cd_trade_price=c.CdTradePrice.VOLUME_WEIGHTED
 
 """ 50ETF option """
 name_code = c.Util.STR_IH
@@ -62,30 +80,9 @@ df_futures_all_daily = get_data.get_mktdata_future_daily(start_date, end_date, n
 df_iv = get_data.get_iv_by_moneyness(dt_histvol,end_date,name_code_option)
 df_iv_call = df_iv[df_iv[c.Util.CD_OPTION_TYPE]=='call']
 df_iv_put = df_iv[df_iv[c.Util.CD_OPTION_TYPE]=='put']
-df_data = df_iv_call[[c.Util.DT_DATE,c.Util.PCT_IMPLIED_VOL]].rename(columns={c.Util.PCT_IMPLIED_VOL:'iv_call'})
-df_data = df_data.join(df_iv_put[[c.Util.DT_DATE,c.Util.PCT_IMPLIED_VOL]].set_index(c.Util.DT_DATE),on=c.Util.DT_DATE,how='outer')\
-    .rename(columns={c.Util.PCT_IMPLIED_VOL:'iv_put'})
-df_data = df_data.dropna().reset_index(drop=True)
-df_data.loc[:,'average_iv'] = (df_data.loc[:,'iv_call'] + df_data.loc[:,'iv_put'])/2
-
-""" Volatility Statistics """
+df_data = df_iv_put.reset_index(drop=True).rename(columns={c.Util.PCT_IMPLIED_VOL:'average_iv'})
 df_iv_stats = df_data[[c.Util.DT_DATE, 'average_iv']]
-
-""" Filtration : LLT """
-df_iv_stats['LLT_20'] = LLT(df_iv_stats['average_iv'], 20)
-df_iv_stats['LLT_10'] = LLT(df_iv_stats['average_iv'], 10)
-df_iv_stats['LLT_5'] = LLT(df_iv_stats['average_iv'], 5)
-df_iv_stats['LLT_3'] = LLT(df_iv_stats['average_iv'], 3)
-df_iv_stats['diff_20'] = df_iv_stats['LLT_20'].diff()
-df_iv_stats['diff_10'] = df_iv_stats['LLT_10'].diff()
-df_iv_stats['diff_5'] = df_iv_stats['LLT_5'].diff()
-df_iv_stats['diff_3'] = df_iv_stats['LLT_3'].diff()
-
-df_iv_stats = df_iv_stats.set_index(c.Util.DT_DATE)
-df_iv_stats['last_diff_20'] = df_iv_stats['diff_20'].shift()
-df_iv_stats['last_diff_10'] = df_iv_stats['diff_10'].shift()
-df_iv_stats['last_diff_5'] = df_iv_stats['diff_5'].shift()
-df_iv_stats['last_diff_3'] = df_iv_stats['diff_3'].shift()
+df_iv_stats = filtration(df_iv_stats,'average_iv')
 
 """ Volatility Strategy: Straddle """
 d1 = df_future_c1_daily[c.Util.DT_DATE].values[0]
@@ -146,7 +143,9 @@ while optionset.eval_date <= end_date:
                     long_short = c.LongShort.SHORT
                 else:
                     long_short = c.LongShort.LONG
-                order = Order(holding.eval_date, hedging.name_code(), trade_unit, df[c.Util.AMT_CLOSE].values[0],
+                trade_price = df[c.Util.AMT_TRADING_VALUE].values[0] / df[c.Util.AMT_TRADING_VOLUME].values[
+                    0] / hedging.multiplier()
+                order = Order(holding.eval_date, hedging.name_code(), trade_unit, trade_price,
                               holding.eval_datetime, long_short)
                 record = hedging.execute_order(order,slippage=slippage)
                 account.add_record(record, holding)
@@ -157,10 +156,10 @@ while optionset.eval_date <= end_date:
     # 触发平仓信号
     if not empty_position:
         moneyness_put = optionset.get_option_moneyness(atm_put)
-        moneyness_call = optionset.get_option_moneyness(atm_call)
+        # moneyness_call = optionset.get_option_moneyness(atm_call)
         if close_signal(optionset.eval_date,maturity1,df_iv_stats):
             for option in account.dict_holding.values():
-                order = account.create_close_order(option)
+                order = account.create_close_order(option,cd_trade_price=cd_trade_price)
                 record = option.execute_order(order,slippage=slippage)
                 account.add_record(record, option)
                 hedging.synthetic_unit = 0
@@ -172,37 +171,33 @@ while optionset.eval_date <= end_date:
         long_short = c.LongShort.SHORT
         maturity1 = optionset.select_maturity_date(nbr_maturity=0, min_holding=15)
         list_atm_call, list_atm_put = optionset.get_options_list_by_moneyness_mthd1(moneyness_rank=0, maturity=maturity1)
-        atm_call = optionset.select_higher_volume(list_atm_call)
+        # atm_call = optionset.select_higher_volume(list_atm_call)
         atm_put = optionset.select_higher_volume(list_atm_put)
-        atm_strike = atm_call.strike()
-        spot = atm_call.underlying_close()
+        atm_strike = atm_put.strike()
+        spot = atm_put.underlying_close()
         hedging.amt_option = 1 / 1000  # 50ETF与IH点数之比
-        unit_c = np.floor(np.floor(account.portfolio_total_value / atm_call.strike()) / atm_call.multiplier())*m
+        # unit_c = np.floor(np.floor(account.portfolio_total_value / atm_call.strike()) / atm_call.multiplier())*m
         unit_p = np.floor(np.floor(account.portfolio_total_value / atm_put.strike()) / atm_put.multiplier())*m
-        order_c = account.create_trade_order(atm_call, long_short, unit_c)
-        order_p = account.create_trade_order(atm_put, long_short, unit_p)
-        record_call = atm_call.execute_order(order_c, slippage=slippage)
+        # order_c = account.create_trade_order(atm_call, long_short, unit_c)
+        order_p = account.create_trade_order(atm_put, long_short, unit_p,cd_trade_price=cd_trade_price)
+        # record_call = atm_call.execute_order(order_c, slippage=slippage)
         record_put = atm_put.execute_order(order_p, slippage=slippage)
-        account.add_record(record_call, atm_call)
+        # account.add_record(record_call, atm_call)
         account.add_record(record_put, atm_put)
         empty_position = False
 
     # Delta hedge
-    # if not empty_position and (idx_hedge % 2 == 0 or flag_hedge):
     if not empty_position :
-        iv_htbr = optionset.get_iv_by_otm_iv_curve(dt_maturity=maturity1, strike=atm_call.applicable_strike())
-        delta_call = atm_call.get_delta(iv_htbr)
-        delta_put = atm_put.get_delta(iv_htbr)
-        gamma_call = atm_call.get_gamma(iv_htbr)
-        gamma_put = atm_put.get_gamma(iv_htbr)
-        options_delta = unit_c * atm_call.multiplier() * delta_call + unit_p * atm_put.multiplier() * delta_put
+        iv = atm_put.get_implied_vol()
+        delta_put = atm_put.get_delta(iv)
+        options_delta = unit_p * atm_put.multiplier() * delta_put
         hedge_unit = hedging.get_hedge_rebalancing_unit(options_delta,  buy_write)
         hedging.synthetic_unit += - hedge_unit
         if hedge_unit > 0:
             long_short = c.LongShort.LONG
         else:
             long_short = c.LongShort.SHORT
-        order_u = account.create_trade_order(hedging, long_short, hedge_unit)
+        order_u = account.create_trade_order(hedging, long_short, hedge_unit,cd_trade_price=cd_trade_price)
         record_u = hedging.execute_order(order_u, slippage=slippage)
         account.add_record(record_u, hedging)
         flag_hedge = False
@@ -217,10 +212,9 @@ while optionset.eval_date <= end_date:
     hedging.next()
 
 
-# account.account.to_csv('account.csv')
-df_records = pd.DataFrame(account.list_records)
-# df_records.to_csv('df_records.csv')
-res = account.get_netvalue_analysis(account.account[c.Util.PORTFOLIO_NPV])
+res = account.analysis()
+account.account.to_csv('../../accounts_data/short_put_account.csv')
+
 print(res)
 dates = list(account.account.index)
 npv = list(account.account[c.Util.PORTFOLIO_NPV])

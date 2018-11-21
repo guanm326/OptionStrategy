@@ -7,6 +7,46 @@ from Utilities import admin_util as admin
 from data_access.db_tables import DataBaseTables as dbt
 import back_test.model.constant as c
 
+def commodity_option_market_overview(start_date,end_date,name_code):
+    optionMkt = admin.table_options_mktdata()
+    futureMkt = admin.table_futures_mktdata()
+    query = admin.session_mktdata().query(optionMkt.c.dt_date,optionMkt.c.name_code,
+                                              func.sum(optionMkt.c.amt_trading_volume).label('option_trading_volume'),
+                                            func.sum(optionMkt.c.amt_trading_value).label('option_trading_value')
+                                              ) \
+        .filter(optionMkt.c.dt_date >= start_date) \
+        .filter(optionMkt.c.dt_date <= end_date) \
+        .filter(optionMkt.c.name_code == name_code) \
+        .group_by(optionMkt.c.dt_date, optionMkt.c.name_code)
+    df_option_trading = pd.read_sql(query.statement, query.session.bind)
+    query_future = admin.session_mktdata().query(futureMkt.c.dt_date,futureMkt.c.name_code,
+                                              func.sum(futureMkt.c.amt_trading_volume).label('future_trading_volume')
+                                              ) \
+        .filter(futureMkt.c.dt_date >= start_date) \
+        .filter(futureMkt.c.dt_date <= end_date) \
+        .filter(futureMkt.c.name_code == name_code) \
+        .group_by(futureMkt.c.dt_date, futureMkt.c.name_code)
+    df_future_trading = pd.read_sql(query_future.statement, query_future.session.bind)
+    query_option_holding = admin.session_mktdata().query(optionMkt.c.dt_date, optionMkt.c.name_code,
+                                                         func.sum(optionMkt.c.amt_holding_volume).label('option_holding_volume')) \
+        .filter(optionMkt.c.dt_date >= start_date) \
+        .filter(optionMkt.c.dt_date <= end_date) \
+        .filter(optionMkt.c.name_code == name_code) \
+        .filter(or_(optionMkt.c.flag_night == 0,optionMkt.c.flag_night==-1)) \
+        .group_by(optionMkt.c.dt_date, optionMkt.c.name_code)#每日日盘收盘持仓数据
+    df_option_holding = pd.read_sql(query_option_holding.statement, query_option_holding.session.bind)
+    query_future_holding = admin.session_mktdata().query(futureMkt.c.dt_date,futureMkt.c.name_code,
+                                                         func.sum(futureMkt.c.amt_holding_volume).label('future_holding_volume')) \
+        .filter(futureMkt.c.dt_date >= start_date) \
+        .filter(futureMkt.c.dt_date <= end_date) \
+        .filter(futureMkt.c.name_code == name_code) \
+        .filter(or_(futureMkt.c.flag_night == 0,futureMkt.c.flag_night==-1)) \
+        .group_by(futureMkt.c.dt_date, futureMkt.c.name_code) #每日日盘收盘持仓数据
+    df_future_holding = pd.read_sql(query_future_holding.statement, query_future_holding.session.bind)
+    df = pd.merge(df_option_trading,df_future_trading[[c.Util.DT_DATE,'future_trading_volume']],on=c.Util.DT_DATE)
+    df = pd.merge(df,df_option_holding,on=c.Util.DT_DATE)
+    df = pd.merge(df,df_future_holding,on=c.Util.DT_DATE)
+    return df
 
 def get_eventsdata(start_date, end_date, flag_impact):
     events = admin.table_events()
@@ -33,7 +73,7 @@ def get_50option_mktdata(start_date, end_date):
                                               Option_mkt.code_instrument,
                                               Option_mkt.amt_open,
                                               Option_mkt.amt_close, Option_mkt.amt_settlement,
-                                              Option_mkt.amt_last_settlement,
+                                              Option_mkt.amt_last_settlement,Option_mkt.amt_trading_value,
                                               Option_mkt.amt_trading_volume, Option_mkt.amt_holding_volume,
                                               Option_mkt.pct_implied_vol
                                               ) \
@@ -71,10 +111,18 @@ def get_50option_intraday(start_date, end_date):
                                             IndexIntra.c.id_instrument,
                                             IndexIntra.c.amt_close)\
         .filter(IndexIntra.c.dt_date >= start_date).filter(IndexIntra.c.dt_date <= end_date)\
-        .filter(IndexIntra.c.id_instrument == 'index_50etf')
+        .filter(IndexIntra.c.id_instrument == c.Util.STR_INDEX_50ETF)
     df_etf = pd.read_sql(query1.statement, query1.session.bind)
-    df_etf = df_etf[[c.Util.DT_DATETIME, c.Util.ID_INSTRUMENT, c.Util.AMT_CLOSE]].rename(columns={'amt_close': c.Util.AMT_UNDERLYING_CLOSE})
-    df_option_metrics = df.join(df_etf.set_index('dt_datetime'), how='left', on='dt_datetime')
+    df_etf = df_etf[[c.Util.DT_DATETIME,c.Util.ID_INSTRUMENT, c.Util.AMT_CLOSE]]\
+        .rename(columns={c.Util.AMT_CLOSE: c.Util.AMT_UNDERLYING_CLOSE,c.Util.ID_INSTRUMENT:c.Util.ID_UNDERLYING})
+    df_option_metrics = df.join(df_etf.set_index(c.Util.DT_DATETIME), how='left', on=c.Util.DT_DATETIME)
+    options = dbt.Options
+    query_option = admin.session_mktdata().query(options.id_instrument, options.cd_option_type,
+                                                 options.amt_strike, options.name_contract_month,
+                                                 options.dt_maturity, options.nbr_multiplier) \
+        .filter(and_(options.dt_listed <= end_date, options.dt_maturity >= start_date))
+    df_contract = pd.read_sql(query_option.statement, query_option.session.bind)
+    df_option_metrics = df_option_metrics.join(df_contract.set_index(c.Util.ID_INSTRUMENT), how='left', on=c.Util.ID_INSTRUMENT)
     return df_option_metrics
 
 
@@ -149,9 +197,9 @@ def get_comoption_mktdata(start_date, end_date, name_code):
         query(Option_mkt.dt_date, Option_mkt.id_instrument, Option_mkt.id_underlying,
               Option_mkt.code_instrument, Option_mkt.amt_close, Option_mkt.amt_open,
               Option_mkt.amt_settlement,
-              Option_mkt.amt_last_settlement, Option_mkt.amt_trading_volume,
+              Option_mkt.amt_last_settlement, Option_mkt.amt_trading_volume,Option_mkt.amt_trading_value,
               Option_mkt.pct_implied_vol, Option_mkt.amt_holding_volume,
-              Option_mkt.amt_trading_volume,
+              Option_mkt.amt_trading_volume
               ) \
         .filter(Option_mkt.dt_date >= start_date).filter(Option_mkt.dt_date <= end_date) \
         .filter(Option_mkt.name_code == name_code).filter(Option_mkt.flag_night != 1)
@@ -181,7 +229,7 @@ def get_future_mktdata(start_date, end_date, name_code):
     Futures_mkt = dbt.FutureMkt
     Futures = dbt.Futures
     query_mkt = admin.session_mktdata().query(Futures_mkt.dt_date, Futures_mkt.id_instrument, Futures_mkt.name_code,
-                                              Futures_mkt.amt_close, Futures_mkt.amt_trading_volume,
+                                              Futures_mkt.amt_close, Futures_mkt.amt_trading_volume,Futures_mkt.amt_trading_value,
                                               Futures_mkt.amt_settlement, Futures_mkt.amt_last_close,
                                               Futures_mkt.amt_last_settlement, Futures_mkt.amt_open,
                                               Futures_mkt.amt_high, Futures_mkt.amt_low) \
@@ -274,7 +322,7 @@ def get_mktdata_future_c1_daily(start_date, end_date, name_code):
     query = admin.session_mktdata().query(table_cf.c.dt_date, table_cf.c.id_instrument,
                                           table_cf.c.amt_open, table_cf.c.amt_close, table_cf.c.amt_high,
                                           table_cf.c.amt_low,
-                                          table_cf.c.amt_trading_volume). \
+                                          table_cf.c.amt_trading_volume,table_cf.c.amt_trading_value). \
         filter((table_cf.c.dt_date >= start_date) & (table_cf.c.dt_date <= end_date)). \
         filter(table_cf.c.name_code == name_code).filter(table_cf.c.flag_night != 1)
     df = pd.read_sql(query.statement, query.session.bind)
@@ -288,7 +336,7 @@ def get_mktdata_future_daily(start_date, end_date, name_code):
     table_contracts = admin.table_future_contracts()
     query = admin.session_mktdata().query(table_cf.c.dt_date, table_cf.c.id_instrument,
                                           table_cf.c.amt_open, table_cf.c.amt_close, table_cf.c.amt_trading_volume,
-                                          table_cf.c.amt_trading_value). \
+                                          table_cf.c.amt_trading_value,table_cf.c.amt_trading_value). \
         filter((table_cf.c.dt_date >= start_date) & (table_cf.c.dt_date <= end_date)). \
         filter(table_cf.c.name_code == name_code)
     df = pd.read_sql(query.statement, query.session.bind)
@@ -402,7 +450,7 @@ def get_index_mktdata(start_date, end_date, id_index):
 
 def get_index_intraday(start_date, end_date, id_index):
     Index = admin.table_index_mktdata_intraday()
-    query = admin.session_intraday().query(Index.c.dt_datetime, Index.c.id_instrument, Index.c.amt_close,
+    query = admin.session_intraday().query(Index.c.dt_datetime,Index.c.dt_date, Index.c.id_instrument, Index.c.amt_close,
                                            Index.c.amt_trading_volume, Index.c.amt_trading_value) \
         .filter(Index.c.dt_datetime >= start_date).filter(Index.c.dt_datetime <= end_date) \
         .filter(Index.c.id_instrument == id_index)
