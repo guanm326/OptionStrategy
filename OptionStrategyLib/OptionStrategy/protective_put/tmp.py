@@ -35,6 +35,24 @@ res  = account.get_netvalue_analysis(data['npv'])
 print(res)
 df_res['50etf'] = res
 
+data = pd.read_excel('../../../data/50etf_201504.xlsx')
+account = BaseAccount(init_fund=c.Util.BILLION, leverage=1.0, rf=0.03)
+s = data['npv']
+res  = account.get_netvalue_analysis(data['npv'])
+
+# res['turnover'] = account.get_monthly_turnover(data)
+print(res)
+df_res['50etf_201504'] = res
+
+data = pd.read_excel('../../../data/50etf_hedged_201504.xlsx')
+account = BaseAccount(init_fund=c.Util.BILLION, leverage=1.0, rf=0.03)
+s = data['npv']
+res  = account.get_netvalue_analysis(data['npv'])
+
+# res['turnover'] = account.get_monthly_turnover(data)
+print(res)
+df_res['50etf_hedged_201504'] = res
+
 data = pd.read_excel('../../../data/base_low_vol.xlsx')
 account = BaseAccount(init_fund=c.Util.BILLION, leverage=1.0, rf=0.03)
 s = data['npv']
@@ -44,4 +62,16 @@ res  = account.get_netvalue_analysis(data['npv'])
 print(res)
 df_res['base_low_vol'] = res
 
-df_res.to_csv('../../accounts_data/hedge_res_lowvol.csv')
+df_res.to_csv('../../accounts_data/hedge_res.csv')
+
+df_res = pd.DataFrame()
+data = pd.read_excel('../../../data/npv2016.xlsx')
+account = BaseAccount(init_fund=c.Util.BILLION, leverage=1.0, rf=0.03)
+for c in data.columns.values:
+    # s = data[c]
+    res  = account.get_netvalue_analysis(data[c])
+    print(res)
+    df_res[c] = res
+
+
+df_res.to_csv('../../accounts_data/hedge_res_2016.csv')

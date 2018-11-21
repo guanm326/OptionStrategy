@@ -244,9 +244,11 @@ class HedgeIndexByOptions(object):
         record_index = self.invst_portfolio.execute_order(order_index, slippage=self.slippage)
         self.account.add_record(record_index, self.invst_portfolio)
         empty_position = True
-        init_index = self.invst_portfolio.mktprice_close()
+        init_index = self.index.mktprice_close()
+        init_portfolio = self.invst_portfolio.mktprice_close()
 
         base_npv = []
+        index_npv = []
         while self.optionset.eval_date <= self.end_date:
             # if self.optionset.eval_date == datetime.date(2016,5,20):
             #     print('')
@@ -258,7 +260,8 @@ class HedgeIndexByOptions(object):
                         .execute_order(order, slippage=self.slippage, execute_type=c.ExecuteType.EXECUTE_ALL_UNITS)
                     self.account.add_record(execution_record, self.account.dict_holding[order.id_instrument])
                 self.account.daily_accounting(self.optionset.eval_date)
-                base_npv.append(self.invst_portfolio.mktprice_close() / init_index)
+                base_npv.append(self.invst_portfolio.mktprice_close() / init_portfolio)
+                index_npv.append(self.index.mktprice_close() / init_index)
                 print(self.optionset.eval_date, ' close out ')
                 break
 
@@ -277,23 +280,27 @@ class HedgeIndexByOptions(object):
                 empty_position = False
 
             #TODO:移仓换月
-            self.invst_portfolio.shift_contract_month(self.account,self.slippage)
+            if isinstance(self.invst_portfolio,BaseFutureCoutinuous):
+                self.invst_portfolio.shift_contract_month(self.account,self.slippage)
 
             self.account.daily_accounting(self.optionset.eval_date)
             self.account.account.loc[self.optionset.eval_date,'unit_index'] = self.unit_index
             self.account.account.loc[self.optionset.eval_date,'close_index'] = self.index.mktprice_close()
             # print(self.optionset.eval_date,estimated_npv1,estimated_npv2,estimated_npv3,self.account.account.loc[self.optionset.eval_date,c.Util.PORTFOLIO_NPV])
-            base_npv.append(self.invst_portfolio.mktprice_close() / init_index)
-            print(self.invst_portfolio.eval_date, self.account.account.loc[self.optionset.eval_date,c.Util.PORTFOLIO_NPV],
-                  self.invst_portfolio.mktprice_close() / init_index)
+            base_npv.append(self.invst_portfolio.mktprice_close() / init_portfolio)
+            index_npv.append(self.index.mktprice_close() / init_index)
+            # print(self.invst_portfolio.eval_date, self.account.account.loc[self.optionset.eval_date,c.Util.PORTFOLIO_NPV],
+            #       self.invst_portfolio.mktprice_close() / init_index)
             if not self.optionset.has_next(): break
             self.optionset.next()
             self.index.next()
             self.invst_portfolio.next()
         self.account.account['base_npv'] = base_npv
+        self.account.account['index_npv'] = index_npv
         # active_npv = self.df_index[self.df_index[c.Util.DT_DATE]<=self.optionset.eval_date].reset_index(drop=True)
         # self.account.account['active_npv'] = active_npv[c.Util.AMT_CLOSE]
         self.account.nbr_timing = self.nbr_timing
+        # print(self.account.account.loc[self.invst_portfolio.eval_date,c.Util.PORTFOLIO_NPV])
         return self.account
 
     def back_test_with_stop_loss_2(self, drawdown, P_mdd):
