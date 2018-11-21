@@ -77,13 +77,14 @@ maturity1 = optionset.select_maturity_date(nbr_maturity=0, min_holding=min_holdi
 while optionset.eval_date <= end_date:
     # print(optionset.eval_date)
     if account.cash <= 0: break
-    if maturity1 > end_date:  # Final close out all.
+    if optionset.eval_date >= end_date:  # Final close out all.
         close_out_orders = account.creat_close_out_order()
         for order in close_out_orders:
             execution_record = account.dict_holding[order.id_instrument].execute_order(order, slippage=0,
                                                                                        execute_type=c.ExecuteType.EXECUTE_ALL_UNITS)
             account.add_record(execution_record, account.dict_holding[order.id_instrument])
         account.daily_accounting(optionset.eval_date)
+        print(optionset.eval_date, account.account.loc[optionset.eval_date, c.Util.PORTFOLIO_NPV])
         break
 
     # 平仓
@@ -107,6 +108,7 @@ while optionset.eval_date <= end_date:
         atm_put = optionset.select_higher_volume(list_atm_put)
         if atm_call is None or atm_put is None:
             account.daily_accounting(optionset.eval_date)
+            print(optionset.eval_date, account.account.loc[optionset.eval_date, c.Util.PORTFOLIO_NPV])
             if not optionset.has_next(): break
             optionset.next()
             continue

@@ -104,6 +104,9 @@ class NakedShort(object):
             # if self.account.cash <= 0: break
             if self.optionset.eval_date >= self.end_date:  # Final close out all.
                 self.close_out()
+                self.account.daily_accounting(self.optionset.eval_date)
+                print(self.optionset.eval_date,
+                      self.account.account.loc[self.optionset.eval_date, c.Util.PORTFOLIO_NPV])
                 break
 
             # 平仓
