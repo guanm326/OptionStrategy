@@ -72,9 +72,10 @@ class NakedShort(object):
         if dict_strategy is None:
             return True
         else:
-            unit = np.floor(
-                np.floor(self.account.portfolio_total_value / dict_strategy[0].strike()) / dict_strategy[0].multiplier()) * self.m
+            pv = self.account.portfolio_total_value
             for option in dict_strategy:
+                unit = np.floor(
+                    np.floor(pv / option.strike()) / option.multiplier()) * self.m
                 order = self.account.create_trade_order(option, c.LongShort.SHORT, unit, cd_trade_price=self.cd_trade_price)
                 record = option.execute_order(order, slippage=self.slippage)
                 self.account.add_record(record, option)

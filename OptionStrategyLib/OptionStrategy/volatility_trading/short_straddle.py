@@ -44,17 +44,17 @@ cd_trade_price = c.CdTradePrice.VOLUME_WEIGHTED
 name_code = c.Util.STR_IH
 name_code_option = c.Util.STR_50ETF
 df_metrics = get_data.get_50option_mktdata(start_date, end_date)
-df_future_c1_daily = get_data.get_mktdata_future_c1_daily(dt_histvol, end_date, name_code)
-df_futures_all_daily = get_data.get_mktdata_future_daily(start_date, end_date,
-                                                         name_code)  # daily data of all future contracts
+# df_future_c1_daily = get_data.get_mktdata_future_c1_daily(dt_histvol, end_date, name_code)
+# df_futures_all_daily = get_data.get_mktdata_future_daily(start_date, end_date,
+#                                                          name_code)  # daily data of all future contracts
 
 """ Volatility Strategy: Straddle """
-d1 = df_future_c1_daily[c.Util.DT_DATE].values[0]
-d2 = df_metrics[c.Util.DT_DATE].values[0]
-d = max(d1, d2)
-df_metrics = df_metrics[df_metrics[c.Util.DT_DATE] >= d].reset_index(drop=True)
-df_c1 = df_future_c1_daily[df_future_c1_daily[c.Util.DT_DATE] >= d].reset_index(drop=True)
-df_c_all = df_futures_all_daily[df_futures_all_daily[c.Util.DT_DATE] >= d].reset_index(drop=True)
+# d1 = df_future_c1_daily[c.Util.DT_DATE].values[0]
+# d2 = df_metrics[c.Util.DT_DATE].values[0]
+# d = max(d1, d2)
+# df_metrics = df_metrics[df_metrics[c.Util.DT_DATE] >= d].reset_index(drop=True)
+# df_c1 = df_future_c1_daily[df_future_c1_daily[c.Util.DT_DATE] >= d].reset_index(drop=True)
+# df_c_all = df_futures_all_daily[df_futures_all_daily[c.Util.DT_DATE] >= d].reset_index(drop=True)
 
 df_holding_period = pd.DataFrame()
 
@@ -106,6 +106,7 @@ while optionset.eval_date <= end_date:
         atm_call = optionset.select_higher_volume(list_atm_call)
         atm_put = optionset.select_higher_volume(list_atm_put)
         if atm_call is None or atm_put is None:
+            account.daily_accounting(optionset.eval_date)
             if not optionset.has_next(): break
             optionset.next()
             continue
