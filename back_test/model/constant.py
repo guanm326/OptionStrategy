@@ -1087,6 +1087,11 @@ class QuantlibUtil:
         dividend_ts = ql.YieldTermStructureHandle(ql.FlatForward(evalDate, 0.0, daycounter))
         return dividend_ts
 
+    @staticmethod
+    def get_business_between(dt_start,dt_end):
+        calendar = ql.China()
+        t = calendar.businessDaysBetween(QuantlibUtil.to_ql_date(dt_start),QuantlibUtil.to_ql_date(dt_end))
+        return t
 
 class Statistics:
     @staticmethod

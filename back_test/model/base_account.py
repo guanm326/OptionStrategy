@@ -9,16 +9,12 @@ from back_test.model.base_option import BaseOption
 
 class BaseAccount():
     def __init__(self, init_fund, leverage=1.0, rf=0.03):
-        # super().__init__()
-        # self.df_records = pd.DataFrame()
-        # self.list_records = []
         self.trade_records = pd.DataFrame()
         self.trade_book = pd.DataFrame(columns=Util.TRADE_BOOK_COLUMN_LIST)
         self.dict_holding = {}  # id_instrument -> Product
         self.account = pd.DataFrame(columns=Util.ACCOUNT_COLUMNS)
         self.init_fund = init_fund
         self.max_leverage = leverage
-        # self.fee_rate = fee_rate
         self.rf = rf
         self.cash = init_fund  # 现金账户：初始资金为现金
         self.actual_leverage = 0.0
@@ -26,9 +22,6 @@ class BaseAccount():
         self.trade_book_daily = pd.DataFrame(columns=Util.TRADE_BOOK_COLUMN_LIST)
         self.portfolio_total_value = init_fund
         self.realized_pnl_from_closed_out_positions = 0.0
-        # self.cashed_unrealized_pnl_from_mtm_positions = 0.0
-        # self.total_mtm_position = 0.0  # 总多空持仓市值(abs value)加总
-        # self.total_margin_trade_mtm_position = 0.0
 
     def add_holding(self, base_product: BaseProduct):
         if base_product.id_instrument() not in self.dict_holding.keys():
