@@ -30,7 +30,7 @@ def close_position(dt_maturity, optionset,call,put):
 
 
 pu = PlotUtil()
-start_date = datetime.date(2015, 1, 1)
+start_date = datetime.date(2015, 4, 16)
 end_date = datetime.date(2018, 10, 8)
 dt_histvol = start_date - datetime.timedelta(days=90)
 min_holding = 20  # 20 sharpe ratio较优
@@ -108,7 +108,7 @@ while optionset.eval_date <= end_date:
         atm_put = optionset.select_higher_volume(list_atm_put)
         if atm_call is None or atm_put is None:
             account.daily_accounting(optionset.eval_date)
-            print(optionset.eval_date, account.account.loc[optionset.eval_date, c.Util.PORTFOLIO_NPV])
+            # print(optionset.eval_date, account.account.loc[optionset.eval_date, c.Util.PORTFOLIO_NPV])
             if not optionset.has_next(): break
             optionset.next()
             continue
@@ -125,7 +125,7 @@ while optionset.eval_date <= end_date:
         empty_position = False
 
     account.daily_accounting(optionset.eval_date)
-    print(optionset.eval_date, account.account.loc[optionset.eval_date, c.Util.PORTFOLIO_NPV])
+    # print(optionset.eval_date, account.account.loc[optionset.eval_date, c.Util.PORTFOLIO_NPV])
 
     total_liquid_asset = account.cash + account.get_portfolio_margin_capital()
     if not optionset.has_next(): break
