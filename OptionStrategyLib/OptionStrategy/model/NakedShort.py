@@ -162,8 +162,8 @@ class NakedShort(object):
 """ example """
 
 
-df_metrics = get_data.get_50option_mktdata(datetime.date(2015,1,1),datetime.date(2018,11,20))
-df_baseindex = get_data.get_index_mktdata(datetime.date(2015,1,1),datetime.date(2018,11,20),c.Util.STR_INDEX_50SH)
+df_metrics = get_data.get_50option_mktdata(datetime.date(2016,1,1),datetime.date(2018,11,20))
+df_baseindex = get_data.get_index_mktdata(datetime.date(2016,1,1),datetime.date(2018,11,20),c.Util.STR_INDEX_50SH)
 
 df_sharpe = pd.DataFrame()
 df_return = pd.DataFrame()
@@ -181,8 +181,8 @@ for cd_marutity_days in [0,1,2,3,4,5,6,7]:
         series_return['moneyness:'+str(moneyness)] = y
     df_sharpe[cd_marutity_days] = series_sharpe
     df_return[cd_marutity_days] = series_return
-df_sharpe.to_csv('../../accounts_data/sharpe_cd_marutity_days_moneynesses' + str(cd_strategy) +'.csv')
-df_return.to_csv('../../accounts_data/return_cd_marutity_days_moneynesses' + str(cd_strategy) +'.csv')
+df_sharpe.to_csv('../../accounts_data/sharpe_' + str(cd_strategy) +'_2016.csv')
+df_return.to_csv('../../accounts_data/return_' + str(cd_strategy) +'_2016.csv')
 
 df_sharpe = pd.DataFrame()
 df_return = pd.DataFrame()
@@ -200,8 +200,8 @@ for cd_marutity_days in [0,1,2,3,4,5,6,7]:
         series_return['moneyness:'+str(moneyness)] = y
     df_sharpe[cd_marutity_days] = series_sharpe
     df_return[cd_marutity_days] = series_return
-df_sharpe.to_csv('../../accounts_data/sharpe_cd_marutity_days_moneynesses' + str(cd_strategy) +'.csv')
-df_return.to_csv('../../accounts_data/return_cd_marutity_days_moneynesses' + str(cd_strategy) +'.csv')
+df_sharpe.to_csv('../../accounts_data/sharpe_' + str(cd_strategy) +'_2016.csv')
+df_return.to_csv('../../accounts_data/return_' + str(cd_strategy) +'_2016.csv')
 
 df_sharpe = pd.DataFrame()
 df_return = pd.DataFrame()
@@ -219,8 +219,8 @@ for cd_marutity_days in [0,1,2,3,4,5,6,7]:
         series_return['moneyness:'+str(moneyness)] = y
     df_sharpe[cd_marutity_days] = series_sharpe
     df_return[cd_marutity_days] = series_return
-df_sharpe.to_csv('../../accounts_data/sharpe_cd_marutity_days_moneynesses' + str(cd_strategy) +'.csv')
-df_return.to_csv('../../accounts_data/return_cd_marutity_days_moneynesses' + str(cd_strategy) +'.csv')
+df_sharpe.to_csv('../../accounts_data/sharpe_' + str(cd_strategy) +'_2016.csv')
+df_return.to_csv('../../accounts_data/return_' + str(cd_strategy) +'_2016.csv')
 
 # df_metrics = get_data.get_50option_mktdata(datetime.date(2015,1,1),datetime.date(2018,11,20))
 # df_baseindex = get_data.get_index_mktdata(datetime.date(2015,1,1),datetime.date(2018,11,20),c.Util.STR_INDEX_50SH)
