@@ -254,8 +254,11 @@ def implied_vol(last_week, end_date, df_metrics, df_res, name_code):
     optionset.init()
     list_res_iv = []
     while optionset.current_index < optionset.nbr_index:
+        # if optionset.eval_date ==datetime.date(2018,11,23):
+        #     print('')
         dt_maturity = optionset.select_maturity_date(nbr_maturity=0, min_holding=min_holding)
         iv = optionset.get_atm_iv_by_htbr(dt_maturity)
+        # print({'date': optionset.eval_date, 'iv': iv})
         list_res_iv.append({'date': optionset.eval_date, 'iv': iv})
         if not optionset.has_next(): break
         optionset.next()
@@ -284,7 +287,7 @@ def implied_vol_vw(last_week, end_date, df_metrics, df_res, name_code):
 
 """"""
 
-end_date = datetime.date(2018,11,16)
+end_date = datetime.date(2018,11,23)
 start_date = datetime.date(2015, 1, 1)
 last_week = datetime.date(2018,11,9)
 dt_histvol = datetime.date(2014,1,1)
@@ -293,7 +296,9 @@ min_holding = 5
 
 writer = ExcelWriter('../data/option_data_python.xlsx')
 name_codes = [c.Util.STR_50ETF,c.Util.STR_CU, c.Util.STR_M, c.Util.STR_SR]
+# name_codes = [c.Util.STR_CU, c.Util.STR_M, c.Util.STR_SR]
 core_ids = ['index_50etf','cu_1901', 'm_1901', 'sr_1901']
+# core_ids = ['cu_1901', 'm_1901', 'sr_1901']
 for (idx, name_code) in enumerate(name_codes):
     df_res = pd.DataFrame()
     core_id = core_ids[idx]
@@ -312,7 +317,6 @@ for (idx, name_code) in enumerate(name_codes):
     else:
         df_res = pcr_commodity_option(dt_start, end_date, name_code, df_res,min_holding)
     df_res = implied_vol(dt_start, end_date, df_metrics, df_res, name_code)
-    df_res.to_csv('df.csv')
     df_res.to_excel(writer, name_code)
     dt_end = df_metrics[c.Util.DT_DATE].unique()[-1]
     dt_yesterday = df_metrics[c.Util.DT_DATE].unique()[-2]
