@@ -162,65 +162,65 @@ class NakedShort(object):
 """ example """
 
 
-df_metrics = get_data.get_50option_mktdata(datetime.date(2016,1,1),datetime.date(2018,11,20))
-df_baseindex = get_data.get_index_mktdata(datetime.date(2016,1,1),datetime.date(2018,11,20),c.Util.STR_INDEX_50SH)
-
-df_sharpe = pd.DataFrame()
-df_return = pd.DataFrame()
-cd_strategy = 'short_straddle'
-for cd_marutity_days in [0,1,2,3,4,5,6,7]:
-    series_sharpe = pd.Series()
-    series_return = pd.Series()
-    for moneyness in [-1,-2,-3,-4]:
-        naked_short = NakedShort(df_metrics,df_baseindex,cd_strategy=cd_strategy,cd_marutity_days=cd_marutity_days)
-        naked_short.moneyness_rank = moneyness
-        naked_short.back_test()
-        sharpe = naked_short.account.analysis()['sharpe']
-        y = naked_short.account.analysis()['annual_yield']
-        series_sharpe['moneyness:'+str(moneyness)] = sharpe
-        series_return['moneyness:'+str(moneyness)] = y
-    df_sharpe[cd_marutity_days] = series_sharpe
-    df_return[cd_marutity_days] = series_return
-df_sharpe.to_csv('../../accounts_data/sharpe_' + str(cd_strategy) +'_2016.csv')
-df_return.to_csv('../../accounts_data/return_' + str(cd_strategy) +'_2016.csv')
-
-df_sharpe = pd.DataFrame()
-df_return = pd.DataFrame()
-cd_strategy = 'short_put'
-for cd_marutity_days in [0,1,2,3,4,5,6,7]:
-    series_sharpe = pd.Series()
-    series_return = pd.Series()
-    for moneyness in [-1,-2,-3,-4]:
-        naked_short = NakedShort(df_metrics,df_baseindex,cd_strategy=cd_strategy,cd_marutity_days=cd_marutity_days)
-        naked_short.moneyness_rank = moneyness
-        naked_short.back_test()
-        sharpe = naked_short.account.analysis()['sharpe']
-        y = naked_short.account.analysis()['annual_yield']
-        series_sharpe['moneyness:'+str(moneyness)] = sharpe
-        series_return['moneyness:'+str(moneyness)] = y
-    df_sharpe[cd_marutity_days] = series_sharpe
-    df_return[cd_marutity_days] = series_return
-df_sharpe.to_csv('../../accounts_data/sharpe_' + str(cd_strategy) +'_2016.csv')
-df_return.to_csv('../../accounts_data/return_' + str(cd_strategy) +'_2016.csv')
-
-df_sharpe = pd.DataFrame()
-df_return = pd.DataFrame()
-cd_strategy = 'short_call'
-for cd_marutity_days in [0,1,2,3,4,5,6,7]:
-    series_sharpe = pd.Series()
-    series_return = pd.Series()
-    for moneyness in [-1,-2,-3,-4]:
-        naked_short = NakedShort(df_metrics,df_baseindex,cd_strategy=cd_strategy,cd_marutity_days=cd_marutity_days)
-        naked_short.moneyness_rank = moneyness
-        naked_short.back_test()
-        sharpe = naked_short.account.analysis()['sharpe']
-        y = naked_short.account.analysis()['annual_yield']
-        series_sharpe['moneyness:'+str(moneyness)] = sharpe
-        series_return['moneyness:'+str(moneyness)] = y
-    df_sharpe[cd_marutity_days] = series_sharpe
-    df_return[cd_marutity_days] = series_return
-df_sharpe.to_csv('../../accounts_data/sharpe_' + str(cd_strategy) +'_2016.csv')
-df_return.to_csv('../../accounts_data/return_' + str(cd_strategy) +'_2016.csv')
+# df_metrics = get_data.get_50option_mktdata(datetime.date(2015,1,1),datetime.date(2018,11,20))
+# df_baseindex = get_data.get_index_mktdata(datetime.date(2015,1,1),datetime.date(2018,11,20),c.Util.STR_INDEX_50SH)
+#
+# df_sharpe = pd.DataFrame()
+# df_return = pd.DataFrame()
+# cd_strategy = 'short_straddle'
+# for cd_marutity_days in [0,1,2,3,4,5,6,7]:
+#     series_sharpe = pd.Series()
+#     series_return = pd.Series()
+#     for moneyness in [-1,-2,-3,-4]:
+#         naked_short = NakedShort(df_metrics,df_baseindex,cd_strategy=cd_strategy,cd_marutity_days=cd_marutity_days)
+#         naked_short.moneyness_rank = moneyness
+#         naked_short.back_test()
+#         sharpe = naked_short.account.analysis()['sharpe']
+#         y = naked_short.account.analysis()['annual_yield']
+#         series_sharpe['moneyness:'+str(moneyness)] = sharpe
+#         series_return['moneyness:'+str(moneyness)] = y
+#     df_sharpe[cd_marutity_days] = series_sharpe
+#     df_return[cd_marutity_days] = series_return
+# df_sharpe.to_csv('../../accounts_data/sharpe_' + str(cd_strategy) +'_2016.csv')
+# df_return.to_csv('../../accounts_data/return_' + str(cd_strategy) +'_2016.csv')
+#
+# df_sharpe = pd.DataFrame()
+# df_return = pd.DataFrame()
+# cd_strategy = 'short_put'
+# for cd_marutity_days in [0,1,2,3,4,5,6,7]:
+#     series_sharpe = pd.Series()
+#     series_return = pd.Series()
+#     for moneyness in [-1,-2,-3,-4]:
+#         naked_short = NakedShort(df_metrics,df_baseindex,cd_strategy=cd_strategy,cd_marutity_days=cd_marutity_days)
+#         naked_short.moneyness_rank = moneyness
+#         naked_short.back_test()
+#         sharpe = naked_short.account.analysis()['sharpe']
+#         y = naked_short.account.analysis()['annual_yield']
+#         series_sharpe['moneyness:'+str(moneyness)] = sharpe
+#         series_return['moneyness:'+str(moneyness)] = y
+#     df_sharpe[cd_marutity_days] = series_sharpe
+#     df_return[cd_marutity_days] = series_return
+# df_sharpe.to_csv('../../accounts_data/sharpe_' + str(cd_strategy) +'_2016.csv')
+# df_return.to_csv('../../accounts_data/return_' + str(cd_strategy) +'_2016.csv')
+#
+# df_sharpe = pd.DataFrame()
+# df_return = pd.DataFrame()
+# cd_strategy = 'short_call'
+# for cd_marutity_days in [0,1,2,3,4,5,6,7]:
+#     series_sharpe = pd.Series()
+#     series_return = pd.Series()
+#     for moneyness in [-1,-2,-3,-4]:
+#         naked_short = NakedShort(df_metrics,df_baseindex,cd_strategy=cd_strategy,cd_marutity_days=cd_marutity_days)
+#         naked_short.moneyness_rank = moneyness
+#         naked_short.back_test()
+#         sharpe = naked_short.account.analysis()['sharpe']
+#         y = naked_short.account.analysis()['annual_yield']
+#         series_sharpe['moneyness:'+str(moneyness)] = sharpe
+#         series_return['moneyness:'+str(moneyness)] = y
+#     df_sharpe[cd_marutity_days] = series_sharpe
+#     df_return[cd_marutity_days] = series_return
+# df_sharpe.to_csv('../../accounts_data/sharpe_' + str(cd_strategy) +'_2016.csv')
+# df_return.to_csv('../../accounts_data/return_' + str(cd_strategy) +'_2016.csv')
 
 # df_metrics = get_data.get_50option_mktdata(datetime.date(2015,1,1),datetime.date(2018,11,20))
 # df_baseindex = get_data.get_index_mktdata(datetime.date(2015,1,1),datetime.date(2018,11,20),c.Util.STR_INDEX_50SH)
@@ -237,19 +237,35 @@ df_return.to_csv('../../accounts_data/return_' + str(cd_strategy) +'_2016.csv')
     # df_res[cd_marutity_days] = res
 # df_res.to_csv('../../accounts_data/res_cd_marutity_days' + str(cd_strategy) +'_'+ str(naked_short.moneyness_rank) + '.csv')
 
-
-
+# df_metrics = get_data.get_50option_mktdata(datetime.date(2015,1,1),datetime.date(2018,11,20))
+# df_baseindex = get_data.get_index_mktdata(datetime.date(2015,1,1),datetime.date(2018,11,20),c.Util.STR_INDEX_50SH)
+#
 # df_res = pd.DataFrame()
 # for cd_strategy in ['short_call','short_put','short_straddle']:
-#     naked_short = NakedShort(df_metrics,df_baseindex,cd_strategy=cd_strategy,cd_marutity_days=6)
-#     naked_short.moneyness_rank=-1
+#     naked_short = NakedShort(df_metrics,df_baseindex,cd_strategy=cd_strategy,cd_marutity_days=5)
+#     naked_short.moneyness_rank=-2
 #     naked_short.back_test()
-#     naked_short.account.account.to_csv('../../accounts_data/naked_short_account_'+ str(cd_strategy) +'_' + str(naked_short.moneyness_rank) + '.csv')
-#     naked_short.account.trade_records.to_csv('../../accounts_data/naked_short_records_' + str(cd_strategy) +'_' + str(naked_short.moneyness_rank) + '.csv')
+#     naked_short.account.account.to_csv('../../accounts_data/naked_short_account_'+ str(cd_strategy) +'_' + str(naked_short.moneyness_rank) + '_2015.csv')
+#     naked_short.account.trade_records.to_csv('../../accounts_data/naked_short_records_' + str(cd_strategy) +'_' + str(naked_short.moneyness_rank) + '_2015.csv')
 #     res = naked_short.account.analysis()
 #     print(res)
 #     df_res[cd_strategy] = res
-# df_res.to_csv('../../accounts_data/res_cd_strategy_' + str(naked_short.moneyness_rank) + '.csv')
+# df_res.to_csv('../../accounts_data/res_cd_strategy_' + str(naked_short.moneyness_rank) + '_2015.csv')
+
+df_metrics = get_data.get_50option_mktdata(datetime.date(2015,2,9),datetime.date(2018,11,20))
+df_baseindex = get_data.get_index_mktdata(datetime.date(2015,2,9),datetime.date(2018,11,20),c.Util.STR_INDEX_50SH)
+
+df_res = pd.DataFrame()
+for cd_strategy in ['short_call','short_put','short_straddle']:
+    naked_short = NakedShort(df_metrics,df_baseindex,cd_strategy=cd_strategy,cd_marutity_days=0)
+    naked_short.moneyness_rank=-4
+    naked_short.back_test()
+    naked_short.account.account.to_csv('../../accounts_data/naked_short_account_'+ str(cd_strategy) +'_' + str(naked_short.moneyness_rank) + '_2015.csv')
+    naked_short.account.trade_records.to_csv('../../accounts_data/naked_short_records_' + str(cd_strategy) +'_' + str(naked_short.moneyness_rank) + '_2015.csv')
+    res = naked_short.account.analysis()
+    print(res)
+    df_res[cd_strategy] = res
+df_res.to_csv('../../accounts_data/res_cd_strategy_' + str(naked_short.moneyness_rank) + '_2015.csv')
 
 
 # dates = list(naked_short.account.account.index)
