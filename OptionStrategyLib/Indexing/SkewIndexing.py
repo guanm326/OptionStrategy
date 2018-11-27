@@ -151,6 +151,16 @@ class SkewIndexing(BaseOptionSet):
         # sigma = 2.0 * fv * sum - v1
         return sigma
 
+
+    def revome_A(self,df):
+        if df[Util.ID_INSTRUMENT][-1] =='A':
+            if df[Util.AMT_STRIKE] == df[Util.AMT_APPLICABLE_STRIKE]:
+                return 1
+            else:
+                return 0
+        else:
+            return 0
+
     def calculate(self, eval_date):
         df_daily_state = self.get_current_state()
         mdt = self.get_maturities_list()[0]
@@ -162,6 +172,11 @@ class SkewIndexing(BaseOptionSet):
             mdt2 = self.get_maturities_list()[1]
         df_mdt1 = OptionUtil.get_df_by_mdt(df_daily_state, mdt1)
         df_mdt2 = OptionUtil.get_df_by_mdt(df_daily_state, mdt2)
+        # TODO: Remove A after dividend day.
+        df_mdt1['flag'] = df_mdt1.apply(self.revome_A,axis=1)
+        df_mdt1 = df_mdt1[df_mdt1['flag']==0].reset_index(drop=True)
+        df_mdt2['flag'] = df_mdt2.apply(self.revome_A, axis=1)
+        df_mdt2 = df_mdt2[df_mdt2['flag'] == 0].reset_index(drop=True)
         t_quotes1 = self.get_T_quotes(df_mdt1, eval_date)
         t_quotes2 = self.get_T_quotes(df_mdt2, eval_date)
         # t_quotes1.to_csv('t_quotes1.csv')
@@ -212,14 +227,14 @@ class SkewIndexing(BaseOptionSet):
 
 
 
-start_date = datetime.date.today() - datetime.timedelta(days=10)
-end_date = datetime.date.today()
-skew_indexing = SkewIndexing(start_date, end_date)
-skew_indexing.init()
-skew_indexing.run()
-res = skew_indexing.df_res.sort_index(ascending=False)
-res.to_csv('../../data/skew.csv')
-print('saved to csv')
+# start_date = datetime.date.today() - datetime.timedelta(days=10)
+# end_date = datetime.date.today()
+# skew_indexing = SkewIndexing(start_date, end_date)
+# skew_indexing.init()
+# skew_indexing.run()
+# res = skew_indexing.df_res.sort_index(ascending=False)
+# res.to_csv('../../data/skew.csv')
+# print('saved to csv')
 start_date = datetime.date(2015, 1, 11)
 end_date = datetime.date.today()
 skew_indexing = SkewIndexing(start_date, end_date)
@@ -228,7 +243,7 @@ skew_indexing.run()
 res = skew_indexing.df_res.sort_index(ascending=False)
 res.to_csv('../../data/skew_index_python.csv')
 
-# writer = pd.ExcelWriter('../data/skew_index_python.xlsx')
-# res.to_excel(writer,'Sheet1')
-# writer.save()
+writer = pd.ExcelWriter('../data/skew_index_python.xlsx')
+res.to_excel(writer,'Sheet1')
+writer.save()
 

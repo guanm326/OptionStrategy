@@ -917,6 +917,7 @@ class Util:
     DICT_FUTURE_MARGIN_RATE = {  # 合约价值的百分比
         'm': 0.05,
         'sr': 0.05,
+        'cu': 0.05,
         'if': 0.15,
         'ih': 0.15,
         'ic': 0.15,
@@ -925,6 +926,7 @@ class Util:
     DICT_TRANSACTION_FEE = {  # 元/手
         'm': 3.0,
         'sr': 3.0,
+        'cu': 3.0,
         'if': None,
         'ih': None,
         'ic': None,
@@ -940,16 +942,16 @@ class Util:
         "50etf": 5.0,
         "m": 5.0,
         "sr": 5.0,
-        "cu": 5.0,
+        "cu": 5.0
     }
     DICT_TRANSACTION_FEE_RATE = {  # 百分比
         'm': None,
         'sr': None,
+        'cu': None,
         'if': 6.9 / 10000.0,
         'ih': 6.9 / 10000.0,
         'ic': 6.9 / 10000.0,
         "index": None
-
     }
     DICT_CONTRACT_MULTIPLIER = {  # 合约乘数
         'm': 10,
@@ -958,7 +960,6 @@ class Util:
         'if': 300,
         'ih': 300,
         'ic': 200,
-        'cu': 5,
         'index': 1
     }
     DICT_OPTION_CONTRACT_MULTIPLIER = {  # 合约乘数
