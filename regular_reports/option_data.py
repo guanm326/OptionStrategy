@@ -287,7 +287,7 @@ def implied_vol_vw(last_week, end_date, df_metrics, df_res, name_code):
 
 """"""
 
-end_date = datetime.date(2018,11,23)
+end_date = datetime.date(2018,11,27)
 start_date = datetime.date(2015, 1, 1)
 last_week = datetime.date(2018,11,9)
 dt_histvol = datetime.date(2014,1,1)
@@ -296,9 +296,7 @@ min_holding = 5
 
 writer = ExcelWriter('../data/option_data_python.xlsx')
 name_codes = [c.Util.STR_50ETF,c.Util.STR_CU, c.Util.STR_M, c.Util.STR_SR]
-# name_codes = [c.Util.STR_CU, c.Util.STR_M, c.Util.STR_SR]
 core_ids = ['index_50etf','cu_1901', 'm_1901', 'sr_1901']
-# core_ids = ['cu_1901', 'm_1901', 'sr_1901']
 for (idx, name_code) in enumerate(name_codes):
     df_res = pd.DataFrame()
     core_id = core_ids[idx]

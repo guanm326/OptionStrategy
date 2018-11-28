@@ -103,6 +103,32 @@ class OptionCU:
     def fun_applicable_strike(df: pd.Series) -> float:
         return df[Util.AMT_STRIKE]
 
+    @staticmethod
+    def get_strike_by_monenyes_rank_nearest_strike(spot: float, moneyness_rank: int, strikes: List[float],
+                                                   option_type: OptionType) -> float:
+        d = OptionCU.get_strike_monenyes_rank_dict_nearest_strike(spot, strikes, option_type)
+        return d.get(moneyness_rank, None)
+
+    @staticmethod
+    def get_strike_monenyes_rank_dict_nearest_strike(spot: float, strikes: List[float],
+                                                     option_type: OptionType) -> dict:
+        d = {}
+        min_strike = strikes[0]
+        max_strike = strikes[0]
+        for strike in strikes:
+            if strike < min_strike:
+                min_strike = strike
+            if strike > max_strike:
+                max_strike = strike
+        if spot < min_strike:
+            spot = min_strike
+        elif spot > max_strike:
+            spot = max_strike
+        for strike in strikes:
+            rank = int(option_type.value * round((spot - strike) / 1000))
+            d.update({rank: strike})
+        return d
+
 
 class OptionM:
     MONEYNESS_POINT_LOW = 2000
@@ -247,29 +273,7 @@ class OptionM:
             d.update({rank: strike})
         return d
 
-    @staticmethod
-    def generate_commodity_option_maturities():
-        maturity_date = 0
-        dict_option_maturity = {}
-        id_list = ['m_1707', 'm_1708', 'm_1709', 'm_1711', 'm_1712']
-        calendar = ql.China()
-        for contractId in id_list:
-            year = '201' + contractId[3]
-            month = contractId[-2:]
-            date = ql.Date(1, int(month), int(year))
-            maturity_date = calendar.advance(calendar.advance(date, ql.Period(-1, ql.Months)), ql.Period(4, ql.Days))
-            dt_maturity = QuantlibUtil.to_dt_date(maturity_date)
-            dict_option_maturity.update({contractId: dt_maturity})
-        id_list_sr = ['sr_1707', 'sr_1709', 'sr_1711', 'sr_1801']
-        for contractId in id_list_sr:
-            year = '201' + contractId[4]
-            month = contractId[-2:]
-            date = ql.Date(1, int(month), int(year))
-            maturity_date = calendar.advance(calendar.advance(date, ql.Period(-1, ql.Months)), ql.Period(-5, ql.Days))
-            dt_maturity = QuantlibUtil.to_dt_date(maturity_date)
-            dict_option_maturity.update({contractId: dt_maturity})
-        print(dict_option_maturity)
-        return maturity_date
+
 
 
 class OptionSR:
@@ -597,6 +601,29 @@ class OptionFilter:
         else:
             return df[Util.DT_MATURITY]
 
+    @staticmethod
+    def generate_commodity_option_maturities():
+        maturity_date = 0
+        dict_option_maturity = {}
+        id_list = ['m_1707', 'm_1708', 'm_1709', 'm_1711', 'm_1712']
+        calendar = ql.China()
+        for contractId in id_list:
+            year = '201' + contractId[3]
+            month = contractId[-2:]
+            date = ql.Date(1, int(month), int(year))
+            maturity_date = calendar.advance(calendar.advance(date, ql.Period(-1, ql.Months)), ql.Period(4, ql.Days))
+            dt_maturity = QuantlibUtil.to_dt_date(maturity_date)
+            dict_option_maturity.update({contractId: dt_maturity})
+        id_list_sr = ['sr_1707', 'sr_1709', 'sr_1711', 'sr_1801']
+        for contractId in id_list_sr:
+            year = '201' + contractId[4]
+            month = contractId[-2:]
+            date = ql.Date(1, int(month), int(year))
+            maturity_date = calendar.advance(calendar.advance(date, ql.Period(-1, ql.Months)), ql.Period(-5, ql.Days))
+            dt_maturity = QuantlibUtil.to_dt_date(maturity_date)
+            dict_option_maturity.update({contractId: dt_maturity})
+        print(dict_option_maturity)
+        return maturity_date
 
 class FutureUtil:
     @staticmethod
@@ -901,6 +928,7 @@ class Util:
     DRAWDOWN = 'drawdown'
     DAILY_EXCECUTED_AMOUNT = 'daily_executed_amount'  # abs value
     BILLION = 1000000000.0
+    MILLION = 1000000.0
     TRADE_BOOK_COLUMN_LIST = [DT_DATE, TRADE_LONG_SHORT, TRADE_UNIT,
                               LAST_PRICE, TRADE_MARGIN_CAPITAL,
                               TRADE_BOOK_VALUE, AVERAGE_POSITION_COST,
