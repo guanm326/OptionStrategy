@@ -40,4 +40,4 @@ for dt in date_range:
             print(res)
         except Exception as e:
             print(e)
-e
+

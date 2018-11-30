@@ -100,7 +100,7 @@ def trade_volume(dt_date, dt_last_week, df_option_metrics, name_code, core_instr
 def pcr_commodity_option(dt_start, dt_end, name_code, df_res,min_holding):
     optionMkt = admin.table_options_mktdata()
     futureMkt = admin.table_futures_mktdata()
-    query_pcr = admin.session_mktdata().query(optionMkt.c.dt_date, optionMkt.c.cd_option_type,
+    query_pcr = admin.session_gc().query(optionMkt.c.dt_date, optionMkt.c.cd_option_type,
                                               optionMkt.c.id_underlying,
                                               func.sum(optionMkt.c.amt_holding_volume).label('total_holding_volume'),
                                               func.sum(optionMkt.c.amt_trading_volume).label('total_trading_volume')
@@ -151,7 +151,7 @@ def pcr_commodity_option(dt_start, dt_end, name_code, df_res,min_holding):
 def pcr_etf_option(dt_start, dt_end, name_code, df_res):
     optionMkt = admin.table_options_mktdata()
     Index_mkt = admin.table_indexes_mktdata()
-    query_pcr = admin.session_mktdata().query(optionMkt.c.dt_date, optionMkt.c.cd_option_type,
+    query_pcr = admin.session_gc().query(optionMkt.c.dt_date, optionMkt.c.cd_option_type,
                                               optionMkt.c.id_underlying,
                                               func.sum(optionMkt.c.amt_holding_volume).label('total_holding_volume'),
                                               func.sum(optionMkt.c.amt_trading_volume).label('total_trading_volume')

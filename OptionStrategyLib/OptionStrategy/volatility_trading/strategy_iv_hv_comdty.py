@@ -1,4 +1,5 @@
 from back_test.model.base_option_set import BaseOptionSet
+from back_test.model.base_option import BaseOption
 from back_test.model.base_account import BaseAccount
 import data_access.get_data as get_data
 import back_test.model.constant as c
@@ -13,54 +14,54 @@ from OptionStrategyLib.VolatilityModel.historical_volatility import HistoricalVo
 
 
 def open_position( df_vol, dt_date):
-    return True
-    # if dt_date not in df_vol.index:
-    #     return False
-    # amt_premium = df_vol.loc[dt_date, 'amt_premium']
-    # amt_1std = df_vol.loc[dt_date, 'amt_1std']
-    # if amt_premium > amt_1std:
-    #     print(dt_date,' open position')
-    #     return True
-    # else:
-    #     return False
+    # return True
+    if dt_date not in df_vol.index:
+        return False
+    amt_premium = df_vol.loc[dt_date, 'amt_premium']
+    amt_1std = df_vol.loc[dt_date, 'amt_1std']
+    if amt_premium > amt_1std and amt_premium >0:
+        print(dt_date,' open position')
+        return True
+    else:
+        return False
 
 def close_position(df_vol, dt_maturity, optionset):
 
     if (dt_maturity - optionset.eval_date).days <= 5:
         return True
-    else:
-        return False
-    # dt_date = optionset.eval_date
-    # amt_premium = df_vol.loc[dt_date, 'amt_premium']
-    # amt_n1std = df_vol.loc[dt_date, 'amt_n1std']
-    # if amt_premium < amt_n1std:
-    #     print(dt_date,' close position')
-    #     return True
     # else:
     #     return False
+    dt_date = optionset.eval_date
+    amt_premium = df_vol.loc[dt_date, 'amt_premium']
+    amt_n1std = df_vol.loc[dt_date, 'amt_n1std']
+    if amt_premium < amt_n1std or amt_premium <=0:
+        print(dt_date,' close position')
+        return True
+    else:
+        return False
 
 
 pu = PlotUtil()
-start_date = datetime.date(2018, 9, 21)
+start_date = datetime.date(2018, 9, 1)
 end_date = datetime.date(2018, 11, 27)
 dt_histvol = start_date - datetime.timedelta(days=300)
 min_holding = 20  # 20 sharpe ratio较优
-init_fund = c.Util.BILLION
 slippage = 0
 m = 3  # 期权notional倍数
-cd_trade_price = c.CdTradePrice.VOLUME_WEIGHTED
-cd_hedge_price = c.CdTradePrice.CLOSE
+cd_vw_price = c.CdTradePrice.VOLUME_WEIGHTED
+cd_c_price = c.CdTradePrice.CLOSE
 
-name_code = c.Util.STR_CU
+# name_code = c.Util.STR_CU
+name_code = c.Util.STR_M
 df_metrics = get_data.get_comoption_mktdata(start_date, end_date,name_code)
 df_future_c1_daily = get_data.get_future_c1_by_option_daily(dt_histvol, end_date, name_code,min_holding=5)
-# df_futures_all_daily = get_data.get_mktdata_future_daily(start_date, end_date,
-#                                                          name_code)  # daily data of all future contracts
+df_futures_all_daily = get_data.get_mktdata_future_daily(start_date, end_date,
+                                                         name_code)  # daily data of all future contracts
 
 
 df_future_c1_daily['amt_hv'] = histvol.hist_vol(df_future_c1_daily[c.Util.AMT_CLOSE],n=30)
 
-df_iv = get_data.get_iv_by_moneyness(dt_histvol, end_date, c.Util.STR_CU)
+df_iv = get_data.get_iv_by_moneyness(dt_histvol, end_date, name_code)
 # df_iv_call = df_iv[df_iv[c.Util.CD_OPTION_TYPE] == 'call']
 # df_iv_put = df_iv[df_iv[c.Util.CD_OPTION_TYPE] == 'put']
 df_iv_htbr = df_iv[df_iv[c.Util.CD_OPTION_TYPE]=='put_call_htbr']
@@ -74,7 +75,8 @@ df_data = df_iv_htbr.reset_index(drop=True).rename(columns={c.Util.PCT_IMPLIED_V
 df_vol = pd.merge(df_data[[c.Util.DT_DATE, 'amt_iv']], df_future_c1_daily[[c.Util.DT_DATE, 'amt_hv']],
                   on=c.Util.DT_DATE)
 df_vol['amt_premium'] = (df_vol['amt_iv'] - df_vol['amt_hv']).shift()
-h = 10
+df_vol['amt_iv_previous'] = df_vol['amt_iv'].shift()
+h = 60
 df_vol['amt_1std'] = c.Statistics.moving_average(df_vol['amt_premium'], n=h)+c.Statistics.standard_deviation(df_vol['amt_premium'], n=h)
 df_vol['amt_n1std'] = c.Statistics.moving_average(df_vol['amt_premium'], n=h)-c.Statistics.standard_deviation(df_vol['amt_premium'], n=h)
 df_vol['amt_2std'] = c.Statistics.moving_average(df_vol['amt_premium'], n=h)+2*c.Statistics.standard_deviation(df_vol['amt_premium'], n=h)
@@ -94,14 +96,14 @@ df_holding_period = pd.DataFrame()
 d = max(df_future_c1_daily[c.Util.DT_DATE].values[0], df_metrics[c.Util.DT_DATE].values[0])
 df_metrics = df_metrics[df_metrics[c.Util.DT_DATE] >= d].reset_index(drop=True)
 df_c1 = df_future_c1_daily[df_future_c1_daily[c.Util.DT_DATE] >= d].reset_index(drop=True)
-# df_c_all = df_futures_all_daily[df_futures_all_daily[c.Util.DT_DATE] >= d].reset_index(drop=True)
+df_c_all = df_futures_all_daily[df_futures_all_daily[c.Util.DT_DATE] >= d].reset_index(drop=True)
 
 
 optionset = BaseOptionSet(df_metrics)
 optionset.init()
 d1 = optionset.eval_date
 
-hedging = SytheticOption(df_c1, frequency=c.FrequentType.DAILY, df_c1_daily=df_c1)
+hedging = SytheticOption(df_c1, frequency=c.FrequentType.DAILY, df_c1_daily=df_c1,df_futures_all_daily = df_c_all)
 hedging.init()
 # hedging.amt_option = 1 / 1000  # 50ETF与IH点数之比
 
@@ -133,33 +135,35 @@ while optionset.eval_date <= end_date:
               int(account.cash))
         break
 
-    # # 标的移仓换月
-    # if id_future != hedging.current_state[c.Util.ID_FUTURE]:
-    #     for holding in account.dict_holding.values():
-    #         if isinstance(holding, SytheticOption):
-    #             df = hedging.df_all_futures_daily[
-    #                 (hedging.df_all_futures_daily[c.Util.DT_DATE] == hedging.eval_date) & (
-    #                     hedging.df_all_futures_daily[c.Util.ID_FUTURE] == id_future)]
-    #             trade_unit = account.trade_book.loc[hedging.name_code(), c.Util.TRADE_UNIT]
-    #             if account.trade_book.loc[hedging.name_code(), c.Util.TRADE_LONG_SHORT] == c.LongShort.LONG:
-    #                 long_short = c.LongShort.SHORT
-    #             else:
-    #                 long_short = c.LongShort.LONG
-    #             trade_price = df[c.Util.AMT_TRADING_VALUE].values[0] / df[c.Util.AMT_TRADING_VOLUME].values[
-    #                 0] / hedging.multiplier()
-    #             order = Order(holding.eval_date, hedging.name_code(), trade_unit, trade_price,
-    #                           holding.eval_datetime, long_short)
-    #             record = hedging.execute_order(order, slippage=slippage)
-    #             account.add_record(record, holding)
-    #     hedging.synthetic_unit = 0
-    #     id_future = hedging.current_state[c.Util.ID_FUTURE]
-    #     flag_hedge = True
+    # 标的移仓换月
+    if id_future != hedging.current_state[c.Util.ID_FUTURE]:
+        for holding in account.dict_holding.values():
+            if isinstance(holding, SytheticOption):
+                df = hedging.df_all_futures_daily[
+                    (hedging.df_all_futures_daily[c.Util.DT_DATE] == hedging.eval_date) & (
+                        hedging.df_all_futures_daily[c.Util.ID_FUTURE] == id_future)]
+                trade_unit = account.trade_book.loc[hedging.name_code(), c.Util.TRADE_UNIT]
+                if account.trade_book.loc[hedging.name_code(), c.Util.TRADE_LONG_SHORT] == c.LongShort.LONG:
+                    long_short = c.LongShort.SHORT
+                else:
+                    long_short = c.LongShort.LONG
+                trade_price = df[c.Util.AMT_CLOSE].values[0]
+                order = Order(holding.eval_date, hedging.name_code(), trade_unit, trade_price,
+                              holding.eval_datetime, long_short)
+                record = hedging.execute_order(order, slippage=slippage)
+                account.add_record(record, holding)
+        hedging.synthetic_unit = 0
+        id_future = hedging.current_state[c.Util.ID_FUTURE]
+        flag_hedge = True
 
     # 平仓：距到期8日
     if not empty_position:
         if close_position(df_vol, maturity1, optionset):
             for option in account.dict_holding.values():
-                order = account.create_close_order(option, cd_trade_price=cd_trade_price)
+                if isinstance(option,BaseOption):
+                    order = account.create_close_order(option, cd_trade_price=cd_vw_price)
+                else:
+                    order = account.create_close_order(option, cd_trade_price=cd_c_price)
                 record = option.execute_order(order, slippage=slippage)
                 account.add_record(record, option)
                 hedging.synthetic_unit = 0
@@ -186,8 +190,8 @@ while optionset.eval_date <= end_date:
         spot = atm_call.underlying_close()
         unit_c = np.floor(np.floor(account.portfolio_total_value / atm_call.strike()) / atm_call.multiplier()) * m
         unit_p = np.floor(np.floor(account.portfolio_total_value / atm_put.strike()) / atm_put.multiplier()) * m
-        order_c = account.create_trade_order(atm_call, long_short, unit_c, cd_trade_price=cd_trade_price)
-        order_p = account.create_trade_order(atm_put, long_short, unit_p, cd_trade_price=cd_trade_price)
+        order_c = account.create_trade_order(atm_call, long_short, unit_c, cd_trade_price=cd_vw_price)
+        order_p = account.create_trade_order(atm_put, long_short, unit_p, cd_trade_price=cd_vw_price)
         record_call = atm_call.execute_order(order_c, slippage=slippage)
         record_put = atm_put.execute_order(order_p, slippage=slippage)
         account.add_record(record_call, atm_call)
@@ -206,7 +210,7 @@ while optionset.eval_date <= end_date:
             long_short = c.LongShort.LONG
         else:
             long_short = c.LongShort.SHORT
-        order_u = account.create_trade_order(hedging, long_short, hedge_unit, cd_trade_price=cd_hedge_price)
+        order_u = account.create_trade_order(hedging, long_short, hedge_unit, cd_trade_price=cd_c_price)
         record_u = hedging.execute_order(order_u, slippage=slippage)
         account.add_record(record_u, hedging)
         flag_hedge = False
@@ -223,7 +227,7 @@ account.trade_records.to_csv('../../accounts_data/iv_hv_record_comdty.csv')
 res = account.analysis()
 # res['期权平均持仓天数'] = len(account.account) / option_trade_times
 print(res)
-print(account.trade_records)
+# print(account.trade_records)
 dates = list(account.account.index)
 npv = list(account.account[c.Util.PORTFOLIO_NPV])
 pu.plot_line_chart(dates, [npv], ['npv'])

@@ -194,7 +194,7 @@ class HedgeIndexByOptions(object):
             self.account.add_record(record, option)
         self.dict_strategy = dict_strategy
 
-    def close_all_options(self):
+    def close_options(self):
         for option in self.account.dict_holding.values():
             if isinstance(option, BaseOption):
                 order = self.account.create_close_order(option, cd_trade_price=self.cd_trade_price)
@@ -241,12 +241,12 @@ class HedgeIndexByOptions(object):
 
             if not empty_position:
                 if self.close_signal():
-                    self.close_all_options()
+                    self.close_options()
                     empty_position = True
                 else:
                     strategy = self.shift()
                     if strategy is not None:
-                        self.close_all_options()
+                        self.close_options()
                         self.excute(strategy)
 
             if empty_position and self.open_signal():

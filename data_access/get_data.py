@@ -237,18 +237,18 @@ def get_50option_minute_with_underlying(start_date, end_date):
 
 def get_comoption_mktdata(start_date, end_date, name_code):
     Future_mkt = dbt.FutureMkt
-    Option_mkt = dbt.OptionMkt
+    Option_mkt = admin.table_options_mktdata()
     options = dbt.Options
-    query_mkt = admin.session_mktdata(). \
-        query(Option_mkt.dt_date, Option_mkt.id_instrument, Option_mkt.id_underlying,
-              Option_mkt.code_instrument, Option_mkt.amt_close, Option_mkt.amt_open,
-              Option_mkt.amt_settlement,
-              Option_mkt.amt_last_settlement, Option_mkt.amt_trading_volume,Option_mkt.amt_trading_value,
-              Option_mkt.pct_implied_vol, Option_mkt.amt_holding_volume,
-              Option_mkt.amt_trading_volume
+    query_mkt = admin.session_gc(). \
+        query(Option_mkt.c.dt_date, Option_mkt.c.id_instrument, Option_mkt.c.id_underlying,
+              Option_mkt.c.code_instrument, Option_mkt.c.amt_close, Option_mkt.c.amt_open,
+              Option_mkt.c.amt_settlement,
+              Option_mkt.c.amt_last_settlement, Option_mkt.c.amt_trading_volume,Option_mkt.c.amt_trading_value,
+              Option_mkt.c.pct_implied_vol, Option_mkt.c.amt_holding_volume,
+              Option_mkt.c.amt_trading_volume
               ) \
-        .filter(Option_mkt.dt_date >= start_date).filter(Option_mkt.dt_date <= end_date) \
-        .filter(Option_mkt.name_code == name_code).filter(Option_mkt.flag_night != 1)
+        .filter(Option_mkt.c.dt_date >= start_date).filter(Option_mkt.c.dt_date <= end_date) \
+        .filter(Option_mkt.c.name_code == name_code).filter(Option_mkt.c.flag_night != 1)
 
     query_option = admin.session_mktdata(). \
         query(options.id_instrument, options.cd_option_type, options.amt_strike, options.name_contract_month,
