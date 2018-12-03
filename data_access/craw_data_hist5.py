@@ -25,7 +25,7 @@ option_contracts = admin.table_option_contracts()
 dc = DataCollection()
 today = datetime.date.today()
 # beg_date = datetime.date(2015, 1, 1)
-beg_date = datetime.date(2018, 9, 1).strftime("%Y-%m-%d")
+beg_date = datetime.date(2018, 9, 20).strftime("%Y-%m-%d")
 end_date = datetime.date(2018, 12, 3).strftime("%Y-%m-%d")
 
 date_range = w.tdays(beg_date, end_date, "").Data[0]

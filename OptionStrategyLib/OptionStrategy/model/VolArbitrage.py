@@ -199,8 +199,8 @@ class VolAbtgHvIv(object):
 
 
 dt_start = datetime.date(2018, 1, 1)
-dt_end = datetime.date(2018, 11, 27)
-name_code = 'm'
+dt_end = datetime.date(2018, 11, 30)
+name_code = 'cu'
 vol_arbitrage = VolAbtgHvIv(dt_start, dt_end, name_code)
 
 account = vol_arbitrage.back_test()

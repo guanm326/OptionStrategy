@@ -14,36 +14,36 @@ from OptionStrategyLib.VolatilityModel.historical_volatility import HistoricalVo
 
 
 def open_position( df_vol, dt_date):
-    # return True
-    if dt_date not in df_vol.index:
-        return False
-    amt_premium = df_vol.loc[dt_date, 'amt_premium']
-    amt_1std = df_vol.loc[dt_date, 'amt_1std']
-    if amt_premium > amt_1std and amt_premium >0:
-        print(dt_date,' open position')
-        return True
-    else:
-        return False
+    return True
+    # if dt_date not in df_vol.index:
+    #     return False
+    # amt_premium = df_vol.loc[dt_date, 'amt_premium']
+    # amt_1std = df_vol.loc[dt_date, 'amt_1std']
+    # if amt_premium > amt_1std and amt_premium >0:
+    #     print(dt_date,' open position')
+    #     return True
+    # else:
+    #     return False
 
 def close_position(df_vol, dt_maturity, optionset):
 
     if (dt_maturity - optionset.eval_date).days <= 5:
         return True
-    # else:
-    #     return False
-    dt_date = optionset.eval_date
-    amt_premium = df_vol.loc[dt_date, 'amt_premium']
-    amt_n1std = df_vol.loc[dt_date, 'amt_n1std']
-    if amt_premium < amt_n1std or amt_premium <=0:
-        print(dt_date,' close position')
-        return True
     else:
         return False
+    # dt_date = optionset.eval_date
+    # amt_premium = df_vol.loc[dt_date, 'amt_premium']
+    # amt_n1std = df_vol.loc[dt_date, 'amt_n1std']
+    # if amt_premium < amt_n1std or amt_premium <=0:
+    #     print(dt_date,' close position')
+    #     return True
+    # else:
+    #     return False
 
 
 pu = PlotUtil()
 start_date = datetime.date(2018, 9, 1)
-end_date = datetime.date(2018, 11, 27)
+end_date = datetime.date(2018, 12, 3)
 dt_histvol = start_date - datetime.timedelta(days=300)
 min_holding = 20  # 20 sharpe ratio较优
 slippage = 0
@@ -51,8 +51,8 @@ m = 3  # 期权notional倍数
 cd_vw_price = c.CdTradePrice.VOLUME_WEIGHTED
 cd_c_price = c.CdTradePrice.CLOSE
 
-# name_code = c.Util.STR_CU
-name_code = c.Util.STR_M
+name_code = c.Util.STR_CU
+# name_code = c.Util.STR_M
 df_metrics = get_data.get_comoption_mktdata(start_date, end_date,name_code)
 df_future_c1_daily = get_data.get_future_c1_by_option_daily(dt_histvol, end_date, name_code,min_holding=5)
 df_futures_all_daily = get_data.get_mktdata_future_daily(start_date, end_date,
@@ -76,7 +76,8 @@ df_vol = pd.merge(df_data[[c.Util.DT_DATE, 'amt_iv']], df_future_c1_daily[[c.Uti
                   on=c.Util.DT_DATE)
 df_vol['amt_premium'] = (df_vol['amt_iv'] - df_vol['amt_hv']).shift()
 df_vol['amt_iv_previous'] = df_vol['amt_iv'].shift()
-h = 60
+df_vol = df_vol.dropna().reset_index(drop=True)
+h = 10
 df_vol['amt_1std'] = c.Statistics.moving_average(df_vol['amt_premium'], n=h)+c.Statistics.standard_deviation(df_vol['amt_premium'], n=h)
 df_vol['amt_n1std'] = c.Statistics.moving_average(df_vol['amt_premium'], n=h)-c.Statistics.standard_deviation(df_vol['amt_premium'], n=h)
 df_vol['amt_2std'] = c.Statistics.moving_average(df_vol['amt_premium'], n=h)+2*c.Statistics.standard_deviation(df_vol['amt_premium'], n=h)
@@ -216,6 +217,8 @@ while optionset.eval_date <= end_date:
         flag_hedge = False
 
     idx_hedge += 1
+    # if optionset.eval_date == datetime.date(2018,12,3):
+    #     print('')
     account.daily_accounting(optionset.eval_date)
     total_liquid_asset = account.cash + account.get_portfolio_margin_capital()
     if not optionset.has_next(): break
