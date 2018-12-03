@@ -254,8 +254,8 @@ def implied_vol(last_week, end_date, df_metrics, df_res, name_code):
     optionset.init()
     list_res_iv = []
     while optionset.current_index < optionset.nbr_index:
-        # if optionset.eval_date ==datetime.date(2018,11,23):
-        #     print('')
+        if optionset.eval_date ==datetime.date(2018,11,29):
+            print('')
         dt_maturity = optionset.select_maturity_date(nbr_maturity=0, min_holding=min_holding)
         iv = optionset.get_atm_iv_by_htbr(dt_maturity)
         # print({'date': optionset.eval_date, 'iv': iv})
@@ -287,19 +287,21 @@ def implied_vol_vw(last_week, end_date, df_metrics, df_res, name_code):
 
 """"""
 
-end_date = datetime.date(2018,11,27)
-start_date = datetime.date(2015, 1, 1)
-last_week = datetime.date(2018,11,9)
+end_date = datetime.date(2018,11,30)
+start_date = datetime.date(2017, 1, 1)
+# last_week = datetime.date(2018,11,9)
 dt_histvol = datetime.date(2014,1,1)
 min_holding = 5
 
 
 writer = ExcelWriter('../data/option_data_python.xlsx')
 name_codes = [c.Util.STR_50ETF,c.Util.STR_CU, c.Util.STR_M, c.Util.STR_SR]
-core_ids = ['index_50etf','cu_1901', 'm_1901', 'sr_1901']
+# name_codes = [ c.Util.STR_M, c.Util.STR_SR]
+# core_ids = ['index_50etf','cu_1901', 'm_1901', 'sr_1901']
+# core_ids = ['m_1901', 'sr_1901']
 for (idx, name_code) in enumerate(name_codes):
     df_res = pd.DataFrame()
-    core_id = core_ids[idx]
+    # core_id = core_ids[idx]
     if name_code==c.Util.STR_50ETF:
         df_metrics = get_data.get_50option_mktdata(start_date,end_date)
         df_future_c1_daily = get_data.get_mktdata_future_c1_daily(dt_histvol, end_date, c.Util.STR_IH)
@@ -319,6 +321,6 @@ for (idx, name_code) in enumerate(name_codes):
     dt_end = df_metrics[c.Util.DT_DATE].unique()[-1]
     dt_yesterday = df_metrics[c.Util.DT_DATE].unique()[-2]
     print('Finished ',name_code,dt_end,dt_yesterday)
-    df_holdings = trade_volume(dt_end, dt_yesterday, df_metrics, name_code, core_id,df_res)
-    df_holdings.to_excel(writer, 'holdings_'+name_code)
+    # df_holdings = trade_volume(dt_end, dt_yesterday, df_metrics, name_code, core_id,df_res)
+    # df_holdings.to_excel(writer, 'holdings_'+name_code)
 writer.save()

@@ -10,14 +10,15 @@ from Utilities import admin_write_util as admin
 
 w.start()
 
-date = datetime.date.today()
-# date = datetime.date(2018,11,23)
+# date = datetime.date.today()
+date = datetime.date(2018,11,30)
 
 dt_date = date.strftime("%Y-%m-%d")
 print(dt_date)
 
 conn = admin.conn_mktdata()
 conn_intraday = admin.conn_intraday()
+conn_gc = admin.conn_gc()
 
 options_mktdata_daily = admin.table_options_mktdata()
 futures_mktdata_daily = admin.table_futures_mktdata()
@@ -130,7 +131,7 @@ for db_data in db_datas:
 db_data = dc.table_options().wind_cu_option(dt_date)
 if len(db_data) == 0: print('no data')
 try:
-    conn.execute(options_mktdata_daily.insert(), db_data)
+    conn_gc.execute(options_mktdata_daily.insert(), db_data)
     print('wind CU option -- inserted into data base succefully')
 except Exception as e:
     print(e)
@@ -142,7 +143,7 @@ if res.rowcount == 0:
     db_data = dc.table_options().wind_data_50etf_option(dt_date)
     if len(db_data) == 0: print('no data')
     try:
-        conn.execute(options_mktdata_daily.insert(), db_data)
+        conn_gc.execute(options_mktdata_daily.insert(), db_data)
         print('wind 50ETF option -- inserted into data base succefully')
     except Exception as e:
         print(e)
@@ -156,7 +157,7 @@ if res.rowcount == 0:
     db_data = dc.table_options().wind_data_m_option(dt_date,dt_date)
     if len(db_data) == 0: print('no data')
     try:
-        conn.execute(options_mktdata_daily.insert(), db_data)
+        conn_gc.execute(options_mktdata_daily.insert(), db_data)
         print('wind m option -- inserted into data base succefully')
     except Exception as e:
         print(e)
@@ -170,7 +171,7 @@ if res.rowcount == 0:
     db_data = dc.table_options().wind_data_sr_option(dt_date,dt_date)
     if len(db_data) == 0: print('no data')
     try:
-        conn.execute(options_mktdata_daily.insert(), db_data)
+        conn_gc.execute(options_mktdata_daily.insert(), db_data)
         print('wind sr option -- inserted into data base succefully')
     except Exception as e:
         print(e)

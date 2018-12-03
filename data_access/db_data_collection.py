@@ -272,12 +272,11 @@ class DataCollection():
                 if pd.isnull(amt_open): amt_open = -999.0
                 if pd.isnull(amt_high): amt_high = -999.0
                 if pd.isnull(amt_low): amt_low = -999.0
-                if pd.isnull(amt_close): amt_close = -999.0
-                if pd.isnull(amt_settlement): amt_settlement = -999.0
+                if pd.isnull(amt_close): continue
+                if pd.isnull(amt_settlement): continue
                 if pd.isnull(amt_last_settlement): amt_last_settlement = -999.0
-                if pd.isnull(amt_trading_volume): amt_trading_volume = -999.0
-                if pd.isnull(amt_trading_volume): amt_trading_volume = -999.0
-                if pd.isnull(amt_trading_value): amt_trading_value = -999.0
+                if pd.isnull(amt_trading_volume): continue
+                if pd.isnull(amt_trading_value): continue
                 if pd.isnull(amt_holding_volume): amt_holding_volume =  -999.0
                 db_row = {'dt_date': dt_date,
                           'id_instrument': id_instrument,
@@ -375,7 +374,7 @@ class DataCollection():
         def wind_data_m_option(self, start_dates_tr,end_date_str,wind_contract='all'):
 
             db_data = []
-            id_underlying = wind_contract[0].lower() + '_' + wind_contract[1:5]
+            # id_underlying = wind_contract[0].lower() + '_' + wind_contract[1:5]
             name_code = 'm'
             datasource = 'wind'
             cd_exchange = 'dce'
@@ -392,6 +391,7 @@ class DataCollection():
                 dt_date = df_mktdata['date'].date()
                 option_code = df_mktdata['option_code']
                 id_instrument = option_code[0].lower()+'_'+option_code[1:5]+'_'+option_code[6].lower() +'_'+option_code[-4:]
+                id_underlying = option_code[0].lower()+'_'+option_code[1:5]
                 windcode = option_code[0:5]+option_code[6]+option_code[-4:]+'.DCE'
                 amt_strike = option_code[-4:]
                 if option_code[6].lower()=='c':
@@ -447,7 +447,7 @@ class DataCollection():
         def wind_data_sr_option(self, start_dates_tr,end_date_str,wind_contract='all'):
 
             db_data = []
-            id_underlying = wind_contract[0:2].lower() + '_1' + wind_contract[2:5]
+            # id_underlying = wind_contract[0:2].lower() + '_1' + wind_contract[2:5]
             name_code = 'sr'
             datasource = 'wind'
             cd_exchange = 'czce'
@@ -465,6 +465,7 @@ class DataCollection():
                 option_code = df_mktdata['option_code']
                 # TODO
                 id_instrument = option_code[0:2].lower()+'_1'+option_code[2:5]+'_'+option_code[5].lower() +'_'+option_code[-4:]
+                id_underlying = option_code[0:2].lower()+'_1'+option_code[2:5]
                 windcode = option_code+'.CZC'
                 amt_strike = option_code[-4:]
                 if option_code[5].lower()=='c':

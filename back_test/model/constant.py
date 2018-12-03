@@ -401,7 +401,8 @@ class Option50ETF:
         ],
         datetime.date(2017, 11, 28): [
             '1712', '1801', '1803', '1806'
-        ]
+        ],
+        datetime.date(2018,12,3):['1812','1901','1903','1906']
 
     }
 
@@ -419,6 +420,11 @@ class Option50ETF:
             return round(df[Util.AMT_STRIKE] * df[Util.NBR_MULTIPLIER] / 10000, 2)  # 分红除息日前反算调整前的行权价
         elif eval_date < dates[1]:
             if contract_month in dividend_dates[dates[1]]:
+                return round(df[Util.AMT_STRIKE] * df[Util.NBR_MULTIPLIER] / 10000, 2)  # 分红除息日前反算调整前的行权价
+            else:
+                return df[Util.AMT_STRIKE]  # 分红除息日后用实际调整后的行权价
+        elif eval_date < dates[2]:
+            if contract_month in dividend_dates[dates[2]]:
                 return round(df[Util.AMT_STRIKE] * df[Util.NBR_MULTIPLIER] / 10000, 2)  # 分红除息日前反算调整前的行权价
             else:
                 return df[Util.AMT_STRIKE]  # 分红除息日后用实际调整后的行权价

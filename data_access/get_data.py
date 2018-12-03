@@ -112,19 +112,19 @@ def get_eventsdata(start_date, end_date, flag_impact):
 
 def get_50option_mktdata(start_date, end_date):
     Index_mkt = dbt.IndexMkt
-    Option_mkt = dbt.OptionMkt
+    Option_mkt = admin.table_options_mktdata()
     options = dbt.Options
     util = c.Util
-    query_mkt = admin.session_mktdata().query(Option_mkt.dt_date, Option_mkt.id_instrument,
-                                              Option_mkt.code_instrument,
-                                              Option_mkt.amt_open,
-                                              Option_mkt.amt_close, Option_mkt.amt_settlement,
-                                              Option_mkt.amt_last_settlement,Option_mkt.amt_trading_value,
-                                              Option_mkt.amt_trading_volume, Option_mkt.amt_holding_volume,
-                                              Option_mkt.pct_implied_vol
+    query_mkt = admin.session_gc().query(Option_mkt.c.dt_date, Option_mkt.c.id_instrument,
+                                              Option_mkt.c.code_instrument,
+                                              Option_mkt.c.amt_open,
+                                              Option_mkt.c.amt_close, Option_mkt.c.amt_settlement,
+                                              Option_mkt.c.amt_last_settlement,Option_mkt.c.amt_trading_value,
+                                              Option_mkt.c.amt_trading_volume, Option_mkt.c.amt_holding_volume,
+                                              Option_mkt.c.pct_implied_vol
                                               ) \
-        .filter(Option_mkt.dt_date >= start_date).filter(Option_mkt.dt_date <= end_date) \
-        .filter(Option_mkt.datasource == 'wind').filter(Option_mkt.name_code == '50etf')
+        .filter(Option_mkt.c.dt_date >= start_date).filter(Option_mkt.c.dt_date <= end_date) \
+        .filter(Option_mkt.c.datasource == 'wind').filter(Option_mkt.c.name_code == '50etf')
     query_option = admin.session_mktdata().query(options.id_instrument, options.cd_option_type,
                                                  options.amt_strike, options.name_contract_month,
                                                  options.dt_maturity, options.nbr_multiplier) \

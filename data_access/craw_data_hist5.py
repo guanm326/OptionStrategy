@@ -19,14 +19,14 @@ w.start()
 conn = admin.conn_gc()
 conn_intraday = admin.conn_intraday()
 
-options_mktdata_daily = admin.table_options_mktdata_gc()
+options_mktdata_daily = admin.table_options_mktdata()
 option_contracts = admin.table_option_contracts()
 
 dc = DataCollection()
 today = datetime.date.today()
 # beg_date = datetime.date(2015, 1, 1)
-beg_date = datetime.date(2018, 11, 13).strftime("%Y-%m-%d")
-end_date = datetime.date.today().strftime("%Y-%m-%d")
+beg_date = datetime.date(2018, 9, 1).strftime("%Y-%m-%d")
+end_date = datetime.date(2018, 12, 3).strftime("%Y-%m-%d")
 
 date_range = w.tdays(beg_date, end_date, "").Data[0]
 date_range = sorted(date_range, reverse=True)
@@ -64,11 +64,29 @@ date_range = sorted(date_range, reverse=True)
 #     print(e)
 
 
-db_data = dc.table_options().wind_data_sr_option(beg_date, end_date)
-if len(db_data) == 0: print('no data')
-try:
-    conn.execute(options_mktdata_daily.insert(), db_data)
-    print('wind sr option -- inserted into data base succefully')
-except Exception as e:
-    print(e)
+    # db_data = dc.table_options().wind_data_sr_option(beg_date, end_date)
+    # if len(db_data) == 0: print('no data')
+    # try:
+    #     conn.execute(options_mktdata_daily.insert(), db_data)
+    #     print('wind sr option -- inserted into data base succefully')
+    # except Exception as e:
+    #     print(e)
 
+    # for dt in date_range:
+    #     dt = dt.strftime("%Y-%m-%d")
+    #     db_data = dc.table_options().wind_data_50etf_option(dt)
+    #     if len(db_data) == 0: print('no data')
+    #     try:
+    #         conn.execute(options_mktdata_daily.insert(), db_data)
+    #         print(dt,' wind 50ETF option -- inserted into data base succefully')
+    #     except Exception as e:
+    #         print(e)
+for dt in date_range:
+    dt = dt.strftime("%Y-%m-%d")
+    db_data = dc.table_options().wind_cu_option(dt)
+    if len(db_data) == 0: print('no data')
+    try:
+        conn.execute(options_mktdata_daily.insert(), db_data)
+        print('wind CU option -- inserted into data base succefully')
+    except Exception as e:
+        print(e)
