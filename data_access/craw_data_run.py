@@ -10,8 +10,8 @@ from Utilities import admin_write_util as admin
 
 w.start()
 
-date = datetime.date.today()
-# date = datetime.date(2018,11,30)
+# date = datetime.date.today()
+date = datetime.date(2018,12,3)
 
 dt_date = date.strftime("%Y-%m-%d")
 print(dt_date)
@@ -32,7 +32,8 @@ option_mktdata_intraday = admin.table_option_mktdata_intraday()
 
 dc = DataCollection()
 
-# Contract base info
+####################################### Contract base info ##################################################
+
 db_datas = dc.table_option_contracts().wind_options_50etf()
 for db_data in db_datas:
     id_instrument = db_data['id_instrument']

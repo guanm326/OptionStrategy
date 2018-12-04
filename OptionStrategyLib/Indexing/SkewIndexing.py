@@ -90,12 +90,14 @@ class SkewIndexing(BaseOptionSet):
         df['amt_delta_k'] = dk
         return df
 
+    """ K0 is the 1st strike below F0, mid_k is the nearest one """
     def forward_cboe(self, t_quotes, eval_date):
         # ATM strike k0 -- First strike below the forward index level, F
         # Forward price F -- F, by identifying the strike price at which the absolute difference
         # between the call and put prices is smallest.
         df = t_quotes.set_index(Util.AMT_APPLICABLE_STRIKE)
-        mid_k = df.sort_values(by='amt_cp_diff', ascending=True).index[0]
+        # mid_k = df.sort_values(by='amt_cp_diff', ascending=True).index[0]
+        mid_k = df['amt_cp_diff'].idxmin()
         p_call = df.loc[mid_k, 'amt_call_quote']
         p_put = df.loc[mid_k, 'amt_put_quote']
         F = df.loc[mid_k, 'amt_fv'] * (p_call - p_put) + mid_k
@@ -106,25 +108,35 @@ class SkewIndexing(BaseOptionSet):
             K0 = df.sort_values(by='amt_cp_diff', ascending=True).index[0]
         return mid_k, K0, F
 
-    """ K0 is the 1st strike below F0 """
+
     def for_calculation(self, df, eval_date):
-        mid_k, k0, F = self.forward_cboe(df, eval_date)
+        # mid_k, k0, F = self.forward_cboe(df, eval_date)
+        # df = df.set_index(Util.AMT_APPLICABLE_STRIKE)
+        idx_midk = df['amt_cp_diff'].idxmin()
+
+        mid_k = df.loc[idx_midk,Util.AMT_APPLICABLE_STRIKE]
+        p_call = df.loc[idx_midk, 'amt_call_quote']
+        p_put = df.loc[idx_midk, 'amt_put_quote']
+        F = df.loc[idx_midk, 'amt_fv'] * (p_call - p_put) + mid_k
         ttm = df.loc[0, 'amt_ttm']
         S = df.loc[0, 'amt_underlying_close']
         implied_r = math.log(F/S,math.e)/ttm
         self.implied_rf = implied_r
-        df['k0'] = k0
+        # df['k0'] = k0
         df['mid_k'] = mid_k
         df['F'] = F
         df['amt_otm_quote'] = df.apply(self.fun_otm_quote, axis=1)
+        df['nbr'] = df.index - idx_midk
+        df = df[(df['nbr'] >= -10) & (df['nbr'] <= 10)].reset_index(drop=True)
         return df
 
     def calculate_S_for_skew(self, df):
-        k0 = df.loc[0, 'k0']
+        # k0 = df.loc[0, 'k0']
+        mid_k = df.loc[0, 'mid_k']
         F = df.loc[0, 'F']
-        e1 = self.get_e1(F, k0)
-        e2 = self.get_e2(F, k0)
-        e3 = self.get_e3(F, k0)
+        e1 = self.get_e1(F, mid_k)
+        e2 = self.get_e2(F, mid_k)
+        e3 = self.get_e3(F, mid_k)
         df['for_p1'] = df.apply(self.fun_for_p1, axis=1)
         df['for_p2'] = df.apply(self.fun_for_p2, axis=1)
         df['for_p3'] = df.apply(self.fun_for_p3, axis=1)
@@ -140,11 +152,12 @@ class SkewIndexing(BaseOptionSet):
 
     def calculate_sigma_for_vix(self, df):
         df['for_sigma'] = df.apply(self.fun_for_sigma, axis=1)
-        k0 = df.loc[0, 'k0']
+        # k0 = df.loc[0, 'k0']
+        mid_k = df.loc[0, 'mid_k']
         F = df.loc[0, 'F']
         T = df.loc[0, 'amt_ttm']
         fv = df.loc[0, 'amt_fv']
-        v1 = (1.0 / T) * (F / k0 - 1) ** 2
+        v1 = (1.0 / T) * (F / mid_k - 1) ** 2
         # v1 = (F / K - 1) ** 2
         sum = df['for_sigma'].sum()
         sigma = (2.0 / T) * fv * sum - v1
@@ -172,7 +185,6 @@ class SkewIndexing(BaseOptionSet):
             mdt2 = self.get_maturities_list()[1]
         df_mdt1 = OptionUtil.get_df_by_mdt(df_daily_state, mdt1)
         df_mdt2 = OptionUtil.get_df_by_mdt(df_daily_state, mdt2)
-        # TODO: Remove A after dividend day.
         df_mdt1['flag'] = df_mdt1.apply(self.revome_A,axis=1)
         df_mdt1 = df_mdt1[df_mdt1['flag']==0].reset_index(drop=True)
         df_mdt2['flag'] = df_mdt2.apply(self.revome_A, axis=1)
@@ -207,35 +219,34 @@ class SkewIndexing(BaseOptionSet):
         print('-' * 100)
         while self.current_index < self.nbr_index:
             eval_date = self.eval_date
-            try:
-                vix, skew = self.calculate(eval_date)
-                # self.df_res.loc[eval_date, 'skew'] = skew
-                # self.df_res.loc[eval_date, 'vix'] = vix
+            # try:
+            vix, skew = self.calculate(eval_date)
+            self.df_res.loc[eval_date, 'skew'] = skew
+            self.df_res.loc[eval_date, 'vix'] = vix
                 # self.df_res.loc[eval_date, '50ETF'] = self.get_underlying_close()
-                if skew is not None and skew > 50 and skew < 200:
-                    self.df_res.loc[eval_date,'skew'] = skew
-                    self.df_res.loc[eval_date,'vix'] = vix
+                # if skew is not None and skew > 50 and skew < 200:
+                #     self.df_res.loc[eval_date,'skew'] = skew
+                #     self.df_res.loc[eval_date,'vix'] = vix
                     # self.df_res.loc[eval_date,'ir'] = self.implied_rf
                 # self.df_res.loc[eval_date,'skew'] = skew
-                print("%10s %20s %20s %20s" % (eval_date,vix, skew, self.implied_rf))
+            print("%10s %20s %20s %20s" % (eval_date,vix, skew, self.implied_rf))
 
-            except:
-                pass
+            # except:
+            #     pass
             if not self.has_next():break
             self.next()
 
 
 
-
-start_date = datetime.date.today() - datetime.timedelta(days=10)
-end_date = datetime.date.today()
-skew_indexing = SkewIndexing(start_date, end_date)
-skew_indexing.init()
-skew_indexing.run()
-res = skew_indexing.df_res.sort_index(ascending=False)
-res.to_csv('../../data/skew.csv')
-print('saved to csv')
-start_date = datetime.date(2015, 1, 11)
+# start_date = datetime.date.today() - datetime.timedelta(days=5)
+# end_date = datetime.date.today()
+# skew_indexing = SkewIndexing(start_date, end_date)
+# skew_indexing.init()
+# skew_indexing.run()
+# res = skew_indexing.df_res.sort_index(ascending=False)
+# res.to_csv('../../data/skew.csv')
+# print('saved to csv')
+start_date = datetime.date(2015, 8, 24)
 end_date = datetime.date.today()
 skew_indexing = SkewIndexing(start_date, end_date)
 skew_indexing.init()
@@ -243,7 +254,4 @@ skew_indexing.run()
 res = skew_indexing.df_res.sort_index(ascending=False)
 res.to_csv('../../data/skew_index_python.csv')
 
-# writer = pd.ExcelWriter('../data/skew_index_python.xlsx')
-# res.to_excel(writer,'Sheet1')
-# writer.save()
 

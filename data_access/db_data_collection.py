@@ -312,8 +312,11 @@ class DataCollection():
             cd_exchange = 'sse'
             flag_night = -1
 
-            df_optionchain = self.get_option_contracts(datestr)
-
+            # df_optionchain = self.get_option_contracts(datestr)
+            optionchain = w.wset("optioncontractbasicinfo","exchange=sse;windcode=510050.SH;status=trading")
+            df_optionchain = pd.DataFrame()
+            for i0, f0 in enumerate(optionchain.Fields):
+                df_optionchain[f0] = optionchain.Data[i0]
             data = w.wset("optiondailyquotationstastics",
                           "startdate=" + datestr + ";enddate=" + datestr + ";exchange=sse;windcode=510050.SH")
             df_mktdatas = pd.DataFrame()
@@ -322,12 +325,26 @@ class DataCollection():
             df_mktdatas = df_mktdatas.fillna(-999.0)
             for (i2, df_mktdata) in df_mktdatas.iterrows():
                 dt_date = datetime.datetime.strptime(datestr, "%Y-%m-%d").date()
-                windcode = df_mktdata['option_code'] + '.SH'
-                option_info = df_optionchain[df_optionchain['windcode'] == windcode]
-                id_instrument = option_info['id_instrument'].values[0]
-                amt_strike = option_info['amt_strike'].values[0]
-                cd_option_type = option_info['cd_option_type'].values[0]
-
+                windcode = df_mktdata['option_code']
+                option_info = df_optionchain[df_optionchain['wind_code'] == windcode]
+                call_or_put = option_info['call_or_put'].values[0]
+                expire_date = option_info['expire_date'].values[0]
+                amt_strike = option_info['exercise_price'].values[0]
+                sec_name = option_info['sec_name'].values[0]
+                if call_or_put == '认购':
+                    cd_option_type = 'call'
+                elif call_or_put == '认沽':
+                    cd_option_type = 'put'
+                else:
+                    cd_option_type = 'none'
+                    print('error in call_or_put')
+                dt_maturity =  pd.to_datetime(str(expire_date))
+                name_contract_month = dt_maturity.strftime("%y%m")
+                if sec_name[-1] == 'A':
+                    id_instrument = '50etf_' + name_contract_month + '_' + cd_option_type[0] + '_' + str(amt_strike)[
+                                                                                                     :6] + '_A'
+                else:
+                    id_instrument = '50etf_' + name_contract_month + '_' + cd_option_type[0] + '_' + str(amt_strike)[:6]
                 amt_last_settlement = df_mktdata['pre_settle']
                 amt_open = df_mktdata['open']
                 amt_high = df_mktdata['highest']
@@ -953,7 +970,7 @@ class DataCollection():
             windcode_underlying = '510050.SH'
 
             cd_exchange = 'sse'
-            data = w.wset("optioncontractbasicinfo", "exchange=sse;windcode=510050.SH;status=all")
+            data = w.wset("optioncontractbasicinfo", "exchange=sse;windcode=510050.SH;status=trading")
             optionData = data.Data
             optionFlds = data.Fields
             print('ErrorCode : ',data.ErrorCode)
@@ -1024,7 +1041,7 @@ class DataCollection():
             db_data = []
             name_code = 'm'
             cd_exchange = 'dce'
-            data = w.wset("optionfuturescontractbasicinfo", "exchange=DCE;productcode=M;contract=all")
+            data = w.wset("optionfuturescontractbasicinfo", "exchange=DCE;productcode=M;contract=trading")
             optionData = data.Data
             optionFlds = data.Fields
 
@@ -1085,7 +1102,7 @@ class DataCollection():
             db_data = []
             name_code = 'sr'
             cd_exchange = 'czce'
-            data = w.wset("optionfuturescontractbasicinfo", "exchange=CZCE;productcode=SR;contract=all")
+            data = w.wset("optionfuturescontractbasicinfo", "exchange=CZCE;productcode=SR;contract=trading")
             optionData = data.Data
             optionFlds = data.Fields
 
