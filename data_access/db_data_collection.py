@@ -1041,7 +1041,7 @@ class DataCollection():
             db_data = []
             name_code = 'm'
             cd_exchange = 'dce'
-            data = w.wset("optionfuturescontractbasicinfo", "exchange=DCE;productcode=M;contract=trading")
+            data = w.wset("optionfuturescontractbasicinfo", "exchange=DCE;productcode=M;status=trading")
             optionData = data.Data
             optionFlds = data.Fields
 
@@ -1102,7 +1102,7 @@ class DataCollection():
             db_data = []
             name_code = 'sr'
             cd_exchange = 'czce'
-            data = w.wset("optionfuturescontractbasicinfo", "exchange=CZCE;productcode=SR;contract=trading")
+            data = w.wset("optionfuturescontractbasicinfo", "exchange=CZCE;productcode=SR;status=trading")
             optionData = data.Data
             optionFlds = data.Fields
 

@@ -238,20 +238,20 @@ class SkewIndexing(BaseOptionSet):
 
 
 
-# start_date = datetime.date.today() - datetime.timedelta(days=5)
-# end_date = datetime.date.today()
-# skew_indexing = SkewIndexing(start_date, end_date)
-# skew_indexing.init()
-# skew_indexing.run()
-# res = skew_indexing.df_res.sort_index(ascending=False)
-# res.to_csv('../../data/skew.csv')
-# print('saved to csv')
-start_date = datetime.date(2015, 8, 24)
+start_date = datetime.date.today() - datetime.timedelta(days=10)
 end_date = datetime.date.today()
 skew_indexing = SkewIndexing(start_date, end_date)
 skew_indexing.init()
 skew_indexing.run()
 res = skew_indexing.df_res.sort_index(ascending=False)
-res.to_csv('../../data/skew_index_python.csv')
+res.to_csv('../../data/skew.csv')
+print('saved to csv')
+# start_date = datetime.date(2015, 8, 24)
+# end_date = datetime.date.today()
+# skew_indexing = SkewIndexing(start_date, end_date)
+# skew_indexing.init()
+# skew_indexing.run()
+# res = skew_indexing.df_res.sort_index(ascending=False)
+# res.to_csv('../../data/skew_index_python.csv')
 
 
