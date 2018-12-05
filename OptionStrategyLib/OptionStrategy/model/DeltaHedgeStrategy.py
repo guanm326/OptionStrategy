@@ -14,7 +14,7 @@ from back_test.model.trade import Order
 from OptionStrategyLib.VolatilityModel.historical_volatility import HistoricalVolatilityModels as histvol
 
 
-class DeltaHedgedVolStrategy(object):
+class DeltaHedgedStrategy(object):
     def __init__(self, start_date, end_date, name_code):
         self.min_holding = 20
         self.slippage = 0
@@ -220,7 +220,7 @@ class DeltaHedgedVolStrategy(object):
 dt_start = datetime.date(2018, 1, 1)
 dt_end = datetime.date(2018, 11, 30)
 name_code = 'cu'
-vol_arbitrage = DeltaHedgedVolStrategy(dt_start, dt_end, name_code)
+vol_arbitrage = DeltaHedgedStrategy(dt_start, dt_end, name_code)
 
 account = vol_arbitrage.back_test()
 

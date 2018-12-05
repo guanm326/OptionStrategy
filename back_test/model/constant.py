@@ -750,7 +750,11 @@ class PricingUtil:
 
     @staticmethod
     def get_std(dt_eval, dt_maturity, annualized_vol):
+        # try:
         stdDev = annualized_vol * math.sqrt(PricingUtil.get_ttm(dt_eval, dt_maturity))
+        # except:
+        #     print('')
+        #     pass
         return stdDev
 
     @staticmethod
