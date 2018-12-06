@@ -30,7 +30,7 @@ def close_position(dt_maturity, optionset,call,put):
 
 
 pu = PlotUtil()
-start_date = datetime.date(2015, 1, 1)
+start_date = datetime.date(2015, 4, 16)
 end_date = datetime.date(2018, 10, 8)
 dt_histvol = start_date - datetime.timedelta(days=90)
 min_holding = 20  # 20 sharpe ratio较优
@@ -44,17 +44,17 @@ cd_trade_price = c.CdTradePrice.VOLUME_WEIGHTED
 name_code = c.Util.STR_IH
 name_code_option = c.Util.STR_50ETF
 df_metrics = get_data.get_50option_mktdata(start_date, end_date)
-df_future_c1_daily = get_data.get_mktdata_future_c1_daily(dt_histvol, end_date, name_code)
-df_futures_all_daily = get_data.get_mktdata_future_daily(start_date, end_date,
-                                                         name_code)  # daily data of all future contracts
+# df_future_c1_daily = get_data.get_mktdata_future_c1_daily(dt_histvol, end_date, name_code)
+# df_futures_all_daily = get_data.get_mktdata_future_daily(start_date, end_date,
+#                                                          name_code)  # daily data of all future contracts
 
 """ Volatility Strategy: Straddle """
-d1 = df_future_c1_daily[c.Util.DT_DATE].values[0]
-d2 = df_metrics[c.Util.DT_DATE].values[0]
-d = max(d1, d2)
-df_metrics = df_metrics[df_metrics[c.Util.DT_DATE] >= d].reset_index(drop=True)
-df_c1 = df_future_c1_daily[df_future_c1_daily[c.Util.DT_DATE] >= d].reset_index(drop=True)
-df_c_all = df_futures_all_daily[df_futures_all_daily[c.Util.DT_DATE] >= d].reset_index(drop=True)
+# d1 = df_future_c1_daily[c.Util.DT_DATE].values[0]
+# d2 = df_metrics[c.Util.DT_DATE].values[0]
+# d = max(d1, d2)
+# df_metrics = df_metrics[df_metrics[c.Util.DT_DATE] >= d].reset_index(drop=True)
+# df_c1 = df_future_c1_daily[df_future_c1_daily[c.Util.DT_DATE] >= d].reset_index(drop=True)
+# df_c_all = df_futures_all_daily[df_futures_all_daily[c.Util.DT_DATE] >= d].reset_index(drop=True)
 
 df_holding_period = pd.DataFrame()
 
@@ -77,13 +77,14 @@ maturity1 = optionset.select_maturity_date(nbr_maturity=0, min_holding=min_holdi
 while optionset.eval_date <= end_date:
     # print(optionset.eval_date)
     if account.cash <= 0: break
-    if maturity1 > end_date:  # Final close out all.
+    if optionset.eval_date >= end_date:  # Final close out all.
         close_out_orders = account.creat_close_out_order()
         for order in close_out_orders:
             execution_record = account.dict_holding[order.id_instrument].execute_order(order, slippage=0,
                                                                                        execute_type=c.ExecuteType.EXECUTE_ALL_UNITS)
             account.add_record(execution_record, account.dict_holding[order.id_instrument])
         account.daily_accounting(optionset.eval_date)
+        print(optionset.eval_date, account.account.loc[optionset.eval_date, c.Util.PORTFOLIO_NPV])
         break
 
     # 平仓
@@ -106,6 +107,8 @@ while optionset.eval_date <= end_date:
         atm_call = optionset.select_higher_volume(list_atm_call)
         atm_put = optionset.select_higher_volume(list_atm_put)
         if atm_call is None or atm_put is None:
+            account.daily_accounting(optionset.eval_date)
+            # print(optionset.eval_date, account.account.loc[optionset.eval_date, c.Util.PORTFOLIO_NPV])
             if not optionset.has_next(): break
             optionset.next()
             continue
@@ -122,11 +125,14 @@ while optionset.eval_date <= end_date:
         empty_position = False
 
     account.daily_accounting(optionset.eval_date)
+    # print(optionset.eval_date, account.account.loc[optionset.eval_date, c.Util.PORTFOLIO_NPV])
+
     total_liquid_asset = account.cash + account.get_portfolio_margin_capital()
     if not optionset.has_next(): break
     optionset.next()
 
 account.account.to_csv('../../accounts_data/short_strangle_account_' + str(moneyness_rank) + '-no_hedge.csv')
+account.trade_records.to_csv('../../accounts_data/short_strangle_records_' + str(moneyness_rank) + '-no_hedge.csv')
 res = account.analysis()
 res['期权平均持仓天数'] = len(account.account) / option_trade_times
 print(res)

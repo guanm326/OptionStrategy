@@ -53,10 +53,10 @@ def session_metrics():
     Session = sessionmaker(bind=engine_metrics)
     return Session()
 
-def table_options_mktdata():
-    return Table('options_mktdata', metadata, autoload=True)
+# def table_options_mktdata():
+#     return Table('options_mktdata', metadata, autoload=True)
 
-def table_options_mktdata_gc():
+def table_options_mktdata():
     return Table('option_mktdata', metadata_gc, autoload=True)
 
 def table_futures_mktdata():

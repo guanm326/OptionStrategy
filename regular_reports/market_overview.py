@@ -2,7 +2,7 @@ from data_access import get_data
 import datetime
 import pandas as pd
 import back_test.model.constant as c
-start_date = datetime.date(2017,1,1)
+start_date = datetime.date(2018,9,1)
 end_date = datetime.date.today()
 # name_code = 'sr'
 # df_future = pd.read_excel('../data/SR_future.xlsx')
@@ -24,8 +24,14 @@ end_date = datetime.date.today()
 # df.to_csv('../data/market_overview'+str(name_code)+'.csv')
 
 name_code = 'cu'
-df =get_data.commodity_option_market_overview(start_date,end_date,name_code)
+df =get_data.commodity_option_market_overview_by_month(start_date,end_date,name_code)
 df['pct_trading'] = df['option_trading_volume']/df['future_trading_volume']
 df['pct_holding'] = df['option_holding_volume']/df['future_holding_volume']
+df_a =get_data.commodity_option_market_overview(start_date,end_date,name_code)
+df_a['pct_trading'] = df_a['option_trading_volume']/df_a['future_trading_volume']
+df_a['pct_holding'] = df_a['option_holding_volume']/df_a['future_holding_volume']
+
+df = df.append(df_a)
 print(df)
+
 df.to_csv('../data/market_overview_'+str(name_code)+'.csv')

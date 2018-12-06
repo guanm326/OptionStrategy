@@ -7,45 +7,91 @@ from Utilities import admin_util as admin
 from data_access.db_tables import DataBaseTables as dbt
 import back_test.model.constant as c
 
-def commodity_option_market_overview(start_date,end_date,name_code):
+def commodity_option_market_overview_by_month(start_date,end_date,name_code):
     optionMkt = admin.table_options_mktdata()
     futureMkt = admin.table_futures_mktdata()
-    query = admin.session_mktdata().query(optionMkt.c.dt_date,optionMkt.c.name_code,
+    query = admin.session_mktdata().query(optionMkt.c.dt_date,optionMkt.c.id_underlying,
                                               func.sum(optionMkt.c.amt_trading_volume).label('option_trading_volume'),
                                             func.sum(optionMkt.c.amt_trading_value).label('option_trading_value')
                                               ) \
         .filter(optionMkt.c.dt_date >= start_date) \
         .filter(optionMkt.c.dt_date <= end_date) \
         .filter(optionMkt.c.name_code == name_code) \
-        .group_by(optionMkt.c.dt_date, optionMkt.c.name_code)
+        .group_by(optionMkt.c.dt_date, optionMkt.c.id_underlying)
     df_option_trading = pd.read_sql(query.statement, query.session.bind)
-    query_future = admin.session_mktdata().query(futureMkt.c.dt_date,futureMkt.c.name_code,
+    query_future = admin.session_mktdata().query(futureMkt.c.dt_date,futureMkt.c.id_instrument,
                                               func.sum(futureMkt.c.amt_trading_volume).label('future_trading_volume')
                                               ) \
         .filter(futureMkt.c.dt_date >= start_date) \
         .filter(futureMkt.c.dt_date <= end_date) \
         .filter(futureMkt.c.name_code == name_code) \
-        .group_by(futureMkt.c.dt_date, futureMkt.c.name_code)
+        .group_by(futureMkt.c.dt_date, futureMkt.c.id_instrument)
     df_future_trading = pd.read_sql(query_future.statement, query_future.session.bind)
-    query_option_holding = admin.session_mktdata().query(optionMkt.c.dt_date, optionMkt.c.name_code,
+    query_option_holding = admin.session_mktdata().query(optionMkt.c.dt_date, optionMkt.c.id_underlying,
                                                          func.sum(optionMkt.c.amt_holding_volume).label('option_holding_volume')) \
         .filter(optionMkt.c.dt_date >= start_date) \
         .filter(optionMkt.c.dt_date <= end_date) \
         .filter(optionMkt.c.name_code == name_code) \
         .filter(or_(optionMkt.c.flag_night == 0,optionMkt.c.flag_night==-1)) \
-        .group_by(optionMkt.c.dt_date, optionMkt.c.name_code)#每日日盘收盘持仓数据
+        .group_by(optionMkt.c.dt_date, optionMkt.c.id_underlying) #每日日盘收盘持仓数据
     df_option_holding = pd.read_sql(query_option_holding.statement, query_option_holding.session.bind)
-    query_future_holding = admin.session_mktdata().query(futureMkt.c.dt_date,futureMkt.c.name_code,
+    query_future_holding = admin.session_mktdata().query(futureMkt.c.dt_date,futureMkt.c.id_instrument,
                                                          func.sum(futureMkt.c.amt_holding_volume).label('future_holding_volume')) \
         .filter(futureMkt.c.dt_date >= start_date) \
         .filter(futureMkt.c.dt_date <= end_date) \
         .filter(futureMkt.c.name_code == name_code) \
         .filter(or_(futureMkt.c.flag_night == 0,futureMkt.c.flag_night==-1)) \
-        .group_by(futureMkt.c.dt_date, futureMkt.c.name_code) #每日日盘收盘持仓数据
+        .group_by(futureMkt.c.dt_date, futureMkt.c.id_instrument) #每日日盘收盘持仓数据
     df_future_holding = pd.read_sql(query_future_holding.statement, query_future_holding.session.bind)
-    df = pd.merge(df_option_trading,df_future_trading[[c.Util.DT_DATE,'future_trading_volume']],on=c.Util.DT_DATE)
-    df = pd.merge(df,df_option_holding,on=c.Util.DT_DATE)
-    df = pd.merge(df,df_future_holding,on=c.Util.DT_DATE)
+    # new_df = pd.merge(A_df, B_df, how='left', left_on=['A_c1', 'c2'], right_on=['B_c1', 'c2'])
+    df_future = pd.merge(df_future_holding,df_future_trading,on=[c.Util.DT_DATE,c.Util.ID_INSTRUMENT])
+    df_option = pd.merge(df_option_holding,df_option_trading,on=[c.Util.DT_DATE,c.Util.ID_UNDERLYING])
+    df = pd.merge(df_option,df_future,left_on=[c.Util.DT_DATE,c.Util.ID_UNDERLYING],right_on=[c.Util.DT_DATE,c.Util.ID_INSTRUMENT])
+    # df = df.groupby([c.Util.DT_DATE,c.Util.ID_UNDERLYING,c.Util.ID_INSTRUMENT])['col3'].sum()
+    return df
+
+def commodity_option_market_overview(start_date,end_date,name_code):
+    optionMkt = admin.table_options_mktdata()
+    futureMkt = admin.table_futures_mktdata()
+    query = admin.session_mktdata().query(optionMkt.c.dt_date,
+                                              func.sum(optionMkt.c.amt_trading_volume).label('option_trading_volume'),
+                                            func.sum(optionMkt.c.amt_trading_value).label('option_trading_value')
+                                              ) \
+        .filter(optionMkt.c.dt_date >= start_date) \
+        .filter(optionMkt.c.dt_date <= end_date) \
+        .filter(optionMkt.c.name_code == name_code) \
+        .group_by(optionMkt.c.dt_date)
+    df_option_trading = pd.read_sql(query.statement, query.session.bind)
+    query_future = admin.session_mktdata().query(futureMkt.c.dt_date,
+                                              func.sum(futureMkt.c.amt_trading_volume).label('future_trading_volume')
+                                              ) \
+        .filter(futureMkt.c.dt_date >= start_date) \
+        .filter(futureMkt.c.dt_date <= end_date) \
+        .filter(futureMkt.c.name_code == name_code) \
+        .group_by(futureMkt.c.dt_date)
+    df_future_trading = pd.read_sql(query_future.statement, query_future.session.bind)
+    query_option_holding = admin.session_mktdata().query(optionMkt.c.dt_date,
+                                                         func.sum(optionMkt.c.amt_holding_volume).label('option_holding_volume')) \
+        .filter(optionMkt.c.dt_date >= start_date) \
+        .filter(optionMkt.c.dt_date <= end_date) \
+        .filter(optionMkt.c.name_code == name_code) \
+        .filter(or_(optionMkt.c.flag_night == 0,optionMkt.c.flag_night==-1)) \
+        .group_by(optionMkt.c.dt_date) #每日日盘收盘持仓数据
+    df_option_holding = pd.read_sql(query_option_holding.statement, query_option_holding.session.bind)
+    query_future_holding = admin.session_mktdata().query(futureMkt.c.dt_date,
+                                                         func.sum(futureMkt.c.amt_holding_volume).label('future_holding_volume')) \
+        .filter(futureMkt.c.dt_date >= start_date) \
+        .filter(futureMkt.c.dt_date <= end_date) \
+        .filter(futureMkt.c.name_code == name_code) \
+        .filter(or_(futureMkt.c.flag_night == 0,futureMkt.c.flag_night==-1)) \
+        .group_by(futureMkt.c.dt_date) #每日日盘收盘持仓数据
+    df_future_holding = pd.read_sql(query_future_holding.statement, query_future_holding.session.bind)
+    # df = pd.merge(df_option_trading,df_future_trading[[c.Util.DT_DATE,'future_trading_volume']],on=c.Util.DT_DATE)
+    # df = pd.merge(df,df_option_holding,on=c.Util.DT_DATE)
+    # df = pd.merge(df,df_future_holding,on=c.Util.DT_DATE)
+    df_future = pd.merge(df_future_holding, df_future_trading, on=[c.Util.DT_DATE])
+    df_option = pd.merge(df_option_holding, df_option_trading, on=[c.Util.DT_DATE])
+    df = pd.merge(df_option, df_future, on=[c.Util.DT_DATE])
     return df
 
 def get_eventsdata(start_date, end_date, flag_impact):
@@ -66,19 +112,19 @@ def get_eventsdata(start_date, end_date, flag_impact):
 
 def get_50option_mktdata(start_date, end_date):
     Index_mkt = dbt.IndexMkt
-    Option_mkt = dbt.OptionMkt
+    Option_mkt = admin.table_options_mktdata()
     options = dbt.Options
     util = c.Util
-    query_mkt = admin.session_mktdata().query(Option_mkt.dt_date, Option_mkt.id_instrument,
-                                              Option_mkt.code_instrument,
-                                              Option_mkt.amt_open,
-                                              Option_mkt.amt_close, Option_mkt.amt_settlement,
-                                              Option_mkt.amt_last_settlement,Option_mkt.amt_trading_value,
-                                              Option_mkt.amt_trading_volume, Option_mkt.amt_holding_volume,
-                                              Option_mkt.pct_implied_vol
+    query_mkt = admin.session_gc().query(Option_mkt.c.dt_date, Option_mkt.c.id_instrument,
+                                              Option_mkt.c.code_instrument,
+                                              Option_mkt.c.amt_open,
+                                              Option_mkt.c.amt_close, Option_mkt.c.amt_settlement,
+                                              Option_mkt.c.amt_last_settlement,Option_mkt.c.amt_trading_value,
+                                              Option_mkt.c.amt_trading_volume, Option_mkt.c.amt_holding_volume,
+                                              Option_mkt.c.pct_implied_vol
                                               ) \
-        .filter(Option_mkt.dt_date >= start_date).filter(Option_mkt.dt_date <= end_date) \
-        .filter(Option_mkt.datasource == 'wind').filter(Option_mkt.name_code == '50etf')
+        .filter(Option_mkt.c.dt_date >= start_date).filter(Option_mkt.c.dt_date <= end_date) \
+        .filter(Option_mkt.c.datasource == 'wind').filter(Option_mkt.c.name_code == '50etf')
     query_option = admin.session_mktdata().query(options.id_instrument, options.cd_option_type,
                                                  options.amt_strike, options.name_contract_month,
                                                  options.dt_maturity, options.nbr_multiplier) \
@@ -191,18 +237,18 @@ def get_50option_minute_with_underlying(start_date, end_date):
 
 def get_comoption_mktdata(start_date, end_date, name_code):
     Future_mkt = dbt.FutureMkt
-    Option_mkt = dbt.OptionMkt
+    Option_mkt = admin.table_options_mktdata()
     options = dbt.Options
-    query_mkt = admin.session_mktdata(). \
-        query(Option_mkt.dt_date, Option_mkt.id_instrument, Option_mkt.id_underlying,
-              Option_mkt.code_instrument, Option_mkt.amt_close, Option_mkt.amt_open,
-              Option_mkt.amt_settlement,
-              Option_mkt.amt_last_settlement, Option_mkt.amt_trading_volume,Option_mkt.amt_trading_value,
-              Option_mkt.pct_implied_vol, Option_mkt.amt_holding_volume,
-              Option_mkt.amt_trading_volume
+    query_mkt = admin.session_gc(). \
+        query(Option_mkt.c.dt_date, Option_mkt.c.id_instrument, Option_mkt.c.id_underlying,
+              Option_mkt.c.code_instrument, Option_mkt.c.amt_close, Option_mkt.c.amt_open,
+              Option_mkt.c.amt_settlement,
+              Option_mkt.c.amt_last_settlement, Option_mkt.c.amt_trading_volume,Option_mkt.c.amt_trading_value,
+              Option_mkt.c.pct_implied_vol, Option_mkt.c.amt_holding_volume,
+              Option_mkt.c.amt_trading_volume
               ) \
-        .filter(Option_mkt.dt_date >= start_date).filter(Option_mkt.dt_date <= end_date) \
-        .filter(Option_mkt.name_code == name_code).filter(Option_mkt.flag_night != 1)
+        .filter(Option_mkt.c.dt_date >= start_date).filter(Option_mkt.c.dt_date <= end_date) \
+        .filter(Option_mkt.c.name_code == name_code).filter(Option_mkt.c.flag_night != 1)
 
     query_option = admin.session_mktdata(). \
         query(options.id_instrument, options.cd_option_type, options.amt_strike, options.name_contract_month,

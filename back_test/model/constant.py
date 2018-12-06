@@ -103,6 +103,32 @@ class OptionCU:
     def fun_applicable_strike(df: pd.Series) -> float:
         return df[Util.AMT_STRIKE]
 
+    @staticmethod
+    def get_strike_by_monenyes_rank_nearest_strike(spot: float, moneyness_rank: int, strikes: List[float],
+                                                   option_type: OptionType) -> float:
+        d = OptionCU.get_strike_monenyes_rank_dict_nearest_strike(spot, strikes, option_type)
+        return d.get(moneyness_rank, None)
+
+    @staticmethod
+    def get_strike_monenyes_rank_dict_nearest_strike(spot: float, strikes: List[float],
+                                                     option_type: OptionType) -> dict:
+        d = {}
+        min_strike = strikes[0]
+        max_strike = strikes[0]
+        for strike in strikes:
+            if strike < min_strike:
+                min_strike = strike
+            if strike > max_strike:
+                max_strike = strike
+        if spot < min_strike:
+            spot = min_strike
+        elif spot > max_strike:
+            spot = max_strike
+        for strike in strikes:
+            rank = int(option_type.value * round((spot - strike) / 1000))
+            d.update({rank: strike})
+        return d
+
 
 class OptionM:
     MONEYNESS_POINT_LOW = 2000
@@ -247,29 +273,7 @@ class OptionM:
             d.update({rank: strike})
         return d
 
-    @staticmethod
-    def generate_commodity_option_maturities():
-        maturity_date = 0
-        dict_option_maturity = {}
-        id_list = ['m_1707', 'm_1708', 'm_1709', 'm_1711', 'm_1712']
-        calendar = ql.China()
-        for contractId in id_list:
-            year = '201' + contractId[3]
-            month = contractId[-2:]
-            date = ql.Date(1, int(month), int(year))
-            maturity_date = calendar.advance(calendar.advance(date, ql.Period(-1, ql.Months)), ql.Period(4, ql.Days))
-            dt_maturity = QuantlibUtil.to_dt_date(maturity_date)
-            dict_option_maturity.update({contractId: dt_maturity})
-        id_list_sr = ['sr_1707', 'sr_1709', 'sr_1711', 'sr_1801']
-        for contractId in id_list_sr:
-            year = '201' + contractId[4]
-            month = contractId[-2:]
-            date = ql.Date(1, int(month), int(year))
-            maturity_date = calendar.advance(calendar.advance(date, ql.Period(-1, ql.Months)), ql.Period(-5, ql.Days))
-            dt_maturity = QuantlibUtil.to_dt_date(maturity_date)
-            dict_option_maturity.update({contractId: dt_maturity})
-        print(dict_option_maturity)
-        return maturity_date
+
 
 
 class OptionSR:
@@ -397,7 +401,8 @@ class Option50ETF:
         ],
         datetime.date(2017, 11, 28): [
             '1712', '1801', '1803', '1806'
-        ]
+        ],
+        datetime.date(2018,12,3):['1812','1901','1903','1906']
 
     }
 
@@ -415,6 +420,11 @@ class Option50ETF:
             return round(df[Util.AMT_STRIKE] * df[Util.NBR_MULTIPLIER] / 10000, 2)  # 分红除息日前反算调整前的行权价
         elif eval_date < dates[1]:
             if contract_month in dividend_dates[dates[1]]:
+                return round(df[Util.AMT_STRIKE] * df[Util.NBR_MULTIPLIER] / 10000, 2)  # 分红除息日前反算调整前的行权价
+            else:
+                return df[Util.AMT_STRIKE]  # 分红除息日后用实际调整后的行权价
+        elif eval_date < dates[2]:
+            if contract_month in dividend_dates[dates[2]]:
                 return round(df[Util.AMT_STRIKE] * df[Util.NBR_MULTIPLIER] / 10000, 2)  # 分红除息日前反算调整前的行权价
             else:
                 return df[Util.AMT_STRIKE]  # 分红除息日后用实际调整后的行权价
@@ -554,6 +564,8 @@ class OptionFilter:
                        'cu_1907': datetime.date(2019, 6, 24),
                        'cu_1908': datetime.date(2019, 7, 25),
                        'cu_1909': datetime.date(2019, 8, 26),
+                       'cu_1910': datetime.date(2019, 9, 24),
+                       'cu_1911': datetime.date(2019, 10, 25)
                        }
 
     @staticmethod
@@ -595,6 +607,29 @@ class OptionFilter:
         else:
             return df[Util.DT_MATURITY]
 
+    @staticmethod
+    def generate_commodity_option_maturities():
+        maturity_date = 0
+        dict_option_maturity = {}
+        id_list = ['m_1707', 'm_1708', 'm_1709', 'm_1711', 'm_1712']
+        calendar = ql.China()
+        for contractId in id_list:
+            year = '201' + contractId[3]
+            month = contractId[-2:]
+            date = ql.Date(1, int(month), int(year))
+            maturity_date = calendar.advance(calendar.advance(date, ql.Period(-1, ql.Months)), ql.Period(4, ql.Days))
+            dt_maturity = QuantlibUtil.to_dt_date(maturity_date)
+            dict_option_maturity.update({contractId: dt_maturity})
+        id_list_sr = ['sr_1707', 'sr_1709', 'sr_1711', 'sr_1801']
+        for contractId in id_list_sr:
+            year = '201' + contractId[4]
+            month = contractId[-2:]
+            date = ql.Date(1, int(month), int(year))
+            maturity_date = calendar.advance(calendar.advance(date, ql.Period(-1, ql.Months)), ql.Period(-5, ql.Days))
+            dt_maturity = QuantlibUtil.to_dt_date(maturity_date)
+            dict_option_maturity.update({contractId: dt_maturity})
+        print(dict_option_maturity)
+        return maturity_date
 
 class FutureUtil:
     @staticmethod
@@ -715,7 +750,11 @@ class PricingUtil:
 
     @staticmethod
     def get_std(dt_eval, dt_maturity, annualized_vol):
+        # try:
         stdDev = annualized_vol * math.sqrt(PricingUtil.get_ttm(dt_eval, dt_maturity))
+        # except:
+        #     print('')
+        #     pass
         return stdDev
 
     @staticmethod
@@ -899,6 +938,7 @@ class Util:
     DRAWDOWN = 'drawdown'
     DAILY_EXCECUTED_AMOUNT = 'daily_executed_amount'  # abs value
     BILLION = 1000000000.0
+    MILLION = 1000000.0
     TRADE_BOOK_COLUMN_LIST = [DT_DATE, TRADE_LONG_SHORT, TRADE_UNIT,
                               LAST_PRICE, TRADE_MARGIN_CAPITAL,
                               TRADE_BOOK_VALUE, AVERAGE_POSITION_COST,
@@ -915,6 +955,7 @@ class Util:
     DICT_FUTURE_MARGIN_RATE = {  # 合约价值的百分比
         'm': 0.05,
         'sr': 0.05,
+        'cu': 0.05,
         'if': 0.15,
         'ih': 0.15,
         'ic': 0.15,
@@ -923,6 +964,7 @@ class Util:
     DICT_TRANSACTION_FEE = {  # 元/手
         'm': 3.0,
         'sr': 3.0,
+        'cu': 3.0,
         'if': None,
         'ih': None,
         'ic': None,
@@ -938,16 +980,16 @@ class Util:
         "50etf": 5.0,
         "m": 5.0,
         "sr": 5.0,
-        "cu": 5.0,
+        "cu": 5.0
     }
     DICT_TRANSACTION_FEE_RATE = {  # 百分比
         'm': None,
         'sr': None,
+        'cu': None,
         'if': 6.9 / 10000.0,
         'ih': 6.9 / 10000.0,
         'ic': 6.9 / 10000.0,
         "index": None
-
     }
     DICT_CONTRACT_MULTIPLIER = {  # 合约乘数
         'm': 10,
@@ -956,7 +998,6 @@ class Util:
         'if': 300,
         'ih': 300,
         'ic': 200,
-        'cu': 5,
         'index': 1
     }
     DICT_OPTION_CONTRACT_MULTIPLIER = {  # 合约乘数
@@ -1087,6 +1128,11 @@ class QuantlibUtil:
         dividend_ts = ql.YieldTermStructureHandle(ql.FlatForward(evalDate, 0.0, daycounter))
         return dividend_ts
 
+    @staticmethod
+    def get_business_between(dt_start,dt_end):
+        calendar = ql.China()
+        t = calendar.businessDaysBetween(QuantlibUtil.to_ql_date(dt_start),QuantlibUtil.to_ql_date(dt_end))
+        return t
 
 class Statistics:
     @staticmethod

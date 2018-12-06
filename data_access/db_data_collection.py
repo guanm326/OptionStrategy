@@ -236,7 +236,9 @@ class DataCollection():
             return db_data
 
         def wind_cu_option(self,datestr):
-            data=w.wss("CU1901C46000.SHF,CU1901C47000.SHF,CU1901C48000.SHF,CU1901C49000.SHF,CU1901C50000.SHF,CU1901C51000.SHF,CU1901C52000.SHF,CU1901P46000.SHF,CU1901P47000.SHF,CU1901P48000.SHF,CU1901P49000.SHF,CU1901P50000.SHF,CU1901P51000.SHF,CU1901P52000.SHF,CU1902C46000.SHF,CU1902C47000.SHF,CU1902C48000.SHF,CU1902C49000.SHF,CU1902C50000.SHF,CU1902C51000.SHF,CU1902C52000.SHF,CU1902P46000.SHF,CU1902P47000.SHF,CU1902P48000.SHF,CU1902P49000.SHF,CU1902P50000.SHF,CU1902P51000.SHF,CU1902P52000.SHF,CU1903C46000.SHF,CU1903C47000.SHF,CU1903C48000.SHF,CU1903C49000.SHF,CU1903C50000.SHF,CU1903C51000.SHF,CU1903C52000.SHF,CU1903P46000.SHF,CU1903P47000.SHF,CU1903P48000.SHF,CU1903P49000.SHF,CU1903P50000.SHF,CU1903P51000.SHF,CU1903P52000.SHF,CU1904C46000.SHF,CU1904C47000.SHF,CU1904C48000.SHF,CU1904C49000.SHF,CU1904C50000.SHF,CU1904C51000.SHF,CU1904C52000.SHF,CU1904P46000.SHF,CU1904P47000.SHF,CU1904P48000.SHF,CU1904P49000.SHF,CU1904P50000.SHF,CU1904P51000.SHF,CU1904P52000.SHF,CU1905C46000.SHF,CU1905C47000.SHF,CU1905C48000.SHF,CU1905C49000.SHF,CU1905C50000.SHF,CU1905C51000.SHF,CU1905C52000.SHF,CU1905P46000.SHF,CU1905P47000.SHF,CU1905P48000.SHF,CU1905P49000.SHF,CU1905P50000.SHF,CU1905P51000.SHF,CU1905P52000.SHF,CU1906C46000.SHF,CU1906C47000.SHF,CU1906C48000.SHF,CU1906C49000.SHF,CU1906C50000.SHF,CU1906C51000.SHF,CU1906C52000.SHF,CU1906P46000.SHF,CU1906P47000.SHF,CU1906P48000.SHF,CU1906P49000.SHF,CU1906P50000.SHF,CU1906P51000.SHF,CU1906P52000.SHF,CU1907C46000.SHF,CU1907C47000.SHF,CU1907C48000.SHF,CU1907C49000.SHF,CU1907C50000.SHF,CU1907C51000.SHF,CU1907C52000.SHF,CU1907P46000.SHF,CU1907P47000.SHF,CU1907P48000.SHF,CU1907P49000.SHF,CU1907P50000.SHF,CU1907P51000.SHF,CU1907P52000.SHF,CU1908C46000.SHF,CU1908C47000.SHF,CU1908C48000.SHF,CU1908C49000.SHF,CU1908C50000.SHF,CU1908C51000.SHF,CU1908C52000.SHF,CU1908P46000.SHF,CU1908P47000.SHF,CU1908P48000.SHF,CU1908P49000.SHF,CU1908P50000.SHF,CU1908P51000.SHF,CU1908P52000.SHF,CU1909C47000.SHF,CU1909C48000.SHF,CU1909C49000.SHF,CU1909C50000.SHF,CU1909C51000.SHF,CU1909C52000.SHF,CU1909P47000.SHF,CU1909P48000.SHF,CU1909P49000.SHF,CU1909P50000.SHF,CU1909P51000.SHF,CU1909P52000.SHF", "pre_close,open,high,low,close,volume,amt,oi,oi_chg,pre_settle,settle","tradeDate="+datestr+";priceAdj=U;cycle=D")
+            data=w.wss(
+                "CU1901C46000.SHF,CU1901C47000.SHF,CU1901C48000.SHF,CU1901C49000.SHF,CU1901C50000.SHF,CU1901C51000.SHF,CU1901C52000.SHF,CU1901C53000.SHF,CU1901C54000.SHF,CU1901P46000.SHF,CU1901P47000.SHF,CU1901P48000.SHF,CU1901P49000.SHF,CU1901P50000.SHF,CU1901P51000.SHF,CU1901P52000.SHF,CU1901P53000.SHF,CU1901P54000.SHF,CU1902C46000.SHF,CU1902C47000.SHF,CU1902C48000.SHF,CU1902C49000.SHF,CU1902C50000.SHF,CU1902C51000.SHF,CU1902C52000.SHF,CU1902C53000.SHF,CU1902C54000.SHF,CU1902P46000.SHF,CU1902P47000.SHF,CU1902P48000.SHF,CU1902P49000.SHF,CU1902P50000.SHF,CU1902P51000.SHF,CU1902P52000.SHF,CU1902P53000.SHF,CU1902P54000.SHF,CU1903C46000.SHF,CU1903C47000.SHF,CU1903C48000.SHF,CU1903C49000.SHF,CU1903C50000.SHF,CU1903C51000.SHF,CU1903C52000.SHF,CU1903C53000.SHF,CU1903C54000.SHF,CU1903P46000.SHF,CU1903P47000.SHF,CU1903P48000.SHF,CU1903P49000.SHF,CU1903P50000.SHF,CU1903P51000.SHF,CU1903P52000.SHF,CU1903P53000.SHF,CU1903P54000.SHF,CU1904C46000.SHF,CU1904C47000.SHF,CU1904C48000.SHF,CU1904C49000.SHF,CU1904C50000.SHF,CU1904C51000.SHF,CU1904C52000.SHF,CU1904C53000.SHF,CU1904C54000.SHF,CU1904P46000.SHF,CU1904P47000.SHF,CU1904P48000.SHF,CU1904P49000.SHF,CU1904P50000.SHF,CU1904P51000.SHF,CU1904P52000.SHF,CU1904P53000.SHF,CU1904P54000.SHF,CU1905C46000.SHF,CU1905C47000.SHF,CU1905C48000.SHF,CU1905C49000.SHF,CU1905C50000.SHF,CU1905C51000.SHF,CU1905C52000.SHF,CU1905C53000.SHF,CU1905C54000.SHF,CU1905P46000.SHF,CU1905P47000.SHF,CU1905P48000.SHF,CU1905P49000.SHF,CU1905P50000.SHF,CU1905P51000.SHF,CU1905P52000.SHF,CU1905P53000.SHF,CU1905P54000.SHF,CU1906C46000.SHF,CU1906C47000.SHF,CU1906C48000.SHF,CU1906C49000.SHF,CU1906C50000.SHF,CU1906C51000.SHF,CU1906C52000.SHF,CU1906C53000.SHF,CU1906C54000.SHF,CU1906P46000.SHF,CU1906P47000.SHF,CU1906P48000.SHF,CU1906P49000.SHF,CU1906P50000.SHF,CU1906P51000.SHF,CU1906P52000.SHF,CU1906P53000.SHF,CU1906P54000.SHF,CU1907C46000.SHF,CU1907C47000.SHF,CU1907C48000.SHF,CU1907C49000.SHF,CU1907C50000.SHF,CU1907C51000.SHF,CU1907C52000.SHF,CU1907C53000.SHF,CU1907C54000.SHF,CU1907P46000.SHF,CU1907P47000.SHF,CU1907P48000.SHF,CU1907P49000.SHF,CU1907P50000.SHF,CU1907P51000.SHF,CU1907P52000.SHF,CU1907P53000.SHF,CU1907P54000.SHF,CU1908C46000.SHF,CU1908C47000.SHF,CU1908C48000.SHF,CU1908C49000.SHF,CU1908C50000.SHF,CU1908C51000.SHF,CU1908C52000.SHF,CU1908C53000.SHF,CU1908C54000.SHF,CU1908P46000.SHF,CU1908P47000.SHF,CU1908P48000.SHF,CU1908P49000.SHF,CU1908P50000.SHF,CU1908P51000.SHF,CU1908P52000.SHF,CU1908P53000.SHF,CU1908P54000.SHF,CU1909C46000.SHF,CU1909C47000.SHF,CU1909C48000.SHF,CU1909C49000.SHF,CU1909C50000.SHF,CU1909C51000.SHF,CU1909C52000.SHF,CU1909C53000.SHF,CU1909C54000.SHF,CU1909P46000.SHF,CU1909P47000.SHF,CU1909P48000.SHF,CU1909P49000.SHF,CU1909P50000.SHF,CU1909P51000.SHF,CU1909P52000.SHF,CU1909P53000.SHF,CU1909P54000.SHF,CU1910C45000.SHF,CU1910C46000.SHF,CU1910C47000.SHF,CU1910C48000.SHF,CU1910C49000.SHF,CU1910C50000.SHF,CU1910C51000.SHF,CU1910C52000.SHF,CU1910C53000.SHF,CU1910C54000.SHF,CU1910C55000.SHF,CU1910C56000.SHF,CU1910P45000.SHF,CU1910P46000.SHF,CU1910P47000.SHF,CU1910P48000.SHF,CU1910P49000.SHF,CU1910P50000.SHF,CU1910P51000.SHF,CU1910P52000.SHF,CU1910P53000.SHF,CU1910P54000.SHF,CU1910P55000.SHF,CU1910P56000.SHF,CU1911C44000.SHF,CU1911C45000.SHF,CU1911C46000.SHF,CU1911C47000.SHF,CU1911C48000.SHF,CU1911C49000.SHF,CU1911C50000.SHF,CU1911C51000.SHF,CU1911C52000.SHF,CU1911C53000.SHF,CU1911C54000.SHF,CU1911C55000.SHF,CU1911P44000.SHF,CU1911P45000.SHF,CU1911P46000.SHF,CU1911P47000.SHF,CU1911P48000.SHF,CU1911P49000.SHF,CU1911P50000.SHF,CU1911P51000.SHF,CU1911P52000.SHF,CU1911P53000.SHF,CU1911P54000.SHF,CU1911P55000.SHF"
+                ,"pre_close,open,high,low,close,volume,amt,oi,oi_chg,pre_settle,settle","tradeDate="+datestr+";priceAdj=U;cycle=D")
             # w.wset("optionchain", "date=2018-09-21;us_code=CU.SHF;option_var=全部;call_put=全部")
             df = pd.DataFrame(data=np.transpose(data.Data), columns=data.Fields)
             df['id'] = data.Codes
@@ -270,12 +272,11 @@ class DataCollection():
                 if pd.isnull(amt_open): amt_open = -999.0
                 if pd.isnull(amt_high): amt_high = -999.0
                 if pd.isnull(amt_low): amt_low = -999.0
-                if pd.isnull(amt_close): amt_close = -999.0
-                if pd.isnull(amt_settlement): amt_settlement = -999.0
+                if pd.isnull(amt_close): continue
+                if pd.isnull(amt_settlement): continue
                 if pd.isnull(amt_last_settlement): amt_last_settlement = -999.0
-                if pd.isnull(amt_trading_volume): amt_trading_volume = -999.0
-                if pd.isnull(amt_trading_volume): amt_trading_volume = -999.0
-                if pd.isnull(amt_trading_value): amt_trading_value = -999.0
+                if pd.isnull(amt_trading_volume): continue
+                if pd.isnull(amt_trading_value): continue
                 if pd.isnull(amt_holding_volume): amt_holding_volume =  -999.0
                 db_row = {'dt_date': dt_date,
                           'id_instrument': id_instrument,
@@ -311,8 +312,11 @@ class DataCollection():
             cd_exchange = 'sse'
             flag_night = -1
 
-            df_optionchain = self.get_option_contracts(datestr)
-
+            # df_optionchain = self.get_option_contracts(datestr)
+            optionchain = w.wset("optioncontractbasicinfo","exchange=sse;windcode=510050.SH;status=trading")
+            df_optionchain = pd.DataFrame()
+            for i0, f0 in enumerate(optionchain.Fields):
+                df_optionchain[f0] = optionchain.Data[i0]
             data = w.wset("optiondailyquotationstastics",
                           "startdate=" + datestr + ";enddate=" + datestr + ";exchange=sse;windcode=510050.SH")
             df_mktdatas = pd.DataFrame()
@@ -321,12 +325,26 @@ class DataCollection():
             df_mktdatas = df_mktdatas.fillna(-999.0)
             for (i2, df_mktdata) in df_mktdatas.iterrows():
                 dt_date = datetime.datetime.strptime(datestr, "%Y-%m-%d").date()
-                windcode = df_mktdata['option_code'] + '.SH'
-                option_info = df_optionchain[df_optionchain['windcode'] == windcode]
-                id_instrument = option_info['id_instrument'].values[0]
-                amt_strike = option_info['amt_strike'].values[0]
-                cd_option_type = option_info['cd_option_type'].values[0]
-
+                windcode = df_mktdata['option_code']
+                option_info = df_optionchain[df_optionchain['wind_code'] == windcode]
+                call_or_put = option_info['call_or_put'].values[0]
+                expire_date = option_info['expire_date'].values[0]
+                amt_strike = option_info['exercise_price'].values[0]
+                sec_name = option_info['sec_name'].values[0]
+                if call_or_put == '认购':
+                    cd_option_type = 'call'
+                elif call_or_put == '认沽':
+                    cd_option_type = 'put'
+                else:
+                    cd_option_type = 'none'
+                    print('error in call_or_put')
+                dt_maturity =  pd.to_datetime(str(expire_date))
+                name_contract_month = dt_maturity.strftime("%y%m")
+                if sec_name[-1] == 'A':
+                    id_instrument = '50etf_' + name_contract_month + '_' + cd_option_type[0] + '_' + str(amt_strike)[
+                                                                                                     :6] + '_A'
+                else:
+                    id_instrument = '50etf_' + name_contract_month + '_' + cd_option_type[0] + '_' + str(amt_strike)[:6]
                 amt_last_settlement = df_mktdata['pre_settle']
                 amt_open = df_mktdata['open']
                 amt_high = df_mktdata['highest']
@@ -373,7 +391,7 @@ class DataCollection():
         def wind_data_m_option(self, start_dates_tr,end_date_str,wind_contract='all'):
 
             db_data = []
-            id_underlying = wind_contract[0].lower() + '_' + wind_contract[1:5]
+            # id_underlying = wind_contract[0].lower() + '_' + wind_contract[1:5]
             name_code = 'm'
             datasource = 'wind'
             cd_exchange = 'dce'
@@ -390,6 +408,7 @@ class DataCollection():
                 dt_date = df_mktdata['date'].date()
                 option_code = df_mktdata['option_code']
                 id_instrument = option_code[0].lower()+'_'+option_code[1:5]+'_'+option_code[6].lower() +'_'+option_code[-4:]
+                id_underlying = option_code[0].lower()+'_'+option_code[1:5]
                 windcode = option_code[0:5]+option_code[6]+option_code[-4:]+'.DCE'
                 amt_strike = option_code[-4:]
                 if option_code[6].lower()=='c':
@@ -445,7 +464,7 @@ class DataCollection():
         def wind_data_sr_option(self, start_dates_tr,end_date_str,wind_contract='all'):
 
             db_data = []
-            id_underlying = wind_contract[0:2].lower() + '_1' + wind_contract[2:5]
+            # id_underlying = wind_contract[0:2].lower() + '_1' + wind_contract[2:5]
             name_code = 'sr'
             datasource = 'wind'
             cd_exchange = 'czce'
@@ -463,6 +482,7 @@ class DataCollection():
                 option_code = df_mktdata['option_code']
                 # TODO
                 id_instrument = option_code[0:2].lower()+'_1'+option_code[2:5]+'_'+option_code[5].lower() +'_'+option_code[-4:]
+                id_underlying = option_code[0:2].lower()+'_1'+option_code[2:5]
                 windcode = option_code+'.CZC'
                 amt_strike = option_code[-4:]
                 if option_code[5].lower()=='c':
@@ -950,7 +970,7 @@ class DataCollection():
             windcode_underlying = '510050.SH'
 
             cd_exchange = 'sse'
-            data = w.wset("optioncontractbasicinfo", "exchange=sse;windcode=510050.SH;status=all")
+            data = w.wset("optioncontractbasicinfo", "exchange=sse;windcode=510050.SH;status=trading")
             optionData = data.Data
             optionFlds = data.Fields
             print('ErrorCode : ',data.ErrorCode)
@@ -1021,7 +1041,7 @@ class DataCollection():
             db_data = []
             name_code = 'm'
             cd_exchange = 'dce'
-            data = w.wset("optionfuturescontractbasicinfo", "exchange=DCE;productcode=M;contract=all")
+            data = w.wset("optionfuturescontractbasicinfo", "exchange=DCE;productcode=M;status=trading")
             optionData = data.Data
             optionFlds = data.Fields
 
@@ -1082,7 +1102,7 @@ class DataCollection():
             db_data = []
             name_code = 'sr'
             cd_exchange = 'czce'
-            data = w.wset("optionfuturescontractbasicinfo", "exchange=CZCE;productcode=SR;contract=all")
+            data = w.wset("optionfuturescontractbasicinfo", "exchange=CZCE;productcode=SR;status=trading")
             optionData = data.Data
             optionFlds = data.Fields
 

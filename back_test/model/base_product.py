@@ -139,6 +139,12 @@ class BaseProduct(AbstractBaseProduct):
             else:
                 return False
 
+    def next_date(self) -> Union[datetime.date,None]:
+        if self.has_next():
+            return self.df_data.loc[self.current_index+1,Util.DT_DATE]
+        else:
+            return None
+
     def has_next(self) -> bool:
         return self.current_index < self.nbr_index - 1
 

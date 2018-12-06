@@ -7,39 +7,79 @@ import matplotlib.pyplot as plt
 
 
 pu = PlotUtil()
-mdt = datetime.date.today() + datetime.timedelta(days=30)
 
-# Calculate Implied Volatility by Option Quote by BS Model
-option_quote = 0.1
-black_formula = QlBlackFormula(datetime.date.today(),mdt,c.OptionType.PUT,
-                   spot=2.5,strike=2.5,rf=0.03,dividend_rate=0.0)
-implied_vol=black_formula.estimate_vol(price=option_quote)
-print('implied_vol BS : ',implied_vol)
-print('delta BS: ',black_formula.Delta(implied_vol))
-print('gamma BS : ',black_formula.Gamma(implied_vol))
+# 1. 期权估值
+# 参数输入
+strike = 51000 # 行权价
+option_exercise_type = c.OptionExerciseType.EUROPEAN # 行权方式
+option_type = c.OptionType.CALL # 期权类型
+dt_maturity = datetime.date(2018,12,25) # 到期日
+buy_write = c.BuyWrite.BUY # 持仓头寸
+spot = 50000 # 标的价格
+vol = 0.2 # 波动率
+rf = 0.03 # 利率
+dt_eval = datetime.date(2018,12,6) # 估值日
 
-# Calculate Option Price by Given Volatility by BS Model
-vol = 0.33941
-black_formula = QlBlackFormula(datetime.date.today(),mdt,c.OptionType.PUT,
-                   spot=2.5,strike=2.5,vol=vol,rf=0.03,dividend_rate=0.0)
+# 行权方式为欧式期权、定价模型为BS进而选择QlBlackFormula
+black_formula = QlBlackFormula(dt_eval=dt_eval,dt_maturity=dt_maturity,option_type=option_type,
+                   spot=spot,strike=strike,vol=vol,rf=rf)
 print('option price BS : ',black_formula.NPV())
+print('vol BS : ',vol)
 print('delta BS : ',black_formula.Delta(vol))
 print('gamma BS : ',black_formula.Gamma(vol))
+print('Theta BS : ',black_formula.Theta())
+print('Vega BS : ',black_formula.Vega())
 
-# Plot Delta Graph
-buy_write = c.BuyWrite.BUY # 期权头寸方向
-strikes = np.arange(2.0,3.0,0.001)
+
+# 2. 隐含波动率计算
+# 参数输入
+strike = 51000 # 行权价
+option_type = c.OptionType.CALL # 期权类型
+dt_maturity = datetime.date(2018,12,25) # 到期日
+buy_write = c.BuyWrite.BUY# 持仓头寸
+spot = 50000 # 标的价格
+rf = 0.03 # 利率
+dt_eval = datetime.date(2018,12,6) # 估值日
+option_price = 531
+
+# 行权方式为欧式期权、定价模型为BS进而选择QlBlackFormula
+black_formula = QlBlackFormula(dt_eval=dt_eval,dt_maturity=dt_maturity,option_type=option_type,
+                   spot=spot,strike=strike,rf=rf)
+vol = black_formula.estimate_vol(option_price)
+print('option price BS : ',black_formula.NPV())
+print('vol BS : ',vol)
+print('delta BS : ',black_formula.Delta(vol))
+print('gamma BS : ',black_formula.Gamma(vol))
+print('Theta BS : ',black_formula.Theta())
+print('Vega BS : ',black_formula.Vega())
+
+
+# 3.Plot Graphs
+min_k = strike*0.8
+max_k = strike*1.2
+strikes = np.arange(min_k,max_k,(max_k-min_k)/1000.0)
 deltas = []
 gammas = []
+thetas = []
+vegas = []
 for k in strikes:
-    black_formula = QlBlackFormula(datetime.date.today(), mdt, c.OptionType.PUT,
-                                   spot=2.5, strike=k, vol=vol,rf=0.03,dividend_rate=0.0)
+    black_formula = QlBlackFormula(dt_eval=dt_eval,dt_maturity=dt_maturity,option_type=option_type,
+                   spot=spot,strike=k,vol=vol,rf=rf)
     delta = black_formula.Delta(vol)*buy_write.value
     gamma = black_formula.Gamma(vol)*buy_write.value
+    theta = black_formula.Theta()
+    vaga = black_formula.Vega()
     deltas.append(delta)
     gammas.append(gamma)
+    thetas.append(theta)
+    vegas.append(vaga)
 
 pu.plot_line_chart(strikes,[deltas],['delta'])
 pu.plot_line_chart(strikes,[gammas],['gamma'])
+pu.plot_line_chart(strikes,[thetas],['theta'])
+pu.plot_line_chart(strikes,[vegas],['vega'])
 
 plt.show()
+
+
+

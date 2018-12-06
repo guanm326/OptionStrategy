@@ -179,6 +179,9 @@ class QlBinomial(AbstractOptionPricingEngine):
         self.reset_vol(implied_vol)
         return self.ql_option.gamma()
 
+    def Theta(self):
+        return self.ql_option.theta()
+
     def reset_vol(self, vol):
         self.flat_vol_ts = ql.BlackVolTermStructureHandle(
             ql.BlackConstantVol(self.settlement, self.calendar, vol, self.day_count)
@@ -275,6 +278,12 @@ class QlBlackFormula(AbstractOptionPricingEngine):
         self.reset_vol(implied_vol)
         return self.ql_option.gamma()
 
+    def Theta(self):
+        return self.ql_option.theta()/365.0
+
+    def Vega(self):
+        return self.ql_option.vega()/100.0
+
     def reset_vol(self, vol):
         self.flat_vol_ts = ql.BlackVolTermStructureHandle(
             ql.BlackConstantVol(self.settlement, self.calendar, vol, self.day_count)
@@ -299,4 +308,14 @@ class QlBlackFormula(AbstractOptionPricingEngine):
                 r = m
         return m
 
-
+# mdt = datetime.date.today() + datetime.timedelta(days=30)
+# p = QlBinomial(datetime.date.today(),mdt,constant.OptionType.PUT,constant.OptionExerciseType.AMERICAN,
+#                    spot=2.5,strike=2.5)
+# implied_vol=p.estimate_vol(price=0.1)
+# p.reset_vol(implied_vol)
+# print(implied_vol)
+# print(p.NPV())
+# print(p.Delta(implied_vol))
+# print(p.Gamma(implied_vol))
+# print(p.Theta())
+# print(p.Vega())
