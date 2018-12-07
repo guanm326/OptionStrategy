@@ -72,11 +72,17 @@ class QlBAW(AbstractOptionPricingEngine):
 
     def Delta(self,implied_vol:float=None) -> float:
         if implied_vol is not None: self.reset_vol(implied_vol)
-        return self.ql_option.delta()
+        try: delta = self.ql_option.delta()
+        except:
+            delta = 0.0
+        return delta
 
     def Gamma(self,implied_vol:float=None) -> float:
         if implied_vol is not None: self.reset_vol(implied_vol)
-        return self.ql_option.gamma()
+        try: gamma = self.ql_option.gamma()
+        except:
+            gamma = 0.0
+        return gamma
 
     def Theta(self,implied_vol:float=None) -> float:
         if implied_vol is not None: self.reset_vol(implied_vol)
@@ -183,7 +189,8 @@ class QlBinomial(AbstractOptionPricingEngine):
                                                         self.flat_vol_ts)
         binomial_engine = ql.BinomialVanillaEngine(self.bsm_process, "crr", self.steps)
         self.ql_option.setPricingEngine(binomial_engine)
-        ql.BaroneAdesiWhaleyEngine(self.bsm_process)
+        # ql.BaroneAdesiWhaleyEngine(self.bsm_process)
+
     def NPV(self) -> float:
         return self.ql_option.NPV()
 
@@ -347,14 +354,14 @@ class QlBlackFormula(AbstractOptionPricingEngine):
                 r = m
         return m
 
-# mdt = datetime.date.today() + datetime.timedelta(days=30)
-# p = QlBinomial(datetime.date.today(),mdt,constant.OptionType.PUT,constant.OptionExerciseType.AMERICAN,
-#                    spot=2.5,strike=2.5)
-# implied_vol=p.estimate_vol(price=0.1)
-# p.reset_vol(implied_vol)
-# print(implied_vol)
-# print(p.NPV())
-# print(p.Delta(implied_vol))
-# print(p.Gamma(implied_vol))
-# print(p.Theta())
-# print(p.Vega())
+mdt = datetime.date.today() + datetime.timedelta(days=30)
+p = QlBAW(datetime.date.today(),mdt,constant.OptionType.PUT,constant.OptionExerciseType.AMERICAN,
+                   spot=2.5,strike=2.5)
+implied_vol=p.estimate_vol(price=0.1)
+p.reset_vol(implied_vol)
+print(implied_vol)
+print(p.NPV())
+print(p.Delta())
+print(p.Gamma())
+print(p.Theta())
+print(p.Vega())
