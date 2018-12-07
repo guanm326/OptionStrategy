@@ -19,9 +19,17 @@ class AbstractOptionPricingEngine(ABC):
         pass
 
     @abstractmethod
-    def Delta(self,implied_vol:float) -> float:
+    def Delta(self,implied_vol:float=None) -> float:
         pass
 
     @abstractmethod
-    def Gamma(self,implied_vol:float) -> float:
+    def Gamma(self,implied_vol:float=None) -> float:
+        pass
+
+    @abstractmethod
+    def Theta(self,implied_vol:float=None) -> float:
+        pass
+
+    @abstractmethod
+    def Vega(self,implied_vol:float=None) -> float:
         pass

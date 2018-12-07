@@ -282,6 +282,14 @@ class BaseProduct(AbstractBaseProduct):
             return
         return ret
 
+    def mktprice_hist_average(self,n=5) -> Union[float, None]:
+        if self.current_index < n:
+            return self.mktprice_close()
+        else:
+            p = self.df_data.loc[self.current_index-n:self.current_index,Util.AMT_CLOSE].mean()
+            return p
+
+
     def mktprice_morning_open_15min(self) -> Union[float, None]:
         ret = self.current_state[Util.AMT_MORNING_OPEN_15MIN]
         if ret is None or ret == Util.NAN_VALUE or np.isnan(ret):
