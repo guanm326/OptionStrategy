@@ -46,9 +46,10 @@ class SytheticOption(object):
 
     def update_target_option(self):
         dt_maturity = self.base.eval_date + datetime.timedelta(days=370)
-        strike = self.base.mktprice_close()
+        # strike = self.base.mktprice_hist_average(20)*1.05
+        strike = self.base.mktprice_close()*1.1
         option = EuropeanOption(strike, dt_maturity, c.OptionType.CALL)
-        self.unit_option = self.account.portfolio_total_value*self.leverage/strike
+        self.unit_option = np.floor(self.account.portfolio_total_value*self.leverage/strike)
         self.target_option = option
 
     def get_black_delta(self, vol: float = 0.2):
@@ -63,12 +64,9 @@ class SytheticOption(object):
 
     # Equivalent Delta for Synthetic Option
     def get_synthetic_delta(self, buywrite) -> float:
-        # trade_unit = np.floor(buywrite.value * delta * self.hedge_multiplier / self.base.multiplier())
-        delta = self.get_black_delta()
-        return buywrite.value * delta
+        return buywrite.value * self.get_black_delta()
 
-    def rebalance_sythetic_long(self) -> float:
-        delta = self.get_synthetic_delta(c.BuyWrite.BUY)
+    def rebalance_sythetic_long(self,delta) -> float:
         if self.delta_bound_breaked(delta):
             d_delta = delta - self.delta_last_rebalanced
             self.delta_last_rebalanced = delta
@@ -88,6 +86,13 @@ class SytheticOption(object):
         else:
             return False
 
+    def close_out(self):
+        close_out_orders = self.account.creat_close_out_order(cd_trade_price=c.CdTradePrice.CLOSE)
+        for order in close_out_orders:
+            execution_record = self.account.dict_holding[order.id_instrument] \
+                .execute_order(order, slippage_rate=self.slippage_date, execute_type=c.ExecuteType.EXECUTE_ALL_UNITS)
+            self.account.add_record(execution_record, self.account.dict_holding[order.id_instrument])
+
     def excute(self,sythetic_delta):
         if sythetic_delta ==0.0 : return
         unit = np.floor(self.unit_option * sythetic_delta * self.hedge_multiplier / self.base.multiplier())
@@ -101,16 +106,29 @@ class SytheticOption(object):
         eval_year = self.base.eval_date.year
         self.update_target_option() # Set Init Call Option with strike equals close price
         init_close = self.base.mktprice_close()
-
+        stop_loss = False
         while self.base.has_next():
-            self.excute(self.rebalance_sythetic_long())
+            delta = self.get_synthetic_delta(c.BuyWrite.BUY)
+            # self.excute(self.rebalance_sythetic_long(delta))
+            if not stop_loss:
+                if delta < 0.2:
+                    self.close_out()
+                    self.delta_last_rebalanced = 0.0
+                    stop_loss = True
+                else:
+                    self.excute(self.rebalance_sythetic_long(delta))
+            else:
+                if delta >=0.4:
+                    self.excute(self.rebalance_sythetic_long(delta))
+                    stop_loss = False
             self.account.daily_accounting(self.base.eval_date)
             self.account.account.loc[self.base.eval_date,'benchmark'] = self.base.mktprice_close()/init_close
-            if self.base.next_date() is not None and self.base.next_date().year != eval_year:
-                eval_year = self.base.next_date().year
-                self.update_target_option()# Update option at last trading day of the year
             # print(self.base.eval_date,self.account.account.loc[self.base.eval_date,c.Util.PORTFOLIO_NPV])
             self.base.next()
+            if self.base.eval_date.year != eval_year:
+                eval_year = self.base.eval_date.year
+                self.update_target_option()# Update option at last trading day of the year
+                stop_loss = False
         return self.account
 
 df_base = pd.read_excel('../../../data/中证全指日收盘价.xlsx')

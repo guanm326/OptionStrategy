@@ -25,8 +25,8 @@ black_formula = QlBlackFormula(dt_eval=dt_eval,dt_maturity=dt_maturity,option_ty
                    spot=spot,strike=strike,vol=vol,rf=rf)
 print('option price BS : ',black_formula.NPV())
 print('vol BS : ',vol)
-print('delta BS : ',black_formula.Delta(vol))
-print('gamma BS : ',black_formula.Gamma(vol))
+print('delta BS : ',black_formula.Delta())
+print('gamma BS : ',black_formula.Gamma())
 print('Theta BS : ',black_formula.Theta())
 print('Vega BS : ',black_formula.Vega())
 

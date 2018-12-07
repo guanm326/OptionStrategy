@@ -36,6 +36,9 @@ class BaseAccount():
             # """ New record has opposite direction """
             if book_series[Util.TRADE_LONG_SHORT] != execution_record[Util.TRADE_LONG_SHORT]:
                 # """ close out """
+                a = book_series[Util.TRADE_UNIT]
+                b = execution_record[Util.TRADE_UNIT]
+                r = book_series[Util.TRADE_UNIT] - execution_record[Util.TRADE_UNIT]
                 if book_series[Util.TRADE_UNIT] == execution_record[Util.TRADE_UNIT]:
                     trade_long_short = book_series[Util.TRADE_LONG_SHORT]
                     trade_unit = 0
@@ -171,7 +174,11 @@ class BaseAccount():
             else:
                 # 无保证金交易（期权买方、股票等）加仓价值（execution_record[Util.TRADE_BOOK_VALUE]）从现金账户扣除。
                 self.cash -= execution_record[Util.TRADE_BOOK_VALUE]
-            position_current_value = self.get_position_value(id_instrument, trade_unit, trade_long_short)
+            try:
+                position_current_value = self.get_position_value(id_instrument, trade_unit, trade_long_short)
+            except:
+                print('')
+                pass
         self.trade_book.loc[id_instrument, Util.POSITION_CURRENT_VALUE] = position_current_value
         self.realized_pnl += realized_pnl
         execution_record[Util.TRADE_REALIZED_PNL] = realized_pnl

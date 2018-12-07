@@ -70,13 +70,29 @@ class QlBAW(AbstractOptionPricingEngine):
     def NPV(self) -> float:
         return self.ql_option.NPV()
 
-    def Delta(self,implied_vol:float) -> float:
-        self.reset_vol(implied_vol)
+    def Delta(self,implied_vol:float=None) -> float:
+        if implied_vol is not None: self.reset_vol(implied_vol)
         return self.ql_option.delta()
 
-    def Gamma(self,implied_vol:float) -> float:
-        self.reset_vol(implied_vol)
+    def Gamma(self,implied_vol:float=None) -> float:
+        if implied_vol is not None: self.reset_vol(implied_vol)
         return self.ql_option.gamma()
+
+    def Theta(self,implied_vol:float=None) -> float:
+        if implied_vol is not None: self.reset_vol(implied_vol)
+        try:
+            theta = self.ql_option.theta()/365.0
+        except:
+            theta=0.0
+        return theta
+
+    def Vega(self,implied_vol:float=None) -> float:
+        if implied_vol is not None: self.reset_vol(implied_vol)
+        try:
+            vega = self.ql_option.vega()/100.0
+        except:
+            vega=0.0
+        return vega
 
     def reset_vol(self, vol):
         self.flat_vol_ts = ql.BlackVolTermStructureHandle(
@@ -171,16 +187,29 @@ class QlBinomial(AbstractOptionPricingEngine):
     def NPV(self) -> float:
         return self.ql_option.NPV()
 
-    def Delta(self,implied_vol:float) -> float:
-        self.reset_vol(implied_vol)
+    def Delta(self,implied_vol:float=None) -> float:
+        if implied_vol is not None: self.reset_vol(implied_vol)
         return self.ql_option.delta()
 
-    def Gamma(self,implied_vol:float) -> float:
-        self.reset_vol(implied_vol)
+    def Gamma(self,implied_vol:float=None) -> float:
+        if implied_vol is not None: self.reset_vol(implied_vol)
         return self.ql_option.gamma()
 
-    def Theta(self):
-        return self.ql_option.theta()
+    def Theta(self,implied_vol:float=None) -> float:
+        if implied_vol is not None: self.reset_vol(implied_vol)
+        try:
+            theta = self.ql_option.theta()/365.0
+        except:
+            theta=0.0
+        return theta
+
+    def Vega(self,implied_vol:float=None) -> float:
+        if implied_vol is not None: self.reset_vol(implied_vol)
+        try:
+            vega = self.ql_option.vega()/100.0
+        except:
+            vega=0.0
+        return vega
 
     def reset_vol(self, vol):
         self.flat_vol_ts = ql.BlackVolTermStructureHandle(
@@ -270,19 +299,29 @@ class QlBlackFormula(AbstractOptionPricingEngine):
     def NPV(self) -> float:
         return self.ql_option.NPV()
 
-    def Delta(self,implied_vol:float) -> float:
-        self.reset_vol(implied_vol)
+    def Delta(self,implied_vol:float=None) -> float:
+        if implied_vol is not None: self.reset_vol(implied_vol)
         return self.ql_option.delta()
 
-    def Gamma(self,implied_vol:float) -> float:
-        self.reset_vol(implied_vol)
+    def Gamma(self,implied_vol:float=None) -> float:
+        if implied_vol is not None: self.reset_vol(implied_vol)
         return self.ql_option.gamma()
 
-    def Theta(self):
-        return self.ql_option.theta()/365.0
+    def Theta(self,implied_vol:float=None) -> float:
+        if implied_vol is not None: self.reset_vol(implied_vol)
+        try:
+            theta = self.ql_option.theta()/365.0
+        except:
+            theta=0.0
+        return theta
 
-    def Vega(self):
-        return self.ql_option.vega()/100.0
+    def Vega(self,implied_vol:float=None) -> float:
+        if implied_vol is not None: self.reset_vol(implied_vol)
+        try:
+            vega = self.ql_option.vega()/100.0
+        except:
+            vega=0.0
+        return vega
 
     def reset_vol(self, vol):
         self.flat_vol_ts = ql.BlackVolTermStructureHandle(
