@@ -101,6 +101,7 @@ class QlBAW(AbstractOptionPricingEngine):
         return vega
 
     def reset_vol(self, vol):
+        self.vol = vol
         self.flat_vol_ts = ql.BlackVolTermStructureHandle(
             ql.BlackConstantVol(self.settlement, self.calendar, vol, self.day_count)
         )
@@ -189,7 +190,6 @@ class QlBinomial(AbstractOptionPricingEngine):
                                                         self.flat_vol_ts)
         binomial_engine = ql.BinomialVanillaEngine(self.bsm_process, "crr", self.steps)
         self.ql_option.setPricingEngine(binomial_engine)
-        # ql.BaroneAdesiWhaleyEngine(self.bsm_process)
 
     def NPV(self) -> float:
         return self.ql_option.NPV()
@@ -211,14 +211,19 @@ class QlBinomial(AbstractOptionPricingEngine):
         return theta
 
     def Vega(self,implied_vol:float=None) -> float:
+        vega=self.vega_effective(implied_vol)
+        return vega
+
+    def vega_effective(self,implied_vol:float=None) -> float:
         if implied_vol is not None: self.reset_vol(implied_vol)
-        try:
-            vega = self.ql_option.vega()/100.0
-        except:
-            vega=0.0
+        price1 = self.NPV()
+        self.reset_vol(self.vol+0.01)
+        price2 = self.NPV()
+        vega = price2 - price1
         return vega
 
     def reset_vol(self, vol):
+        self.vol = vol
         self.flat_vol_ts = ql.BlackVolTermStructureHandle(
             ql.BlackConstantVol(self.settlement, self.calendar, vol, self.day_count)
         )
@@ -316,21 +321,16 @@ class QlBlackFormula(AbstractOptionPricingEngine):
 
     def Theta(self,implied_vol:float=None) -> float:
         if implied_vol is not None: self.reset_vol(implied_vol)
-        try:
-            theta = self.ql_option.theta()/365.0
-        except:
-            theta=0.0
+        theta = self.ql_option.theta()/365.0
         return theta
 
     def Vega(self,implied_vol:float=None) -> float:
         if implied_vol is not None: self.reset_vol(implied_vol)
-        try:
-            vega = self.ql_option.vega()/100.0
-        except:
-            vega=0.0
+        vega = self.ql_option.vega()/100.0
         return vega
 
     def reset_vol(self, vol):
+        self.vol = vol
         self.flat_vol_ts = ql.BlackVolTermStructureHandle(
             ql.BlackConstantVol(self.settlement, self.calendar, vol, self.day_count)
         )
@@ -355,7 +355,19 @@ class QlBlackFormula(AbstractOptionPricingEngine):
         return m
 
 mdt = datetime.date.today() + datetime.timedelta(days=30)
-p = QlBAW(datetime.date.today(),mdt,constant.OptionType.PUT,constant.OptionExerciseType.AMERICAN,
+p = QlBinomial(datetime.date.today(),mdt,constant.OptionType.PUT,constant.OptionExerciseType.EUROPEAN,
+                   spot=2.5,strike=2.5)
+implied_vol=p.estimate_vol(price=0.1)
+p.reset_vol(implied_vol)
+print(implied_vol)
+print(p.NPV())
+print(p.Delta())
+print(p.Gamma())
+print(p.Theta())
+print(p.Vega())
+
+mdt = datetime.date.today() + datetime.timedelta(days=30)
+p = QlBlackFormula(datetime.date.today(),mdt,constant.OptionType.PUT,
                    spot=2.5,strike=2.5)
 implied_vol=p.estimate_vol(price=0.1)
 p.reset_vol(implied_vol)
