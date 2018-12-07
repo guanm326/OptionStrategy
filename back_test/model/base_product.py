@@ -151,6 +151,15 @@ class BaseProduct(AbstractBaseProduct):
     def is_last(self) -> bool:
         return self.current_index == self.nbr_index -1
 
+    def is_end_of_quater(self) -> bool:
+        if self.next_date() is None:
+            return False
+        m = self.eval_date.month
+        if m != self.next_date().month and m in [3,6,9,12]:
+            return True
+        else:
+            return False
+
     def update_current_state(self) -> None:
         self.current_index += 1
         self.current_state = self.df_data.loc[self.current_index]

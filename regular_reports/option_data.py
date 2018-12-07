@@ -209,8 +209,8 @@ def hist_vol(dt_start, df_future_c1_daily, df_res, name_code):
     df_future_c1_daily.loc[:, 'histvol_10'] = Histvol.hist_vol(df_future_c1_daily[c.Util.AMT_CLOSE], n=10) * m
     df_future_c1_daily.loc[:, 'histvol_20'] = Histvol.hist_vol(df_future_c1_daily[c.Util.AMT_CLOSE], n=20) * m
     df_future_c1_daily.loc[:, 'histvol_30'] = Histvol.hist_vol(df_future_c1_daily[c.Util.AMT_CLOSE], n=30) * m
-    df_future_c1_daily.loc[:, 'histvol_60'] = Histvol.hist_vol(df_future_c1_daily[c.Util.AMT_CLOSE], n=20 * 3) * m
-    df_future_c1_daily.loc[:, 'histvol_120'] = Histvol.hist_vol(df_future_c1_daily[c.Util.AMT_CLOSE], n=20 * 6) * m
+    df_future_c1_daily.loc[:, 'histvol_60'] = Histvol.hist_vol(df_future_c1_daily[c.Util.AMT_CLOSE], n=60) * m
+    df_future_c1_daily.loc[:, 'histvol_90'] = Histvol.hist_vol(df_future_c1_daily[c.Util.AMT_CLOSE], n=90) * m
     # df_tmp = df_future_c1_daily[df_future_c1_daily[c.Util.DT_DATE] >= dt_start].dropna()
     df_tmp = df_future_c1_daily.sort_values(by=c.Util.DT_DATE, ascending=False).reset_index(drop=True)
     df_res.loc[:, name_code + ':U:date'] = df_tmp[c.Util.DT_DATE]
@@ -218,7 +218,7 @@ def hist_vol(dt_start, df_future_c1_daily, df_res, name_code):
     df_res.loc[:, name_code + ':W:histvol_20'] = df_tmp.loc[:, 'histvol_20']
     df_res.loc[:, name_code + ':X:histvol_30'] = df_tmp.loc[:, 'histvol_30']
     df_res.loc[:, name_code + ':Y:histvol_60'] = df_tmp.loc[:, 'histvol_60']
-    df_res.loc[:, name_code + ':Z:histvol_120'] = df_tmp.loc[:, 'histvol_120']
+    df_res.loc[:, name_code + ':Z:histvol_90'] = df_tmp.loc[:, 'histvol_90']
     return df_res
 
 
@@ -287,7 +287,8 @@ def implied_vol_vw(last_week, end_date, df_metrics, df_res, name_code):
 
 """"""
 
-end_date = datetime.date(2018,11,30)
+end_date = datetime.date.today()
+# end_date = datetime.date(2018,11,30)
 start_date = datetime.date(2017, 1, 1)
 # last_week = datetime.date(2018,11,9)
 dt_histvol = datetime.date(2014,1,1)
