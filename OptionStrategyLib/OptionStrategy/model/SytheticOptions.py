@@ -31,6 +31,7 @@ class SytheticOption(object):
         self.target_option = None
         self.delta_criterian = 0.2
         self.delta_last_rebalanced = 0.0
+        self.d = 370
 
     def _prepare_data(self):
         days_1y = 252
@@ -44,14 +45,14 @@ class SytheticOption(object):
         self.df_hv = self.df_hv.dropna().set_index(c.Util.DT_DATE)
 
     def update_target_option(self):
-        dt_maturity = self.base.eval_date + datetime.timedelta(days=100)
+        dt_maturity = self.base.eval_date + datetime.timedelta(days=self.d)
         # self.strike = self.base.mktprice_hist_average(20)*1.05
         self.strike = self.base.mktprice_close()*1.1
         self.target_option = EuropeanOption(self.strike, dt_maturity, c.OptionType.CALL)
-        self.unit_option = np.floor(self.account.portfolio_total_value*self.leverage/self.strike)
+        # self.unit_option = np.floor(self.account.portfolio_total_value*self.leverage/self.strike)
 
     def update_maturity(self):
-        dt_maturity = self.base.eval_date + datetime.timedelta(days=100)
+        dt_maturity = self.base.eval_date + datetime.timedelta(days=self.d)
         self.target_option = EuropeanOption(self.strike, dt_maturity, c.OptionType.CALL)
 
     def get_black_delta(self, vol: float = 0.2):
@@ -62,7 +63,8 @@ class SytheticOption(object):
         # print(vol)
         black = BlackCalculator(date, self.target_option.dt_maturity, self.target_option.strike,
                                 self.target_option.option_type, spot, vol, self.rf)
-        return black.Delta()
+        delta = round(black.Delta(),2)
+        return delta
 
     # Equivalent Delta for Synthetic Option
     def get_synthetic_delta(self, buywrite) -> float:
@@ -97,7 +99,8 @@ class SytheticOption(object):
 
     def excute(self,sythetic_delta):
         if sythetic_delta ==0.0 : return
-        unit = np.floor(self.unit_option * sythetic_delta * self.hedge_multiplier / self.base.multiplier())
+        unit = np.floor(self.account.portfolio_total_value*sythetic_delta/self.base.mktprice_close())
+        # unit = np.floor(self.unit_option * sythetic_delta * self.hedge_multiplier / self.base.multiplier())
         if unit >0: long_short = c.LongShort.LONG
         else: long_short = c.LongShort.SHORT
         order = self.account.create_trade_order(self.base, long_short, unit)
@@ -132,7 +135,7 @@ class SytheticOption(object):
                 eval_year = self.base.eval_date.year
                 self.update_target_option() # Update option at last trading day of the year
                 # stop_loss = False
-            self.update_maturity()
+            # self.update_maturity()
             # if self.base.is_end_of_quater():
             #     self.update_target_option()
 
@@ -145,7 +148,6 @@ df_base[c.Util.ID_INSTRUMENT] = '000985.CSI'
 
 sythetic = SytheticOption(df_index=df_base)
 account = sythetic.back_test()
-
 account.account.to_csv('../../accounts_data/sythetic_account.csv')
 account.trade_records.to_csv('../../accounts_data/sythetic_records.csv')
 res = account.analysis()
@@ -157,3 +159,21 @@ benchmark = list(account.account['benchmark'])
 pu.plot_line_chart(dates, [npv,benchmark], ['npv','benchmark'])
 
 plt.show()
+
+# npvs = []
+# df_npvs = pd.DataFrame()
+# for d in [30,40,50,60,90]:
+#     print(d)
+#     sythetic = SytheticOption(df_index=df_base)
+#     sythetic.d = d
+#     account = sythetic.back_test()
+#     npvs.append(list(account.account[c.Util.PORTFOLIO_NPV]))
+#     df_npvs['npv '+str(d) + ' day'] = list(account.account[c.Util.PORTFOLIO_NPV])
+# df_npvs['dt_date'] = list(account.account.index)
+# df_npvs['benchmark'] = list(account.account['benchmark'])
+# df_npvs.to_csv('../../accounts_data/df_npvs.csv')
+# # pu = PlotUtil()
+# # dates = list(account.account.index)
+# npvs.append(list(account.account['benchmark']))
+# pu.plot_line_chart(dates, npvs, ['npv 30 d','npv 40 d','npv 50 d','npv 60 d','npv 90 d','benchmark'])
+# plt.show()
