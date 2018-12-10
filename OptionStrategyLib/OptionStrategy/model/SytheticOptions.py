@@ -47,7 +47,7 @@ class SytheticOption(object):
     def update_target_option(self):
         dt_maturity = self.base.eval_date + datetime.timedelta(days=self.d)
         # self.strike = self.base.mktprice_hist_average(20)*1.05
-        self.strike = self.base.mktprice_close()*1.1
+        self.strike = self.base.mktprice_close()*1.05
         self.target_option = EuropeanOption(self.strike, dt_maturity, c.OptionType.CALL)
         # self.unit_option = np.floor(self.account.portfolio_total_value*self.leverage/self.strike)
 
@@ -81,10 +81,11 @@ class SytheticOption(object):
     # May Add Delta Bound Models Here
     def delta_bound_breaked(self, delta):
         if delta - self.delta_last_rebalanced > self.delta_criterian: # 加仓情况信号下有仓位限制
-            if len(self.account.account)>0 and self.account.account[c.Util.CASH][-1]/self.account.account[c.Util.PORTFOLIO_VALUE][-1]<0.1:
-                return False
-            else:
-                return True
+            return True
+            # if len(self.account.account)>0 and self.account.account[c.Util.CASH][-1]/self.account.account[c.Util.PORTFOLIO_VALUE][-1]<0.1:
+            #     return False
+            # else:
+            #     return True
         elif delta - self.delta_last_rebalanced <- self.delta_criterian:
             return True
         else:
@@ -101,8 +102,14 @@ class SytheticOption(object):
         if sythetic_delta ==0.0 : return
         unit = np.floor(self.account.portfolio_total_value*sythetic_delta/self.base.mktprice_close())
         # unit = np.floor(self.unit_option * sythetic_delta * self.hedge_multiplier / self.base.multiplier())
-        if unit >0: long_short = c.LongShort.LONG
-        else: long_short = c.LongShort.SHORT
+        if unit >0:
+            long_short = c.LongShort.LONG
+            max_unit = np.floor(self.account.cash/self.base.mktprice_close())
+            unit = min(abs(unit),max_unit)
+        else:
+            long_short = c.LongShort.SHORT
+            hold_unit = self.account.trade_book.loc[id_instrument,c.Util.TRADE_UNIT]
+            unit = min(abs(unit),hold_unit)
         order = self.account.create_trade_order(self.base, long_short, unit)
         record = self.base.execute_order(order, slippage_rate=self.slippage_date)
         self.account.add_record(record, self.base)
@@ -135,7 +142,7 @@ class SytheticOption(object):
                 eval_year = self.base.eval_date.year
                 self.update_target_option() # Update option at last trading day of the year
                 # stop_loss = False
-            # self.update_maturity()
+            self.update_maturity()
             # if self.base.is_end_of_quater():
             #     self.update_target_option()
 
@@ -144,9 +151,11 @@ class SytheticOption(object):
 df_base = pd.read_excel('../../../data/中证全指日收盘价.xlsx')
 df_base[c.Util.DT_DATE] = df_base['日期'].apply(lambda x:x.date())
 df_base = df_base.rename(columns={'000985.CSI': c.Util.AMT_CLOSE})
-df_base[c.Util.ID_INSTRUMENT] = '000985.CSI'
+id_instrument = '000985.CSI'
+df_base[c.Util.ID_INSTRUMENT] = id_instrument
 
 sythetic = SytheticOption(df_index=df_base)
+sythetic.d = 50
 account = sythetic.back_test()
 account.account.to_csv('../../accounts_data/sythetic_account.csv')
 account.trade_records.to_csv('../../accounts_data/sythetic_records.csv')
