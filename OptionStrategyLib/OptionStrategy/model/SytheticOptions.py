@@ -289,7 +289,7 @@ class SytheticOption(object):
                 eval_year = self.base.eval_date.year
                 self.update_target_option()  # Update option at last trading day of the year
                 # stop_loss = False
-            # self.update_maturity()
+            self.update_maturity()
             # if self.base.is_end_of_quater():
             #     self.update_target_option()
 
@@ -302,21 +302,25 @@ df_base = df_base.rename(columns={'000985.CSI': c.Util.AMT_CLOSE})
 id_instrument = '000985.CSI'
 df_base[c.Util.ID_INSTRUMENT] = id_instrument
 
-sythetic = SytheticOption(df_index=df_base)
-sythetic.k = 1.1
+# sythetic = SytheticOption(df_index=df_base)
+# sythetic.k = 1.1
 # sythetic.d = 50
-account = sythetic.back_test()
+# account = sythetic.back_test()
 # df_res_k[str(k)] = account.analysis()
-account.account.to_csv('../../accounts_data/sythetic_account.csv')
-account.trade_records.to_csv('../../accounts_data/sythetic_records.csv')
-res = account.analysis()
-print(res)
-pu = PlotUtil()
-dates = list(account.account.index)
-npv = list(account.account[c.Util.PORTFOLIO_NPV])
-benchmark = list(account.account['benchmark'])
-pu.plot_line_chart(dates, [npv,benchmark], ['npv','benchmark'])
-plt.show()
+# account.account.to_csv('../../accounts_data/sythetic_account.csv')
+# account.trade_records.to_csv('../../accounts_data/sythetic_records.csv')
+# res = account.analysis()
+# print(res)
+# df_yearly,df_yearly_npvs = account.annual_analyis()
+# print(df_yearly)
+# df_yearly.to_csv('../../accounts_data/df_yearly.csv')
+# df_yearly_npvs.to_csv('../../accounts_data/df_yearly_npvs.csv')
+# pu = PlotUtil()
+# dates = list(account.account.index)
+# npv = list(account.account[c.Util.PORTFOLIO_NPV])
+# benchmark = list(account.account['benchmark'])
+# pu.plot_line_chart(dates, [npv,benchmark], ['npv','benchmark'])
+# plt.show()
 
 # npvs = []
 # df_npv_k = pd.DataFrame()
@@ -341,21 +345,29 @@ plt.show()
 # pu.plot_line_chart(dates, npvs, ['NPV (K=100%)','NPV (K=105%)','NPV (K=110%)','benchmark'])
 # plt.show()
 
-# npvs = []
-# df_npvs = pd.DataFrame()
-# df_res = pd.DataFrame()
-# for d in [30,40,50,60,70,80,90]:
-#     print(d)
-#     sythetic = SytheticOption(df_index=df_base)
-#     sythetic.d = d
-#     account = sythetic.back_test()
-#     npvs.append(list(account.account[c.Util.PORTFOLIO_NPV]))
-#     df_npvs['npv '+str(d) + ' day'] = list(account.account[c.Util.PORTFOLIO_NPV])
-#     df_res['npv '+str(d) + ' day'] = account.analysis()
+df_yield = pd.DataFrame()
+df_mdd = pd.DataFrame()
+npvs = []
+df_npvs = pd.DataFrame()
+df_res = pd.DataFrame()
+for d in [30,40,50,60,70,80,90]:
+# for d in [50]:
+    print(d)
+    sythetic = SytheticOption(df_index=df_base)
+    sythetic.d = d
+    account = sythetic.back_test()
+    npvs.append(list(account.account[c.Util.PORTFOLIO_NPV]))
+    df_npvs['npv '+str(d) + ' day'] = list(account.account[c.Util.PORTFOLIO_NPV])
+    df_res['npv '+str(d) + ' day'] = account.analysis()
+    df_yearly =account.annual_analyis()[0]
+    df_yield['npv '+str(d) + ' day'] = df_yearly['accumulate_yield']
+    df_mdd['npv '+str(d) + ' day'] = df_yearly['max_drawdown']
 # df_npvs['dt_date'] = list(account.account.index)
 # df_npvs['benchmark'] = list(account.account['benchmark'])
 # df_npvs.to_csv('../../accounts_data/df_npvs.csv')
 # df_res.to_csv('../../accounts_data/df_res.csv')
+df_yield.to_csv('../../accounts_data/df_yield.csv')
+df_mdd.to_csv('../../accounts_data/df_mdd.csv')
 # pu = PlotUtil()
 # dates = list(account.account.index)
 # npvs.append(list(account.account['benchmark']))

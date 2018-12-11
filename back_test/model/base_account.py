@@ -576,3 +576,29 @@ class BaseAccount():
         res = self.get_netvalue_analysis(self.account[Util.PORTFOLIO_NPV])
         res['turnover'] = self.get_monthly_turnover(self.account)
         return res
+
+
+    def annual_analyis(self):
+        self.account['year'] = self.account[Util.DT_DATE].apply(lambda x: str(x.year))
+        years = self.account['year'].unique()
+        df_yearly = pd.DataFrame()
+        df_npvs = pd.DataFrame()
+        init_npv = 1
+        for y in years:
+            npv = self.account[self.account['year']==y][Util.PORTFOLIO_NPV]
+            year_npv = npv/init_npv
+            init_npv = npv.iloc[-1]
+            r=self.get_netvalue_analysis(year_npv)
+            df_yearly.loc[y,'accumulate_yield'] = r['accumulate_yield']
+            df_yearly.loc[y,'annual_yield'] = r['annual_yield']
+            df_yearly.loc[y,'annual_volatility'] = r['annual_volatility']
+            df_yearly.loc[y,'max_drawdown'] = r['max_drawdown']
+            df_yearly.loc[y,'prob_of_win(D)'] = r['prob_of_win(D)']
+            df_yearly.loc[y,'win_loss_ratio'] = r['win_loss_ratio']
+            df_yearly.loc[y,'sharpe'] = r['sharpe']
+            df_yearly.loc[y,'Calmar'] = r['Calmar']
+            df_npvs[y] = year_npv
+        return df_yearly,df_npvs
+
+
+
