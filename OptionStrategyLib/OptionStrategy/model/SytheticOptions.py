@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import datetime
 import pandas as pd
 import numpy as np
+import math
 
 
 class SytheticOption1(object):
@@ -168,10 +169,12 @@ class SytheticOption(object):
         self.hedge_multiplier = 1
         self.hold_unit = 0
         self.target_option = None
-        self.delta_criterian = 0.2
+        self.cd_delta_bound = 'ww'
+        self.delta_criterian = 0.1
         self.delta_last_rebalanced = 0.0
         self.d = 370
         self.k = 1.1
+        self.H = None
 
     def _prepare_data(self):
         days_1y = 252
@@ -185,15 +188,15 @@ class SytheticOption(object):
         self.df_hv = self.df_hv.dropna().set_index(c.Util.DT_DATE)
 
     def update_target_option(self):
-        dt_maturity = self.base.eval_date + datetime.timedelta(days=self.d)
+        self.dt_maturity = self.base.eval_date + datetime.timedelta(days=self.d)
         # self.strike = self.base.mktprice_hist_average(20)*1.05
         self.strike = self.base.mktprice_close() * self.k
-        self.target_option = EuropeanOption(self.strike, dt_maturity, c.OptionType.CALL)
+        self.target_option = EuropeanOption(self.strike, self.dt_maturity, c.OptionType.CALL)
         # self.unit_option = np.floor(self.account.portfolio_total_value*self.leverage/self.strike)
 
     def update_maturity(self):
-        dt_maturity = self.base.eval_date + datetime.timedelta(days=self.d)
-        self.target_option = EuropeanOption(self.strike, dt_maturity, c.OptionType.CALL)
+        self.dt_maturity = self.base.eval_date + datetime.timedelta(days=self.d)
+        self.target_option = EuropeanOption(self.strike, self.dt_maturity, c.OptionType.CALL)
 
     def get_black_delta(self, vol: float = 0.2):
         spot = self.base.mktprice_close()
@@ -205,6 +208,17 @@ class SytheticOption(object):
                                 self.target_option.option_type, spot, vol, self.rf)
         delta = round(black.Delta(), 2)
         return delta
+
+    def get_black_gamma(self, vol: float = 0.2):
+        spot = self.base.mktprice_close()
+        date = self.base.eval_date
+        if date in self.df_hv.index:
+            vol = self.df_hv.loc[date, 'hv_6m']
+        # print(vol)
+        black = BlackCalculator(date, self.target_option.dt_maturity, self.target_option.strike,
+                                self.target_option.option_type, spot, vol, self.rf)
+        gamma = black.Gamma()
+        return gamma
 
     # Equivalent Delta for Synthetic Option
     def get_synthetic_delta(self, buywrite) -> float:
@@ -221,16 +235,24 @@ class SytheticOption(object):
 
     # May Add Delta Bound Models Here
     def delta_bound_breaked(self, delta):
-        if delta - self.delta_last_rebalanced > self.delta_criterian:  # 加仓情况信号下有仓位限制
-            return True
-            # if len(self.account.account)>0 and self.account.account[c.Util.CASH][-1]/self.account.account[c.Util.PORTFOLIO_VALUE][-1]<0.1:
-            #     return False
-            # else:
-            #     return True
-        elif delta - self.delta_last_rebalanced < - self.delta_criterian:
-            return True
+        if self.cd_delta_bound == 'ww':
+            gamma = self.get_black_gamma()
+            self.H = self.whalley_wilmott(self.base.eval_date, self.base.mktprice_close(), gamma, self.dt_maturity)
+            if abs(delta - self.delta_last_rebalanced) > self.H:
+                return True
+            else:
+                return False
         else:
-            return False
+            if abs(delta - self.delta_last_rebalanced) > self.delta_criterian:
+                return True
+            else:
+                return False
+
+    def whalley_wilmott(self, eval_date, spot, gamma,dt_maturity, rho=0.01):
+        fee = self.slippage_date
+        ttm = c.PricingUtil.get_ttm(eval_date, dt_maturity)
+        H = (1.5 * math.exp(-self.rf * ttm) * fee * spot * (gamma ** 2) / rho) ** (1 / 3)
+        return H
 
     def close_out(self):
         close_out_orders = self.account.creat_close_out_order(cd_trade_price=c.CdTradePrice.CLOSE)
@@ -282,13 +304,14 @@ class SytheticOption(object):
             self.account.daily_accounting(self.base.eval_date)
             self.account.account.loc[self.base.eval_date, 'benchmark'] = self.base.mktprice_close() / init_close
             self.account.account.loc[self.base.eval_date, 'delta'] = self.delta_last_rebalanced
+            self.account.account.loc[self.base.eval_date, 'ww_bound'] = self.H
             # print(self.base.eval_date,self.account.account.loc[self.base.eval_date,c.Util.PORTFOLIO_NPV])
-            self.base.next()
 
-            if self.base.eval_date.year != eval_year:
-                eval_year = self.base.eval_date.year
+            if self.base.next_date().year != eval_year:
+                eval_year = self.base.next_date().year
                 self.update_target_option()  # Update option at last trading day of the year
                 # stop_loss = False
+            self.base.next()
             self.update_maturity()
             # if self.base.is_end_of_quater():
             #     self.update_target_option()
@@ -322,28 +345,69 @@ df_base[c.Util.ID_INSTRUMENT] = id_instrument
 # pu.plot_line_chart(dates, [npv,benchmark], ['npv','benchmark'])
 # plt.show()
 
+######### Delta Bounds ###################
 # npvs = []
-# df_npv_k = pd.DataFrame()
+# df_yield_d = pd.DataFrame()
+# df_mdd_d = pd.DataFrame()
+# df_res_d = pd.DataFrame()
+# for d_c in ['ww',0.05,0.1,0.2]:
+#     print(d_c)
+#     sythetic = SytheticOption(df_index=df_base)
+#     sythetic.k = 1.0
+#     sythetic.d = 50
+#     sythetic.cd_delta_bound = d_c
+#     sythetic.delta_criterian = d_c
+#     account = sythetic.back_test()
+#     npvs.append(list(account.account[c.Util.PORTFOLIO_NPV]))
+#     df_yearly =account.annual_analyis()[0]
+#     df_yield_d[str(d_c)] = df_yearly['accumulate_yield']
+#     df_mdd_d[str(d_c)] = df_yearly['max_absolute_loss']
+#     df_res_d[str(d_c)] = account.analysis()
+#     account.account.to_csv('../../accounts_data/sythetic_account'+str(sythetic.k)+str(sythetic.delta_criterian)+'.csv')
+#     account.trade_records.to_csv('../../accounts_data/sythetic_records'+str(sythetic.k)+str(sythetic.delta_criterian)+'.csv')
+#
+# df_res_d.to_csv('../../accounts_data/df_res_d'+str(sythetic.k)+'.csv')
+# df_mdd_d.to_csv('../../accounts_data/df_mdd_d'+str(sythetic.k)+'.csv')
+# df_yield_d.to_csv('../../accounts_data/df_yield_d'+str(sythetic.k)+'.csv')
+# print(account.analysis())
+# pu = PlotUtil()
+# dates = list(account.account.index)
+# npvs.append(list(account.account['benchmark']))
+# pu.plot_line_chart(dates, npvs, ['NPV (delta bound Whalley Wilmott)','NPV (delta bound=0.05)','NPV (delta bound=0.1)','NPV (delta bound=0.2)','benchmark'])
+# plt.show()
+
+######### Strikes ###################
+
+# npvs = []
+# df_yield_k = pd.DataFrame()
+# df_mdd_k = pd.DataFrame()
 # df_res_k = pd.DataFrame()
-# for k in [1.0, 1.05, 1.1]:
-# # for k in [1.1]:
+# # for k in [1.0, 1.05, 1.1]:
+# for k in [1.1]:
 #     sythetic = SytheticOption(df_index=df_base)
 #     sythetic.k = k
 #     sythetic.d = 50
+#     # sythetic.delta_criterian = 0.1
 #     account = sythetic.back_test()
 #     npvs.append(list(account.account[c.Util.PORTFOLIO_NPV]))
-#     df_npv_k['npv ' + str(k)] = list(account.account[c.Util.PORTFOLIO_NPV])
+#     df_yearly =account.annual_analyis()[0]
+#     df_yield_k[str(k)] = df_yearly['accumulate_yield']
+#     df_mdd_k[str(k)] = df_yearly['max_absolute_loss']
 #     df_res_k[str(k)] = account.analysis()
-#     # account.account.to_csv('../../accounts_data/sythetic_account'+str(sythetic.k)+'.csv')
-#     # account.trade_records.to_csv('../../accounts_data/sythetic_records'+str(sythetic.k)+'.csv')
-# # df_res_k.to_csv('../../accounts_data/df_res_k.csv')
-# # df_npv_k.to_csv('../../accounts_data/df_npv_k.csv')
-# # print(account.get_netvalue_analysis(account.account['benchmark']))
+#     account.account.to_csv('../../accounts_data/ww_sythetic_account'+str(sythetic.k)+'.csv')
+#     account.trade_records.to_csv('../../accounts_data/ww_sythetic_records'+str(sythetic.k)+'.csv')
+# df_res_k.to_csv('../../accounts_data/ww_df_res_k.csv')
+# df_mdd_k.to_csv('../../accounts_data/ww_df_mdd_k.csv')
+# df_yield_k.to_csv('../../accounts_data/ww_df_yield_k.csv')
+# print(account.analysis())
 # pu = PlotUtil()
 # dates = list(account.account.index)
 # npvs.append(list(account.account['benchmark']))
 # pu.plot_line_chart(dates, npvs, ['NPV (K=100%)','NPV (K=105%)','NPV (K=110%)','benchmark'])
 # plt.show()
+
+
+######### Strikes ###################
 
 df_yield = pd.DataFrame()
 df_mdd = pd.DataFrame()
@@ -355,21 +419,23 @@ for d in [30,40,50,60,70,80,90]:
     print(d)
     sythetic = SytheticOption(df_index=df_base)
     sythetic.d = d
+    # sythetic.delta_criterian = 0.1
+    sythetic.cd_delta_bound = 'ww'
     account = sythetic.back_test()
     npvs.append(list(account.account[c.Util.PORTFOLIO_NPV]))
     df_npvs['npv '+str(d) + ' day'] = list(account.account[c.Util.PORTFOLIO_NPV])
     df_res['npv '+str(d) + ' day'] = account.analysis()
     df_yearly =account.annual_analyis()[0]
     df_yield['npv '+str(d) + ' day'] = df_yearly['accumulate_yield']
-    df_mdd['npv '+str(d) + ' day'] = df_yearly['max_drawdown']
-# df_npvs['dt_date'] = list(account.account.index)
-# df_npvs['benchmark'] = list(account.account['benchmark'])
-# df_npvs.to_csv('../../accounts_data/df_npvs.csv')
-# df_res.to_csv('../../accounts_data/df_res.csv')
+    df_mdd['npv '+str(d) + ' day'] = df_yearly['max_absolute_loss']
+df_npvs['dt_date'] = list(account.account.index)
+df_npvs['benchmark'] = list(account.account['benchmark'])
+df_npvs.to_csv('../../accounts_data/df_npvs.csv')
+df_res.to_csv('../../accounts_data/df_res.csv')
 df_yield.to_csv('../../accounts_data/df_yield.csv')
 df_mdd.to_csv('../../accounts_data/df_mdd.csv')
-# pu = PlotUtil()
-# dates = list(account.account.index)
-# npvs.append(list(account.account['benchmark']))
-# pu.plot_line_chart(dates, npvs, ['NPV (T=30Day)','NPV (T=40Day)','NPV (T=50Day)','NPV (T=60Day)','NPV (T=70Day)','NPV (T=80Day)','NPV (T=90Day)','benchmark'])
-# plt.show()
+pu = PlotUtil()
+dates = list(account.account.index)
+npvs.append(list(account.account['benchmark']))
+pu.plot_line_chart(dates, npvs, ['NPV (T=30Day)','NPV (T=40Day)','NPV (T=50Day)','NPV (T=60Day)','NPV (T=70Day)','NPV (T=80Day)','NPV (T=90Day)','benchmark'])
+plt.show()

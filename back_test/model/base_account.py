@@ -587,6 +587,7 @@ class BaseAccount():
         for y in years:
             npv = self.account[self.account['year']==y][Util.PORTFOLIO_NPV]
             year_npv = npv/init_npv
+            max_absolute_loss = min(year_npv)-1
             init_npv = npv.iloc[-1]
             r=self.get_netvalue_analysis(year_npv)
             df_yearly.loc[y,'accumulate_yield'] = r['accumulate_yield']
@@ -597,6 +598,7 @@ class BaseAccount():
             df_yearly.loc[y,'win_loss_ratio'] = r['win_loss_ratio']
             df_yearly.loc[y,'sharpe'] = r['sharpe']
             df_yearly.loc[y,'Calmar'] = r['Calmar']
+            df_yearly.loc[y,'max_absolute_loss'] = max_absolute_loss
             df_npvs[y] = year_npv
         return df_yearly,df_npvs
 

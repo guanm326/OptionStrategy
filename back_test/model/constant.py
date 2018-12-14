@@ -104,6 +104,10 @@ class OptionCU:
         return df[Util.AMT_STRIKE]
 
     @staticmethod
+    def fun_applicable_multiplier(df: pd.Series) -> float:
+        return df[Util.NBR_MULTIPLIER_AFTER_ADJ]
+
+    @staticmethod
     def get_strike_by_monenyes_rank_nearest_strike(spot: float, moneyness_rank: int, strikes: List[float],
                                                    option_type: OptionType) -> float:
         d = OptionCU.get_strike_monenyes_rank_dict_nearest_strike(spot, strikes, option_type)
@@ -137,6 +141,10 @@ class OptionM:
     @staticmethod
     def fun_applicable_strike(df: pd.Series) -> float:
         return df[Util.AMT_STRIKE]
+
+    @staticmethod
+    def fun_applicable_multiplier(df: pd.Series) -> float:
+        return df[Util.NBR_MULTIPLIER_AFTER_ADJ]
 
     @staticmethod
     def get_moneyness_of_a_strike_by_nearest_strike(spot: float, strike: float, strikes: List[float],
@@ -274,8 +282,6 @@ class OptionM:
         return d
 
 
-
-
 class OptionSR:
     MONEYNESS_POINT_LOW = 3000
     MONEYNESS_POINT_HIGH = 10000
@@ -283,6 +289,10 @@ class OptionSR:
     @staticmethod
     def fun_applicable_strike(df: pd.Series) -> float:
         return df[Util.AMT_STRIKE]
+
+    @staticmethod
+    def fun_applicable_multiplier(df: pd.Series) -> float:
+        return df[Util.NBR_MULTIPLIER_AFTER_ADJ]
 
     @staticmethod
     def get_moneyness_of_a_strike_by_nearest_strike(spot: float, strike: float, strikes: List[float],
@@ -402,7 +412,7 @@ class Option50ETF:
         datetime.date(2017, 11, 28): [
             '1712', '1801', '1803', '1806'
         ],
-        datetime.date(2018,12,3):['1812','1901','1903','1906']
+        datetime.date(2018, 12, 3):['1812','1901','1903','1906']
 
     }
 
@@ -430,6 +440,27 @@ class Option50ETF:
                 return df[Util.AMT_STRIKE]  # 分红除息日后用实际调整后的行权价
         else:
             return df[Util.AMT_STRIKE]  # 分红除息日后用实际调整后的行权价
+
+    @staticmethod
+    def fun_applicable_multiplier(df: pd.Series) -> float:
+        eval_date = df[Util.DT_DATE]
+        contract_month = df[Util.NAME_CONTRACT_MONTH]
+        dividend_dates = Option50ETF.DIVIDEND_DATES
+        dates = sorted(dividend_dates.keys(), reverse=False)
+        if eval_date < dates[0]:
+            return 10000  # 分红除息日前是正常的10000份
+        elif eval_date < dates[1]:
+            if contract_month in dividend_dates[dates[1]]:
+                return 10000  # 分红除息日前是正常的10000份
+            else:
+                return df[Util.NBR_MULTIPLIER_AFTER_ADJ]  # 分红除息日后合约乘数调整
+        elif eval_date < dates[2]:
+            if contract_month in dividend_dates[dates[2]]:
+                return 10000  # 分红除息日前是正常的10000份
+            else:
+                return df[Util.NBR_MULTIPLIER_AFTER_ADJ]  # 分红除息日后合约乘数调整
+        else:
+            return df[Util.NBR_MULTIPLIER_AFTER_ADJ]  # 分红除息日后用实际调整后的行权价
 
     @staticmethod
     def get_moneyness_of_a_strike_by_nearest_strike(spot: float, strike: float, strikes: List[float],
@@ -829,6 +860,7 @@ class Util:
     AMT_LAST_SETTLEMENT = 'amt_last_settlement'
     AMT_LAST_CLOSE = 'amt_last_close'
     NBR_MULTIPLIER = 'nbr_multiplier'
+    NBR_MULTIPLIER_AFTER_ADJ = 'nbr_multiplier_after_adj'
     AMT_HOLDING_VOLUME = 'amt_holding_volume'
     AMT_TRADING_VOLUME = 'amt_trading_volume'
     AMT_TRADING_VOLUME_CALL = 'amtl_trading_volume_call'
@@ -864,6 +896,8 @@ class Util:
     AMT_GARMAN_KLASS = 'amt_garman_klass'
     AMT_HEDHE_UNIT = 'amt_hedge_unit'
     AMT_CALL_QUOTE = 'amt_call_quote'
+    ID_CALL = 'id_call'
+    ID_PUT = 'id_put'
     AMT_PUT_QUOTE = 'amt_put_quote'
     AMT_TTM = 'amt_ttm'
     AMT_HTB_RATE = 'amt_HTB_rate'
@@ -887,14 +921,13 @@ class Util:
     NAN_VALUE = -999.0
 
     LOW_FREQUENT = [FrequentType.DAILY, FrequentType.WEEKLY, FrequentType.MONTHLY, FrequentType.YEARLY]
-    PRODUCT_COLUMN_LIST = [ID_INSTRUMENT, AMT_CLOSE, AMT_OPEN, AMT_SETTLEMENT, AMT_MORNING_OPEN_15MIN,
-                           AMT_MORNING_CLOSE_15MIN, AMT_AFTERNOON_CLOSE_15MIN, AMT_MORNING_AVG, AMT_AFTERNOON_AVG,
-                           AMT_DAILY_AVG, AMT_HOLDING_VOLUME, AMT_TRADING_VOLUME, AMT_LAST_SETTLEMENT,
+    PRODUCT_COLUMN_LIST = [ID_INSTRUMENT, AMT_CLOSE, AMT_OPEN, AMT_SETTLEMENT,
+                           AMT_HOLDING_VOLUME, AMT_TRADING_VOLUME, AMT_LAST_SETTLEMENT,
                            AMT_LAST_CLOSE]
     INSTRUMENT_COLUMN_LIST = PRODUCT_COLUMN_LIST
     OPTION_COLUMN_LIST = PRODUCT_COLUMN_LIST + \
-                         [NAME_CONTRACT_MONTH, AMT_STRIKE, AMT_STRIKE_BEFORE_ADJ, AMT_APPLICABLE_STRIKE, DT_MATURITY,
-                          CD_OPTION_TYPE, AMT_OPTION_PRICE, AMT_ADJ_OPTION_PRICE, ID_UNDERLYING, AMT_UNDERLYING_CLOSE,
+                         [NAME_CONTRACT_MONTH, AMT_STRIKE, AMT_APPLICABLE_STRIKE, DT_MATURITY,
+                          CD_OPTION_TYPE, AMT_OPTION_PRICE, ID_UNDERLYING, AMT_UNDERLYING_CLOSE,
                           AMT_UNDERLYING_OPEN_PRICE, PCT_IMPLIED_VOL, NBR_MULTIPLIER, AMT_LAST_SETTLEMENT,
                           AMT_SETTLEMENT]
     NAME_CODE_159 = ['sr', 'm', 'ru']
