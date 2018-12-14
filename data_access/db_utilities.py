@@ -16,6 +16,7 @@ def code_map_dce():
            '聚丙烯': 'pp',
            '聚氯乙烯': 'v',
            '豆油': 'y',
+           '乙二醇':'eg'
     }
     return map
 
