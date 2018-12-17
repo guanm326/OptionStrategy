@@ -244,7 +244,7 @@ class BaseOptionSet(AbstractBaseProductSet):
 
     def get_baseoption_by_id(self,id):
         for option in self.eligible_options:
-            if option.id_instrument == id:
+            if option.id_instrument() == id:
                 return option
 
 
@@ -726,7 +726,7 @@ class BaseOptionSet(AbstractBaseProductSet):
     def select_maturity_date(self, nbr_maturity, min_holding: int = 1):
         maturities = self.get_maturities_list()
         idx_start = 0
-        if (maturities[idx_start] - self.eval_date).days <= min_holding:
+        if (maturities[idx_start] - self.eval_date).days < min_holding:
             idx_start += 1
         idx_maturity = idx_start + nbr_maturity
         if idx_maturity > len(maturities) - 1:
