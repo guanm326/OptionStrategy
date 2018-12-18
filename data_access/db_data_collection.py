@@ -632,7 +632,7 @@ class DataCollection():
             for dict in data_dict1:
                 name = dict[key_map['codename']].replace(' ', '')
                 contractmonth = dict[key_map['contractmonth']].replace(' ', '')
-                if name == '总计' or contractmonth == '小计': continue
+                if name[0:2] == '总计' or contractmonth == '小计': continue
                 try:
                     name_code = name[0:name.index('_')].lower()
                 except:

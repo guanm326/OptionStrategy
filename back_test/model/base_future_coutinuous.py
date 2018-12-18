@@ -57,7 +57,6 @@ class BaseFutureCoutinuous(BaseProduct):
         margin = self.mktprice_close() * self._margin_rate * self._multiplier
         return margin
 
-    # TODO: USE SETTLEMENT PRICE
     def get_maintain_margin(self,long_short:LongShort) -> Union[float, None]:
         margin = self.mktprice_close() * self._margin_rate * self._multiplier
         return margin

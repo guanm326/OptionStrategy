@@ -174,11 +174,7 @@ class BaseAccount():
             else:
                 # 无保证金交易（期权买方、股票等）加仓价值（execution_record[Util.TRADE_BOOK_VALUE]）从现金账户扣除。
                 self.cash -= execution_record[Util.TRADE_BOOK_VALUE]
-            try:
-                position_current_value = self.get_position_value(id_instrument, trade_unit, trade_long_short)
-            except:
-                print('')
-                pass
+            position_current_value = self.get_position_value(id_instrument, trade_unit, trade_long_short)
         self.trade_book.loc[id_instrument, Util.POSITION_CURRENT_VALUE] = position_current_value
         self.realized_pnl += realized_pnl
         execution_record[Util.TRADE_REALIZED_PNL] = realized_pnl
@@ -537,7 +533,7 @@ class BaseAccount():
         # 年化波动率
         volatility_yr = np.std(returns, ddof=0) * np.sqrt(oneyear)
         # 夏普比率
-        sharpe = (return_yr - self.rf) / volatility_yr
+        sharpe = (return_yr - 0.024) / volatility_yr
         # 回撤
         drawdowns = self.get_maxdrawdown(netvalue)
         # 最大回撤

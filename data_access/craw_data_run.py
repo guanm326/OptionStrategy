@@ -11,7 +11,7 @@ from Utilities import admin_write_util as admin
 w.start()
 
 # date = datetime.date.today()
-date = datetime.date(2018,12,14)
+date = datetime.date(2018,12,17)
 
 dt_date = date.strftime("%Y-%m-%d")
 print(dt_date)
@@ -301,11 +301,13 @@ else:
 # sfe futures data
 res = futures_mktdata_daily.select((futures_mktdata_daily.c.dt_date == dt_date)
                                    & (futures_mktdata_daily.c.cd_exchange == 'sfe')).execute()
-if res.rowcount == 0:
+# if res.rowcount == 0:
+if True:
     ds = sfe.spider_mktdata(date, date)
     for dt in ds.keys():
         data = ds[dt]
         db_data = dc.table_futures().sfe_daily(dt, data)
+        print(db_data)
         if len(db_data) == 0: continue
         try:
             conn.execute(futures_mktdata_daily.insert(), db_data)
