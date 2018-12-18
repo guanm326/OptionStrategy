@@ -63,6 +63,19 @@ class ParityArbitrage(object):
         conversion = self.max_pair(df_conversion)
         return reverse, conversion
 
+    def prepare_box(self):
+        t_quote = self.t_quote[(self.t_quote['rank']<=3)&(self.t_quote['rank']>=-3)] # 只考虑三挡以内期权
+        # df_reverse = t_quote[t_quote['pct_arbitrage_window']>0.0]
+        # df_conversion = t_quote[t_quote['pct_arbitrage_window']<-0.0]
+        reverse = self.max_pair(t_quote)
+        conversion = self.max_pair(t_quote)
+        # TODO: DEFINE BOX ARBITRAGE WINDOW
+        if reverse['w'] - conversion['w'] > 0.001 or reverse['w'] - conversion['w'] < -0.001:
+            print(self.optionset.eval_date,reverse['w'] - conversion['w'])
+            return reverse, conversion
+        else:
+            return None, None
+
     def get_arbitrage_window(self,strategy,cd_strategy):
         discount = c.PricingUtil.get_discount(self.optionset.eval_date, strategy['call'].maturitydt(), self.rf)
         if cd_strategy == 'reverse':
@@ -143,13 +156,13 @@ class ParityArbitrage(object):
         row = df.loc[df['pct_arbitrage_window'].idxmax()]
         option_call = self.optionset.get_baseoption_by_id(row[c.Util.ID_CALL])
         option_put = self.optionset.get_baseoption_by_id(row[c.Util.ID_PUT])
-        strategy = {'call':option_call,'put':option_put}
+        strategy = {'call':option_call,'put':option_put,'w':row['pct_arbitrage_window']}
         return strategy
 
     def open_box(self,box):
         reverse, conversion = box
         if reverse is not None and conversion is not None:
-            for cd_option in reverse.keys():
+            for cd_option in ['call','put']:
                 # short put; buy call
                 option = reverse[cd_option]
                 if cd_option == 'call':
@@ -160,7 +173,7 @@ class ParityArbitrage(object):
                                                         cd_trade_price=self.cd_price)
                 record = option.execute_order(order, slippage=self.slippage)
                 self.account.add_record(record, option)
-            for cd_option in conversion.keys():
+            for cd_option in ['call','put']:
                 # long put; short call
                 option = conversion[cd_option]
                 if cd_option == 'call':
@@ -302,7 +315,7 @@ class ParityArbitrage(object):
         while self.optionset.has_next():
             self.update_arbitrage_window()
             if empty_position:
-                box = self.prepare_strategy()
+                box = self.prepare_box()
                 empty_position = not self.open_box(box)
             else:
                 empty_position = self.close_signal(box,cd_strategy)
@@ -314,6 +327,7 @@ class ParityArbitrage(object):
         return self.account
 
 start_date = datetime.date(2015, 2, 9)
+# start_date = datetime.date(2015, 5, 1)
 # end_date = datetime.date.today()
 end_date = datetime.date(2016,1,1)
 df_metrics = get_data.get_50option_mktdata(start_date, end_date)
@@ -322,16 +336,18 @@ parity = ParityArbitrage(df_metrics,df_index=df_index)
 # df_f_c1 = get_data.get_mktdata_future_c1_daily(start_date,end_date,c.Util.STR_IH)
 # df_f_all = get_data.get_future_mktdata(start_date,end_date,c.Util.STR_IH)
 # parity = ParityArbitrage(df_metrics,df_future_c1=df_f_c1,df_future_all=df_f_all)
-df = parity.back_test()
-df.to_csv('../../accounts_data/ParityArbitrage-window.csv')
-# account.account.to_csv('../../accounts_data/ParityArbitrage-account.csv')
-# account.trade_records.to_csv('../../accounts_data/ParityArbitrage-records.csv')
-# print(account.trade_records)
-# res = account.analysis()
-# print(res)
-# pu = PlotUtil()
-# dates = list(account.account.index)
-# npv = list(account.account[c.Util.PORTFOLIO_NPV])
-# pu.plot_line_chart(dates, [npv], ['npv'])
-#
-# plt.show()
+# df = parity.back_test()
+# df.to_csv('../../accounts_data/ParityArbitrage-window.csv')
+# account = parity.back_test_r()
+account = parity.back_test_b()
+account.account.to_csv('../../accounts_data/ParityArbitrage-account.csv')
+account.trade_records.to_csv('../../accounts_data/ParityArbitrage-records.csv')
+print(account.trade_records)
+res = account.analysis()
+print(res)
+pu = PlotUtil()
+dates = list(account.account.index)
+npv = list(account.account[c.Util.PORTFOLIO_NPV])
+pu.plot_line_chart(dates, [npv], ['npv'])
+
+plt.show()
