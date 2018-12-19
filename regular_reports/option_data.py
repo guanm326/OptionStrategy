@@ -254,8 +254,8 @@ def implied_vol(last_week, end_date, df_metrics, df_res, name_code):
     optionset.init()
     list_res_iv = []
     while optionset.current_index < optionset.nbr_index:
-        if optionset.eval_date ==datetime.date(2018,11,29):
-            print('')
+        # if optionset.eval_date ==datetime.date(2018,12,17):
+        #     print('')
         dt_maturity = optionset.select_maturity_date(nbr_maturity=0, min_holding=min_holding)
         iv = optionset.get_atm_iv_by_htbr(dt_maturity)
         # print({'date': optionset.eval_date, 'iv': iv})
@@ -292,15 +292,16 @@ end_date = datetime.date.today()
 start_date = datetime.date(2017, 1, 1)
 # last_week = datetime.date(2018,11,9)
 dt_histvol = datetime.date(2014,1,1)
-min_holding = 5
+min_holding = 10
 
 
 writer = ExcelWriter('../data/option_data_python.xlsx')
 name_codes = [c.Util.STR_50ETF,c.Util.STR_CU, c.Util.STR_M, c.Util.STR_SR]
-# name_codes = [ c.Util.STR_M, c.Util.STR_SR]
+# name_codes = [ c.Util.STR_CU]
 # core_ids = ['index_50etf','cu_1901', 'm_1901', 'sr_1901']
 # core_ids = ['m_1901', 'sr_1901']
 for (idx, name_code) in enumerate(name_codes):
+    print(name_code)
     df_res = pd.DataFrame()
     # core_id = core_ids[idx]
     if name_code==c.Util.STR_50ETF:

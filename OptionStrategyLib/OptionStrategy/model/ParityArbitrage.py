@@ -16,23 +16,28 @@ import math
 
 
 class ParityArbitrage(object):
-    def __init__(self, df_option, df_index=None, df_future_c1=None, df_future_all=None):
+    def __init__(self, df_option, df_index, df_future_c1=None, df_future_all=None,df_index1=None):
         self.m = 1
-        if df_index is not None:
+        if df_future_c1 is not None:
+            self.df_base = df_future_c1
+            self.underlying = BaseFutureCoutinuous(df_future_c1=df_future_c1, df_futures_all_daily=df_future_all)
+            self.underlying.init()
+            self.base_index = BaseInstrument(df_index)
+            self.base_index.init()
+            self.underlying_unit_ratio = 1/1000.0
+            self.m = 1
+        elif df_index is not None:
             self.df_base = df_index
             self.underlying = BaseInstrument(df_index)
             self.underlying.init()
             self.underlying_unit_ratio = 1
             self.m = 0.75
-        elif df_future_c1 is not None:
-            self.df_base = df_future_c1
-            self.underlying = BaseFutureCoutinuous(df_future_c1=df_future_c1, df_futures_all_daily=df_future_all)
-            self.underlying.init()
-            self.underlying_unit_ratio = 1/1000.0
-            self.m = 1
+        if df_index1 is not None:
+            self.base_index_1 = BaseInstrument(df_index1)
+            self.base_index_1.init()
         self.optionset = BaseOptionSet(df_option)
         self.optionset.init()
-        self.rf = 0.03
+        self.rf = 0.024
         self.account = BaseAccount(c.Util.BILLION / 10,rf=self.rf)
         self.unit = 50
         self.min_holding = 20
@@ -52,26 +57,36 @@ class ParityArbitrage(object):
             window_reverse = df_reverse.loc[df_reverse['pct_arbitrage_window'].idxmax(),'pct_arbitrage_window']
         if not df_conversion.empty and len(df_conversion) > 0:
             window_conversion = df_conversion.loc[df_conversion['pct_arbitrage_window'].idxmax(),'pct_arbitrage_window']
+        basis_etf = (self.base_index.mktprice_close()*1000-self.underlying.mktprice_close())/(self.base_index.mktprice_close()*1000)
+        basis_index = (self.base_index_1.mktprice_close()-self.underlying.mktprice_close())/self.base_index_1.mktprice_close()
         self.df_arbitrage_window.loc[self.optionset.eval_date,'window_reverse'] = window_reverse
         self.df_arbitrage_window.loc[self.optionset.eval_date,'window_conversion'] = window_conversion
+        self.df_arbitrage_window.loc[self.optionset.eval_date,'basis_to_etf'] = basis_etf
+        self.df_arbitrage_window.loc[self.optionset.eval_date,'basis_to_index'] = basis_index
+        self.df_arbitrage_window.loc[self.optionset.eval_date,'50_etf'] = self.base_index.mktprice_close()
+        self.df_arbitrage_window.loc[self.optionset.eval_date,'ih'] = self.underlying.mktprice_close()
 
     def prepare_strategy(self):
         t_quote = self.t_quote[(self.t_quote['rank']<=3)&(self.t_quote['rank']>=-3)] # 只考虑三挡以内期权
         df_reverse = t_quote[t_quote['pct_arbitrage_window']>0.0015]
         df_conversion = t_quote[t_quote['pct_arbitrage_window']<-0.0015]
-        reverse = self.max_pair(df_reverse)
-        conversion = self.max_pair(df_conversion)
+        reverse, conversion = None, None
+        if not df_reverse.empty or len(df_reverse) > 0:
+            row = df_reverse.loc[df_reverse['pct_arbitrage_window'].idxmax()]
+            reverse = self._pair_strategy(row)
+        if not df_conversion.empty or len(df_conversion) > 0:
+            row = df_conversion.loc[df_conversion['pct_arbitrage_window'].idxmin()]
+            conversion = self._pair_strategy(row)
         return reverse, conversion
 
     def prepare_box(self):
         t_quote = self.t_quote[(self.t_quote['rank']<=3)&(self.t_quote['rank']>=-3)] # 只考虑三挡以内期权
-        # df_reverse = t_quote[t_quote['pct_arbitrage_window']>0.0]
-        # df_conversion = t_quote[t_quote['pct_arbitrage_window']<-0.0]
-        reverse = self.max_pair(t_quote)
-        conversion = self.max_pair(t_quote)
+        reverse = self._pair_strategy_box(t_quote.loc[t_quote['pct_arbitrage_window'].idxmax()])
+        conversion = self._pair_strategy_box(t_quote.loc[t_quote['pct_arbitrage_window'].idxmin()])
         # TODO: DEFINE BOX ARBITRAGE WINDOW
-        if reverse['w'] - conversion['w'] > 0.001 or reverse['w'] - conversion['w'] < -0.001:
-            print(self.optionset.eval_date,reverse['w'] - conversion['w'])
+        if reverse['w'] <= 0.0 and conversion['w']-reverse['w']<-0.001:
+            return reverse, conversion
+        elif conversion['w'] >= 0.0 and reverse['w']-conversion['w'] > 0.001:
             return reverse, conversion
         else:
             return None, None
@@ -151,13 +166,26 @@ class ParityArbitrage(object):
                     or conversion['call'].maturitydt() == self.optionset.eval_date:
                 self.close_out()
 
-    def max_pair(self,df):
-        if df.empty or len(df) == 0: return
-        row = df.loc[df['pct_arbitrage_window'].idxmax()]
+    # def max_pair(self,df):
+    #     if df.empty or len(df) == 0: return
+    #     row = df.loc[df['pct_arbitrage_window'].idxmax()]
+    #     option_call = self.optionset.get_baseoption_by_id(row[c.Util.ID_CALL])
+    #     option_put = self.optionset.get_baseoption_by_id(row[c.Util.ID_PUT])
+    #     strategy = {'call':option_call,'put':option_put,'w':row['pct_arbitrage_window']}
+    #     return strategy
+
+    def _pair_strategy(self,row):
+        option_call = self.optionset.get_baseoption_by_id(row[c.Util.ID_CALL])
+        option_put = self.optionset.get_baseoption_by_id(row[c.Util.ID_PUT])
+        strategy = {'call':option_call,'put':option_put}
+        return strategy
+
+    def _pair_strategy_box(self,row):
         option_call = self.optionset.get_baseoption_by_id(row[c.Util.ID_CALL])
         option_put = self.optionset.get_baseoption_by_id(row[c.Util.ID_PUT])
         strategy = {'call':option_call,'put':option_put,'w':row['pct_arbitrage_window']}
         return strategy
+
 
     def open_box(self,box):
         reverse, conversion = box
@@ -189,7 +217,7 @@ class ParityArbitrage(object):
     def open_reverse(self,strategy):
         # short underlying, put; buy call
         if strategy is None: return False
-        for cd_option in strategy.keys():
+        for cd_option in ['call','put']:
             option = strategy[cd_option]
             if cd_option == 'call': long_short = c.LongShort.LONG
             else: long_short = c.LongShort.SHORT
@@ -207,7 +235,7 @@ class ParityArbitrage(object):
     def open_conversion(self,strategy):
         # long underlying, put; short call
         if strategy is None: return False
-        for cd_option in strategy.keys():
+        for cd_option in ['call','put']:
             option = strategy[cd_option]
             if cd_option == 'call': long_short = c.LongShort.SHORT
             else: long_short = c.LongShort.LONG
@@ -260,6 +288,9 @@ class ParityArbitrage(object):
             self.present_arbitrage_window()
             self.optionset.next()
             self.underlying.next()
+            if isinstance(self.underlying, BaseFutureCoutinuous):
+                self.base_index_1.next()
+                self.base_index.next()
         return self.df_arbitrage_window
 
     def back_test_r(self):
@@ -283,10 +314,11 @@ class ParityArbitrage(object):
             self.account.daily_accounting(self.optionset.eval_date)
             self.optionset.next()
             self.underlying.next()
+            print(self.base_index.eval_date,self.optionset.eval_date,self.underlying.eval_date)
         return self.account
 
     def back_test_c(self):
-        cd_strategy = 'conversion'# Reverse
+        cd_strategy = 'conversion'
         empty_position = True
         strategy_excuted = None
         while self.optionset.has_next():
@@ -324,30 +356,48 @@ class ParityArbitrage(object):
             self.account.daily_accounting(self.optionset.eval_date)
             self.optionset.next()
             self.underlying.next()
+
         return self.account
 
-start_date = datetime.date(2015, 2, 9)
-# start_date = datetime.date(2015, 5, 1)
-# end_date = datetime.date.today()
-end_date = datetime.date(2016,1,1)
-df_metrics = get_data.get_50option_mktdata(start_date, end_date)
-df_index = get_data.get_index_mktdata(start_date,end_date,c.Util.STR_INDEX_50ETF)
-parity = ParityArbitrage(df_metrics,df_index=df_index)
+# start_date = datetime.date(2015, 2, 9)
+start_date = datetime.date(2015, 5, 1)
+end_date = datetime.date.today()
+# end_date = datetime.date(2016,1,1)
+# df_metrics = get_data.get_50option_mktdata(start_date, end_date)
+# df_index = get_data.get_index_mktdata(start_date,end_date,c.Util.STR_INDEX_50ETF)
 # df_f_c1 = get_data.get_mktdata_future_c1_daily(start_date,end_date,c.Util.STR_IH)
 # df_f_all = get_data.get_future_mktdata(start_date,end_date,c.Util.STR_IH)
-# parity = ParityArbitrage(df_metrics,df_future_c1=df_f_c1,df_future_all=df_f_all)
-# df = parity.back_test()
-# df.to_csv('../../accounts_data/ParityArbitrage-window.csv')
-# account = parity.back_test_r()
-account = parity.back_test_b()
-account.account.to_csv('../../accounts_data/ParityArbitrage-account.csv')
-account.trade_records.to_csv('../../accounts_data/ParityArbitrage-records.csv')
-print(account.trade_records)
-res = account.analysis()
-print(res)
-pu = PlotUtil()
-dates = list(account.account.index)
-npv = list(account.account[c.Util.PORTFOLIO_NPV])
-pu.plot_line_chart(dates, [npv], ['npv'])
+df_sh50 = get_data.get_index_mktdata(start_date,end_date,c.Util.STR_INDEX_50SH)
+df_metrics=pd.read_excel('../../accounts_data/df_metrics.xlsx')
+df_index= pd.read_excel('../../accounts_data/df_index.xlsx')
+df_f_c1=pd.read_excel('../../accounts_data/df_f_c1.xlsx')
+df_f_all=pd.read_excel('../../accounts_data/df_f_all.xlsx')
+df_metrics = df_metrics[df_metrics[c.Util.DT_DATE]>=start_date].reset_index(drop=True)
+df_index = df_index[df_index[c.Util.DT_DATE]>=start_date].reset_index(drop=True)
+df_f_c1 = df_f_c1[df_f_c1[c.Util.DT_DATE]>=start_date].reset_index(drop=True)
+df_f_all = df_f_all[df_f_all[c.Util.DT_DATE]>=start_date].reset_index(drop=True)
+df_metrics[c.Util.DT_DATE] = df_metrics[c.Util.DT_DATE].apply(lambda x: x.date())
+df_index[c.Util.DT_DATE] = df_index[c.Util.DT_DATE].apply(lambda x: x.date())
+df_f_c1[c.Util.DT_DATE] = df_f_c1[c.Util.DT_DATE].apply(lambda x: x.date())
+df_f_all[c.Util.DT_DATE] = df_f_all[c.Util.DT_DATE].apply(lambda x: x.date())
 
-plt.show()
+df_metrics[c.Util.DT_MATURITY] = df_metrics[c.Util.DT_MATURITY].apply(lambda x: x.date())
+df_f_all[c.Util.DT_MATURITY] = df_f_all[c.Util.DT_MATURITY].apply(lambda x: x.date())
+parity = ParityArbitrage(df_metrics,df_index,df_future_c1=df_f_c1,df_future_all=df_f_all,df_index1=df_sh50)
+
+# parity = ParityArbitrage(df_metrics,df_future_c1=df_f_c1,df_future_all=df_f_all)
+df = parity.back_test()
+df.to_csv('../../accounts_data/ParityArbitrage-window.csv')
+# account = parity.back_test_r()
+# account = parity.back_test_b()
+# account = parity.back_test_c()
+# account.account.to_csv('../../accounts_data/ParityArbitrage-account-r.csv')
+# account.trade_records.to_csv('../../accounts_data/ParityArbitrage-records-r.csv')
+# print(account.trade_records)
+# res = account.analysis()
+# print(res)
+# pu = PlotUtil()
+# dates = list(account.account.index)
+# npv = list(account.account[c.Util.PORTFOLIO_NPV])
+# pu.plot_line_chart(dates, [npv], ['npv'])
+# plt.show()
