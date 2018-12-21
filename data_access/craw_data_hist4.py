@@ -17,22 +17,23 @@ wind data
 
 w.start()
 
-conn = admin.conn_mktdata()
+conn = admin.conn_gc()
 
 options_mktdata_daily = admin.table_options_mktdata()
 
 dc = DataCollection()
 
-
 today = datetime.date.today()
-beg_date = datetime.date(2018, 9, 21)
+beg_date = datetime.date(2018, 4, 19)
 # beg_date = datetime.date(2018, 9, 1)
-end_date = datetime.date.today()
+# end_date = datetime.date.today()
+end_date = datetime.date(2018, 5, 20)
 
 date_range = w.tdays(beg_date, end_date, "").Data[0]
-date_range = sorted(date_range,reverse=True)
+date_range = sorted(date_range, reverse=True)
 for dt in date_range:
-    db_data = dc.table_options().wind_cu_option(dt.strftime("%Y-%m-%d"))
+    # db_data = dc.table_options().wind_cu_option(dt.strftime("%Y-%m-%d"))
+    db_data = dc.table_options().wind_data_50etf_option(dt.strftime("%Y-%m-%d"))
     if len(db_data) == 0: print('no data')
     for res in db_data:
         try:
@@ -40,4 +41,3 @@ for dt in date_range:
             print(res)
         except Exception as e:
             print(e)
-

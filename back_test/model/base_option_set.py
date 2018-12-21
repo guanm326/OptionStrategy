@@ -167,12 +167,12 @@ class BaseOptionSet(AbstractBaseProductSet):
             if not option.has_next():
                 continue
             option.next()
-            if option.is_valid_option():
+            if option.is_valid_option(self.eval_date):
                 self.add_option(option)
                 if option.maturitydt() not in eligible_maturities:
                     eligible_maturities.append(option.maturitydt())
         for option in self.option_dict.pop(self.eval_date, []):
-            if option.is_valid_option():
+            if option.is_valid_option(self.eval_date):
                 self.add_option(option)
                 if option.maturitydt() not in eligible_maturities:
                     eligible_maturities.append(option.maturitydt())

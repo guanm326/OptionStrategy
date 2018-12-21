@@ -384,7 +384,10 @@ class BaseOption(BaseProduct):
                                   self.strike()) * self.multiplier()
         return maintain_margin
 
-    def is_valid_option(self) -> bool:
+    def is_valid_option(self,eval_date) -> bool:
+        if self.eval_date != eval_date:
+            print('option eval date is '+str(self.eval_date)+', but optionset date is '+str(eval_date)+' for id = '+ self.id_instrument())
+            return False
         if self.name_code() in Util.NAME_CODE_159:
             return int(self.id_underlying()[-2:]) in Util.MAIN_CONTRACT_159
         return True

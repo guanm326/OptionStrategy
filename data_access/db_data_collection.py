@@ -313,7 +313,7 @@ class DataCollection():
             flag_night = -1
 
             # df_optionchain = self.get_option_contracts(datestr)
-            optionchain = w.wset("optioncontractbasicinfo","exchange=sse;windcode=510050.SH;status=trading")
+            optionchain = w.wset("optioncontractbasicinfo","exchange=sse;windcode=510050.SH;status=all")
             df_optionchain = pd.DataFrame()
             for i0, f0 in enumerate(optionchain.Fields):
                 df_optionchain[f0] = optionchain.Data[i0]
@@ -326,6 +326,7 @@ class DataCollection():
             for (i2, df_mktdata) in df_mktdatas.iterrows():
                 dt_date = datetime.datetime.strptime(datestr, "%Y-%m-%d").date()
                 windcode = df_mktdata['option_code']
+                code_instrument = windcode + '.SH'
                 option_info = df_optionchain[df_optionchain['wind_code'] == windcode]
                 call_or_put = option_info['call_or_put'].values[0]
                 expire_date = option_info['expire_date'].values[0]
@@ -363,7 +364,7 @@ class DataCollection():
                           'id_instrument': id_instrument,
                           'flag_night': flag_night,
                           'datasource': datasource,
-                          'code_instrument': windcode,
+                          'code_instrument': code_instrument,
                           'name_code': name_code,
                           'id_underlying': id_underlying,
                           'amt_strike': float(amt_strike),

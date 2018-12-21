@@ -296,8 +296,8 @@ min_holding = 10
 
 
 writer = ExcelWriter('../data/option_data_python.xlsx')
-name_codes = [c.Util.STR_50ETF,c.Util.STR_CU, c.Util.STR_M, c.Util.STR_SR]
-# name_codes = [ c.Util.STR_CU]
+# name_codes = [c.Util.STR_50ETF,c.Util.STR_CU, c.Util.STR_M, c.Util.STR_SR]
+name_codes = [ c.Util.STR_CU]
 # core_ids = ['index_50etf','cu_1901', 'm_1901', 'sr_1901']
 # core_ids = ['m_1901', 'sr_1901']
 for (idx, name_code) in enumerate(name_codes):
