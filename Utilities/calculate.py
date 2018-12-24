@@ -56,7 +56,7 @@ def generate_times(dt_dates):
 
 # t = generate_times([datetime.date(2018, 1, 1), datetime.date(2018, 1, 2)])
 # print(t)
-montecarlo(3000, 0.2,[datetime.date(2018, 1, 1), datetime.date(2018, 1, 2)])
+# montecarlo(3000, 0.2,[datetime.date(2018, 1, 1), datetime.date(2018, 1, 2)])
 # s, path = simulate_minute(3000, 0.2, 30)
 # print(s)
 # print(path)

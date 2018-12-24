@@ -41,7 +41,7 @@ class BaseInstrument(BaseProduct):
     """ Long position only in base instrument. """
 
     def execute_order(self, order: Order, slippage=0,slippage_rate=0.0, execute_type: ExecuteType = ExecuteType.EXECUTE_ALL_UNITS):
-        if order is None: return
+        if order is None or order.trade_unit == 0: return
         # if execute_type == ExecuteType.EXECUTE_ALL_UNITS:
         order.trade_all_unit(slippage=slippage,slippage_rate=slippage_rate)
         # elif execute_type == ExecuteType.EXECUTE_WITH_MAX_VOLUME:
