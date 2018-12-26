@@ -431,11 +431,13 @@ class ParityArbitrage(object):
                 self.df_arbitrage_window.loc[self.optionset.eval_date, 'tracking_error'] = self.tracking_error
                 self.df_arbitrage_window.loc[self.optionset.eval_date, 'index_50'] = self.baseindex.mktprice_close()
         self.df_arbitrage_window.loc[self.optionset.eval_date,'50etf'] = self.underlying.mktprice_close()
+        self.df_arbitrage_window.loc[self.optionset.eval_date,'sythetic_underlying_max'] = self.row_max_sythetic['sythetic_underlying']
+        self.df_arbitrage_window.loc[self.optionset.eval_date,'sythetic_underlying_min'] = self.row_min_sythetic['sythetic_underlying']
 
 
-    def get_arbitrage_position(self,cd_strategy):
+    def open_signal(self,cd_strategy):
         if cd_strategy == 'box':
-            if self.row_max_sythetic['sythetic_underlying'] - self.row_min_sythetic['sythetic_underlying'] > self.aggregate_costs:
+            if (self.row_max_sythetic['sythetic_underlying'] - self.row_min_sythetic['sythetic_underlying'])/self.underlying.mktprice_close() > self.aggregate_costs:
                 df = pd.DataFrame(columns=['dt_date','id_instrument','base_instrument','long_short'])
                 base_instrument = self.optionset.get_baseoption_by_id(self.row_max_sythetic[c.Util.ID_CALL])
                 fund_requirement = base_instrument.get_initial_margin(c.LongShort.SHORT)
@@ -469,8 +471,7 @@ class ParityArbitrage(object):
             else:
                 return None
 
-    def open_position(self,cd_strategy):
-        df_position = self.get_arbitrage_position(cd_strategy)
+    def open_excute(self,df_position):
         if df_position is None:
             return False
         else:
@@ -482,6 +483,12 @@ class ParityArbitrage(object):
                                                         cd_trade_price=self.cd_price)
                 record = option.execute_order(order, slippage=self.slippage)
                 self.account.add_record(record, option)
+            return True
+
+    def close_excute(self,df_position):
+        if df_position is None:
+            return False
+        else:
             return True
 
     def close_position(self,cd_strategy):
@@ -553,6 +560,7 @@ parity = ParityArbitrage(df_metrics,df_index)
 # account = parity.back_test_r()
 account = parity.back_test_b()
 # account = parity.back_test_c()
+parity.df_arbitrage_window.to_csv('../../accounts_data/ParityArbitrage-window.csv')
 account.account.to_csv('../../accounts_data/ParityArbitrage-account.csv')
 account.trade_records.to_csv('../../accounts_data/ParityArbitrage-records.csv')
 print(account.trade_records)

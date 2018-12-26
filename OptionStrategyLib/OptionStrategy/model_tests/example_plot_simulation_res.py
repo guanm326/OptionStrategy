@@ -7,8 +7,8 @@ import datetime
 from Utilities.PlotUtil import PlotUtil
 import math
 
-df_simulation_npvs_bad = pd.read_csv('../../accounts_data/df_simulation_npvs_2008.csv')
-df_simulation_analysis_bad = pd.read_csv('../../accounts_data/df_simulation_analysis_2008.csv')
+df_simulation_npvs_bad = pd.read_csv('../../accounts_data/df_simulation_npvs_1000_2008.csv')
+df_simulation_analysis_bad = pd.read_csv('../../accounts_data/df_simulation_analysis_1000_2008.csv')
 max_absolute_loss = list(df_simulation_analysis_bad['max_absolute_loss'])
 annual_yield = list(df_simulation_analysis_bad['annual_yield'])
 df_1 = df_simulation_analysis_bad[df_simulation_analysis_bad['max_absolute_loss']>=-0.1]
@@ -26,8 +26,8 @@ plt.figure()
 plt.hist(annual_yield, bins=100, density=True, facecolor="#CC0000", label="annual yield (historical simulation by 2008)")
 plt.legend()
 
-df_simulation_npvs_good = pd.read_csv('../../accounts_data/df_simulation_npvs.csv')
-df_simulation_analysis_good = pd.read_csv('../../accounts_data/df_simulation_analysis.csv')
+df_simulation_npvs_good = pd.read_csv('../../accounts_data/df_simulation_npvs_1000_2007.csv')
+df_simulation_analysis_good = pd.read_csv('../../accounts_data/df_simulation_analysis_1000_2007.csv')
 max_absolute_loss = list(df_simulation_analysis_good['max_absolute_loss'])
 annual_yield = list(df_simulation_analysis_good['annual_yield'])
 df_1 = df_simulation_analysis_good[df_simulation_analysis_good['max_absolute_loss']>=-0.1]

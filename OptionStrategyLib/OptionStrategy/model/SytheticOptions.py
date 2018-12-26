@@ -169,12 +169,13 @@ class SytheticOption(object):
         self.hedge_multiplier = 1
         self.hold_unit = 0
         self.target_option = None
-        self.cd_delta_bound = 'ww'
-        self.delta_criterian = 0.1
+        self.cd_delta_bound = 'ww' # Delta调仓模型
+        self.delta_criterian = 0.1 # 固定delta变化值调仓条件
         self.delta_last_rebalanced = 0.0
-        self.d = 50
-        self.k = 1.1
+        self.d = 50 # 期权固定期限
+        self.k = 1.1 # 期权行权价比率
         self.H = None
+        self.delta_upper_bound = 0.99
 
     def _prepare_data(self):
         days_1y = 252
@@ -189,23 +190,35 @@ class SytheticOption(object):
 
     def update_target_option(self):
         self.dt_maturity = self.base.eval_date + datetime.timedelta(days=self.d)
-        # self.strike = self.base.mktprice_hist_average(20)*1.05
         self.strike = self.base.mktprice_close() * self.k
         self.target_option = EuropeanOption(self.strike, self.dt_maturity, c.OptionType.CALL)
-        # self.unit_option = np.floor(self.account.portfolio_total_value*self.leverage/self.strike)
 
     def update_maturity(self):
         self.dt_maturity = self.base.eval_date + datetime.timedelta(days=self.d)
         self.target_option = EuropeanOption(self.strike, self.dt_maturity, c.OptionType.CALL)
 
-    def get_black_delta(self, vol: float = 0.2):
+    def update_option_by_delta(self):
+        self.dt_maturity = self.base.eval_date + datetime.timedelta(days=self.d)
+        spot = self.base.mktprice_close()
+        for k in np.arange(spot*1.1, spot*0.1,-spot/30.0):
+            option = EuropeanOption(k, self.dt_maturity, c.OptionType.CALL)
+            delta = self.get_black_delta(option=option)
+            if delta >= self.delta_upper_bound:
+                self.target_option = option
+                self.strike = k
+                print(self.base.eval_date,' update_option_by_delta')
+                return
+
+
+    def get_black_delta(self, vol: float = 0.2, option = None):
+        if option is None:
+            option = self.target_option
         spot = self.base.mktprice_close()
         date = self.base.eval_date
         if date in self.df_hv.index:
             vol = self.df_hv.loc[date, 'hv_6m']
-        # print(vol)
-        black = BlackCalculator(date, self.target_option.dt_maturity, self.target_option.strike,
-                                self.target_option.option_type, spot, vol, self.rf)
+        black = BlackCalculator(date, option.dt_maturity, option.strike,
+                                option.option_type, spot, vol, self.rf)
         delta = round(black.Delta(), 2)
         return delta
 
@@ -299,6 +312,9 @@ class SytheticOption(object):
             if self.base.next_date().year != eval_year:
                 eval_year = self.base.next_date().year
                 self.update_target_option()  # Update option at last trading day of the year
+            elif self.delta_last_rebalanced >= self.delta_upper_bound:
+                self.update_option_by_delta()
+
             self.base.next()
             self.update_maturity()
         self.account.daily_accounting(self.base.eval_date)
@@ -309,87 +325,87 @@ class SytheticOption(object):
 
 
 
-################# Good Year Historical Simulation: 2007 ########################
-df_simulation_npvs = pd.DataFrame()
-df_simulation_analysis = pd.DataFrame()
-# df_simulation_mdd = pd.DataFrame()
-df_simulation = pd.read_excel('../../../data/df_simulation1000.xlsx')
-dates = df_simulation[c.Util.DT_DATE].apply(lambda x: x.date())
-df_simulation_npvs[c.Util.DT_DATE] = dates
-df_simulation_npvs = df_simulation_npvs.set_index(c.Util.DT_DATE,drop=True)
-for col in df_simulation.columns.values:
-    if col == c.Util.DT_DATE: continue
-    print(col)
-    df_base = pd.DataFrame()
-    df_base[c.Util.AMT_CLOSE] = df_simulation[col]
-    df_base[c.Util.DT_DATE] = dates
-    df_base[c.Util.ID_INSTRUMENT] = '000985.CSI'
-    sythetic = SytheticOption(df_index=df_base)
-    sythetic.d = 50
-    sythetic.cd_delta_bound = 'ww'
-    account = sythetic.back_test()
-    npvs = account.account[c.Util.PORTFOLIO_NPV]
-    df_simulation_npvs['npv_'+col] = account.account[c.Util.PORTFOLIO_NPV]
-    df_yearly =account.annual_analyis()[0].loc['2007']
-    df_yearly['SimNo'] = col
-    df_simulation_analysis = df_simulation_analysis.append(df_yearly,ignore_index=True)
-df_simulation_npvs.to_csv('../../accounts_data/df_simulation_npvs_1000_2007.csv')
-df_simulation_analysis.to_csv('../../accounts_data/df_simulation_analysis_1000_2007.csv')
-
-################# Bad Year Historical Simulation: 2008 ########################
-df_simulation_npvs = pd.DataFrame()
-df_simulation_analysis = pd.DataFrame()
-# df_simulation_mdd = pd.DataFrame()
-df_simulation = pd.read_excel('../../../data/df_simulation1000_1.xlsx')
-dates = df_simulation[c.Util.DT_DATE].apply(lambda x: x.date())
-df_simulation_npvs[c.Util.DT_DATE] = dates
-df_simulation_npvs = df_simulation_npvs.set_index(c.Util.DT_DATE,drop=True)
-for col in df_simulation.columns.values:
-    if col == c.Util.DT_DATE: continue
-    print(col)
-    df_base = pd.DataFrame()
-    df_base[c.Util.AMT_CLOSE] = df_simulation[col]
-    df_base[c.Util.DT_DATE] = dates
-    df_base[c.Util.ID_INSTRUMENT] = '000985.CSI'
-    sythetic = SytheticOption(df_index=df_base)
-    sythetic.d = 50
-    sythetic.cd_delta_bound = 'ww'
-    account = sythetic.back_test()
-    npvs = account.account[c.Util.PORTFOLIO_NPV]
-    df_simulation_npvs['npv_'+col] = account.account[c.Util.PORTFOLIO_NPV]
-    df_yearly =account.annual_analyis()[0].loc['2008']
-    df_yearly['SimNo'] = col
-    df_simulation_analysis = df_simulation_analysis.append(df_yearly,ignore_index=True)
-df_simulation_npvs.to_csv('../../accounts_data/df_simulation_npvs_1000_2008.csv')
-df_simulation_analysis.to_csv('../../accounts_data/df_simulation_analysis_1000_2008.csv')
-
-
+# ################# Good Year Historical Simulation: 2007 ########################
+# df_simulation_npvs = pd.DataFrame()
+# df_simulation_analysis = pd.DataFrame()
+# # df_simulation_mdd = pd.DataFrame()
+# df_simulation = pd.read_excel('../../../data/df_simulation1000.xlsx')
+# dates = df_simulation[c.Util.DT_DATE].apply(lambda x: x.date())
+# df_simulation_npvs[c.Util.DT_DATE] = dates
+# df_simulation_npvs = df_simulation_npvs.set_index(c.Util.DT_DATE,drop=True)
+# for col in df_simulation.columns.values:
+#     if col == c.Util.DT_DATE: continue
+#     print(col)
+#     df_base = pd.DataFrame()
+#     df_base[c.Util.AMT_CLOSE] = df_simulation[col]
+#     df_base[c.Util.DT_DATE] = dates
+#     df_base[c.Util.ID_INSTRUMENT] = '000985.CSI'
+#     sythetic = SytheticOption(df_index=df_base)
+#     sythetic.d = 50
+#     sythetic.cd_delta_bound = 'ww'
+#     account = sythetic.back_test()
+#     npvs = account.account[c.Util.PORTFOLIO_NPV]
+#     df_simulation_npvs['npv_'+col] = account.account[c.Util.PORTFOLIO_NPV]
+#     df_yearly =account.annual_analyis()[0].loc['2007']
+#     df_yearly['SimNo'] = col
+#     df_simulation_analysis = df_simulation_analysis.append(df_yearly,ignore_index=True)
+# df_simulation_npvs.to_csv('../../accounts_data/df_simulation_npvs_1000_2007.csv')
+# df_simulation_analysis.to_csv('../../accounts_data/df_simulation_analysis_1000_2007.csv')
 #
-# df_base = pd.read_excel('../../../data/中证全指日收盘价.xlsx')
-# df_base[c.Util.DT_DATE] = df_base['日期'].apply(lambda x: x.date())
-# df_base = df_base.rename(columns={'000985.CSI': c.Util.AMT_CLOSE})
-# id_instrument = '000985.CSI'
-# df_base[c.Util.ID_INSTRUMENT] = id_instrument
+# ################# Bad Year Historical Simulation: 2008 ########################
+# df_simulation_npvs = pd.DataFrame()
+# df_simulation_analysis = pd.DataFrame()
+# # df_simulation_mdd = pd.DataFrame()
+# df_simulation = pd.read_excel('../../../data/df_simulation1000_1.xlsx')
+# dates = df_simulation[c.Util.DT_DATE].apply(lambda x: x.date())
+# df_simulation_npvs[c.Util.DT_DATE] = dates
+# df_simulation_npvs = df_simulation_npvs.set_index(c.Util.DT_DATE,drop=True)
+# for col in df_simulation.columns.values:
+#     if col == c.Util.DT_DATE: continue
+#     print(col)
+#     df_base = pd.DataFrame()
+#     df_base[c.Util.AMT_CLOSE] = df_simulation[col]
+#     df_base[c.Util.DT_DATE] = dates
+#     df_base[c.Util.ID_INSTRUMENT] = '000985.CSI'
+#     sythetic = SytheticOption(df_index=df_base)
+#     sythetic.d = 50
+#     sythetic.cd_delta_bound = 'ww'
+#     account = sythetic.back_test()
+#     npvs = account.account[c.Util.PORTFOLIO_NPV]
+#     df_simulation_npvs['npv_'+col] = account.account[c.Util.PORTFOLIO_NPV]
+#     df_yearly =account.annual_analyis()[0].loc['2008']
+#     df_yearly['SimNo'] = col
+#     df_simulation_analysis = df_simulation_analysis.append(df_yearly,ignore_index=True)
+# df_simulation_npvs.to_csv('../../accounts_data/df_simulation_npvs_1000_2008.csv')
+# df_simulation_analysis.to_csv('../../accounts_data/df_simulation_analysis_1000_2008.csv')
 
-# sythetic = SytheticOption(df_index=df_base)
-# sythetic.k = 1.1
-# sythetic.d = 50
-# account = sythetic.back_test()
-# df_res_k[str(k)] = account.analysis()
-# account.account.to_csv('../../accounts_data/sythetic_account.csv')
-# account.trade_records.to_csv('../../accounts_data/sythetic_records.csv')
-# res = account.analysis()
-# print(res)
-# df_yearly,df_yearly_npvs = account.annual_analyis()
-# print(df_yearly)
+
+df_base = pd.read_excel('../../../data/中证全指日收盘价.xlsx')
+df_base[c.Util.DT_DATE] = df_base['日期'].apply(lambda x: x.date())
+df_base = df_base.rename(columns={'000985.CSI': c.Util.AMT_CLOSE})
+id_instrument = '000985.CSI'
+df_base[c.Util.ID_INSTRUMENT] = id_instrument
+
+
+###############Single BackTest Example ##########################
+
+sythetic = SytheticOption(df_index=df_base)
+sythetic.delta_upper_bound = 0.99
+account = sythetic.back_test()
+account.account.to_csv('../../accounts_data/sythetic_account.csv')
+account.trade_records.to_csv('../../accounts_data/sythetic_records.csv')
+res = account.analysis()
+print(res)
+df_yearly,df_yearly_npvs = account.annual_analyis()
+print(df_yearly)
 # df_yearly.to_csv('../../accounts_data/df_yearly.csv')
-# df_yearly_npvs.to_csv('../../accounts_data/df_yearly_npvs.csv')
-# pu = PlotUtil()
-# dates = list(account.account.index)
-# npv = list(account.account[c.Util.PORTFOLIO_NPV])
-# benchmark = list(account.account['benchmark'])
-# pu.plot_line_chart(dates, [npv,benchmark], ['npv','benchmark'])
-# plt.show()
+# df_yearly_npvs.to_csv('../../accounts_data/df_yearly_npvs.csv')e
+pu = PlotUtil()
+dates = list(account.account.index)
+npv = list(account.account[c.Util.PORTFOLIO_NPV])
+benchmark = list(account.account['benchmark'])
+pu.plot_line_chart(dates, [npv,benchmark], ['npv','benchmark'])
+plt.show()
 
 ######### Delta Bounds ###################
 # npvs = []
@@ -454,7 +470,7 @@ df_simulation_analysis.to_csv('../../accounts_data/df_simulation_analysis_1000_2
 
 
 ######### Ts ###################
-
+#
 # df_yield = pd.DataFrame()
 # df_mdd = pd.DataFrame()
 # npvs = []
@@ -476,10 +492,10 @@ df_simulation_analysis.to_csv('../../accounts_data/df_simulation_analysis_1000_2
 #     df_mdd['npv '+str(d) + ' day'] = df_yearly['max_absolute_loss']
 # df_npvs['dt_date'] = list(account.account.index)
 # df_npvs['benchmark'] = list(account.account['benchmark'])
-# df_npvs.to_csv('../../accounts_data/df_npvs.csv')
-# df_res.to_csv('../../accounts_data/df_res.csv')
-# df_yield.to_csv('../../accounts_data/df_yield.csv')
-# df_mdd.to_csv('../../accounts_data/df_mdd.csv')
+# df_npvs.to_csv('../../accounts_data/df_npvs-1.csv')
+# df_res.to_csv('../../accounts_data/df_res-1.csv')
+# df_yield.to_csv('../../accounts_data/df_yield-1.csv')
+# df_mdd.to_csv('../../accounts_data/df_mdd-1.csv')
 # pu = PlotUtil()
 # dates = list(account.account.index)
 # npvs.append(list(account.account['benchmark']))
