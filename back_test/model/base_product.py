@@ -389,6 +389,10 @@ class BaseProduct(AbstractBaseProduct):
             return self.df_data.loc[self.current_index - 1][Util.AMT_CLOSE]
         return ret
 
+    def get_fund_required(self, long_short: LongShort) -> float:
+        return self.mktprice_close()*self.multiplier()
+
+
     def get_initial_margin(self, long_short: LongShort) -> float:
         return 0.0
 

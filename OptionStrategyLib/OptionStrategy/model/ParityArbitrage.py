@@ -13,7 +13,7 @@ import datetime
 import pandas as pd
 import numpy as np
 import math
-
+from OptionStrategyLib.OptionStrategy.model import TradingDesk
 
 # class ParityArbitrage1(object):
 #     def __init__(self, df_option, df_index, df_future_c1=None, df_future_all=None,df_index1=None):
@@ -439,45 +439,55 @@ class ParityArbitrage(object):
         if cd_strategy == 'box':
             if (self.row_max_sythetic['sythetic_underlying'] - self.row_min_sythetic['sythetic_underlying'])/self.underlying.mktprice_close() > self.aggregate_costs:
                 df = pd.DataFrame(columns=['dt_date','id_instrument','base_instrument','long_short'])
-                base_instrument = self.optionset.get_baseoption_by_id(self.row_max_sythetic[c.Util.ID_CALL])
-                fund_requirement = base_instrument.get_initial_margin(c.LongShort.SHORT)
+                # Converion : Short Sythetic
+                self.conversion_call = self.optionset.get_baseoption_by_id(self.row_max_sythetic[c.Util.ID_CALL])
+                fund_requirement = self.conversion_call.get_fund_required(c.LongShort.SHORT)
                 df = df.append({'dt_date':self.optionset.eval_date,
-                           'id_instrument':self.row_max_sythetic[c.Util.ID_CALL],
-                           'base_instrument':base_instrument,
-                           'long_short':c.LongShort.SHORT,
-                           'fund_requirement':fund_requirement},ignore_index=True)
-                base_instrument = self.optionset.get_baseoption_by_id(self.row_max_sythetic[c.Util.ID_PUT])
-                fund_requirement = base_instrument.get_initial_margin(c.LongShort.LONG)
+                                'cd_posiiton':'C_call',
+                                'id_instrument':self.row_max_sythetic[c.Util.ID_CALL],
+                                'base_instrument':self.conversion_call,
+                                'long_short':c.LongShort.SHORT,
+                                'fund_requirement':fund_requirement,
+                                'cashflow_t0':self.conversion_call.mktprice_close()*self.conversion_call.multiplier()},ignore_index=True)
+                self.conversion_put = self.optionset.get_baseoption_by_id(self.row_max_sythetic[c.Util.ID_PUT])
+                fund_requirement = self.conversion_put.get_fund_required(c.LongShort.LONG)
                 df = df.append({'dt_date':self.optionset.eval_date,
-                           'id_instrument':self.row_max_sythetic[c.Util.ID_PUT],
-                           'base_instrument':base_instrument,
-                           'long_short':c.LongShort.LONG,
-                           'fund_requirement':fund_requirement},ignore_index=True)
-                base_instrument = self.optionset.get_baseoption_by_id(self.row_min_sythetic[c.Util.ID_CALL])
-                fund_requirement = base_instrument.get_initial_margin(c.LongShort.LONG)
+                                'cd_posiiton': 'C_put',
+                                'id_instrument':self.row_max_sythetic[c.Util.ID_PUT],
+                                'base_instrument':self.conversion_put,
+                                'long_short':c.LongShort.LONG,
+                                'fund_requirement':fund_requirement,
+                                'cashflow_t0':-self.conversion_put.mktprice_close()*self.conversion_put.multiplier()},ignore_index=True)
+                # Reverse : Long Sythetic
+                self.reverse_call = self.optionset.get_baseoption_by_id(self.row_min_sythetic[c.Util.ID_CALL])
+                fund_requirement = self.reverse_call.get_fund_required(c.LongShort.LONG)
                 df = df.append({'dt_date':self.optionset.eval_date,
-                           'id_instrument':self.row_min_sythetic[c.Util.ID_CALL],
-                           'base_instrument':base_instrument,
-                           'long_short':c.LongShort.LONG,
-                           'fund_requirement':fund_requirement},ignore_index=True)
-                base_instrument = self.optionset.get_baseoption_by_id(self.row_min_sythetic[c.Util.ID_PUT])
-                fund_requirement = base_instrument.get_initial_margin(c.LongShort.SHORT)
+                                'cd_posiiton': 'R_call',
+                                'id_instrument':self.row_min_sythetic[c.Util.ID_CALL],
+                                'base_instrument':self.reverse_call,
+                                'long_short':c.LongShort.LONG,
+                                'fund_requirement':fund_requirement,
+                                'cashflow_t0':-self.reverse_call.mktprice_close()*self.reverse_call.multiplier()},ignore_index=True)
+                self.reverse_put = self.optionset.get_baseoption_by_id(self.row_min_sythetic[c.Util.ID_PUT])
+                fund_requirement = self.reverse_put.get_fund_required(c.LongShort.SHORT)
                 df = df.append({'dt_date':self.optionset.eval_date,
-                           'id_instrument':self.row_min_sythetic[c.Util.ID_PUT],
-                           'base_instrument':base_instrument,
-                           'long_short':c.LongShort.SHORT,
-                           'fund_requirement':fund_requirement},ignore_index=True)
+                                'cd_posiiton': 'R_put',
+                                'id_instrument':self.row_min_sythetic[c.Util.ID_PUT],
+                                'base_instrument':self.reverse_put,
+                                'long_short':c.LongShort.SHORT,
+                                'fund_requirement':fund_requirement,
+                                'cashflow_t0':self.reverse_put.mktprice_close()*self.reverse_put.multiplier()},ignore_index=True)
                 return df
             else:
                 return None
 
-    def open_excute(self,df_position):
-        if df_position is None:
+    def open_excute(self,open_signal):
+        if open_signal is None:
             return False
         else:
-            fund_per_unit = df_position['fund_requirement'].sum()
+            fund_per_unit = open_signal['fund_requirement'].sum()
             unit = np.floor(self.account.cash/fund_per_unit)
-            for (idx,row) in df_position.iterrows():
+            for (idx,row) in open_signal.iterrows():
                 option = row['base_instrument']
                 order = self.account.create_trade_order(option, row['long_short'], unit,
                                                         cd_trade_price=self.cd_price)
@@ -485,15 +495,35 @@ class ParityArbitrage(object):
                 self.account.add_record(record, option)
             return True
 
-    def close_excute(self,df_position):
-        if df_position is None:
+    def close_signal(self,cd_strategy,df_position):
+        if cd_strategy == 'box':
+            # C_call = df_position[df_position['cd_position']=='C_call']['base_instrument'].values[0]
+            # C_put = df_position[df_position['cd_position']=='C_put']['base_instrument'].values[0]
+            # R_call = df_position[df_position['cd_position']=='R_call']['base_instrument'].values[0]
+            # R_put = df_position[df_position['cd_position']=='R_put']['base_instrument'].values[0]
+            discount_r = c.PricingUtil.get_discount(self.optionset.eval_date, self.reverse_put.maturitydt(), self.rf)
+            discount_c = c.PricingUtil.get_discount(self.optionset.eval_date, self.conversion_put.maturitydt(), self.rf)
+            reverse_sythetic = self.reverse_call.mktprice_close()-self.reverse_put.mktprice_close()+self.reverse_put.applicable_strike()*discount_r # Longed
+            conversion_sythetic = self.conversion_call.mktprice_close()-self.conversion_put.mktprice_close()+self.conversion_put.applicable_strike()*discount_c # shorted
+            if conversion_sythetic <= reverse_sythetic:
+                return TradingDesk.CloseSignal.CLOSE_ALL
+            else:
+                return TradingDesk.CloseSignal.FLASE
+
+
+    def close_excute(self,close_signal):
+        if close_signal==TradingDesk.CloseSignal.CLOSE_ALL:
+            self.close_out()
+            return True
+        elif close_signal==TradingDesk.CloseSignal.FLASE:
             return False
         else:
-            return True
-
-    def close_position(self,cd_strategy):
-        if cd_strategy =='box':
-            self.close_out()
+            for (idx,row) in close_signal.iterrows():
+                option = row['base_instrument']
+                order = self.account.create_trade_order(option, row['long_short'], row['unit'],
+                                                        cd_trade_price=self.cd_price)
+                record = option.execute_order(order, slippage=self.slippage)
+                self.account.add_record(record, option)
             return True
 
     def close_out(self):
@@ -503,17 +533,20 @@ class ParityArbitrage(object):
                 .execute_order(order, slippage=self.slippage, execute_type=c.ExecuteType.EXECUTE_ALL_UNITS)
             self.account.add_record(execution_record, self.account.dict_holding[order.id_instrument])
 
-    def back_test_b(self):
+    def back_test_box(self):
         cd_strategy = 'box'# Box
         empty_position = True
+        df_position = None
         while self.optionset.has_next():
+            print()
             self.update_sythetics()
             if empty_position:
                 # df_position = self.get_arbitrage_position(cd_strategy)
                 # print(df_position)
-                empty_position = not self.open_position(cd_strategy)
-            else:
-                empty_position = self.close_position(cd_strategy)
+                df_position = self.open_signal(cd_strategy)
+                empty_position = not self.open_excute(df_position)
+            elif self.close_signal(cd_strategy,df_position):
+                empty_position = self.close_excute(df_position)
             if isinstance(self.underlying,BaseFutureCoutinuous):
                 self.underlying.shift_contract_month(self.account,self.slippage)
             self.account.daily_accounting(self.optionset.eval_date)
@@ -558,7 +591,7 @@ parity = ParityArbitrage(df_metrics,df_index)
 # df = parity.back_test()
 # df.to_csv('../../accounts_data/ParityArbitrage-window.csv')
 # account = parity.back_test_r()
-account = parity.back_test_b()
+account = parity.back_test_box()
 # account = parity.back_test_c()
 parity.df_arbitrage_window.to_csv('../../accounts_data/ParityArbitrage-window.csv')
 account.account.to_csv('../../accounts_data/ParityArbitrage-account.csv')

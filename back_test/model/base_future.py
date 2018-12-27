@@ -24,6 +24,9 @@ class BaseFuture(BaseProduct):
     def contract_month(self) -> Union[str, None]:
         return self.current_state[Util.NAME_CONTRACT_MONTH]
 
+    def get_fund_required(self, long_short: LongShort) -> float:
+        return self.get_initial_margin(long_short)
+
     def get_initial_margin(self,long_short:LongShort) -> Union[float,None]:
         return self.get_maintain_margin(long_short)
 

@@ -337,6 +337,13 @@ class BaseOption(BaseProduct):
     def is_mtm(self):
         return False
 
+
+    def get_fund_required(self, long_short: LongShort) -> float:
+        if long_short == LongShort.LONG:
+            return self.mktprice_close()*self.multiplier()
+        else:
+            return self.get_initial_margin(long_short)-self.mktprice_close()*self.multiplier()
+
     """ init_margin(初始保证金):用于开仓一天，且只有期权卖方收取 """
 
     # 认购期权义务仓开仓保证金＝[合约前结算价+Max（12%×合约标的前收盘价-认购期权虚值，

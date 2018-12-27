@@ -17,7 +17,7 @@ class BaseInstrument(BaseProduct):
         self._multiplier = 1.0
         self.fee_rate = 0.0
         self.fee_per_unit = 0.0
-        self._margin_rate = 0.15
+        self._margin_rate = 1.0
 
     def __repr__(self) -> str:
         return 'BaseInstrument(id_instrument: {0},eval_date: {1},frequency: {2})' \
@@ -26,10 +26,16 @@ class BaseInstrument(BaseProduct):
     def margin_rate(self) -> Union[float, None]:
         return self._margin_rate
 
+    def get_fund_required(self, long_short: LongShort) -> float:
+        if long_short == LongShort.LONG:
+            return self.mktprice_close()*self.multiplier()
+        else:
+            return self.get_initial_margin(long_short)
+
     def get_initial_margin(self,long_short:LongShort) -> Union[float, None]:
         if long_short == LongShort.LONG: margin = 0.0
         else:
-            margin = self.mktprice_close() * self._margin_rate * self._multiplier
+            margin = self.mktprice_close() * self._margin_rate * self._multiplier # 假设可以融券的情况下
         return margin
 
     def get_maintain_margin(self,long_short:LongShort) -> Union[float, None]:
