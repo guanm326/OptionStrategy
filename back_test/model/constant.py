@@ -596,7 +596,8 @@ class OptionFilter:
                        'cu_1908': datetime.date(2019, 7, 25),
                        'cu_1909': datetime.date(2019, 8, 26),
                        'cu_1910': datetime.date(2019, 9, 24),
-                       'cu_1911': datetime.date(2019, 10, 25)
+                       'cu_1911': datetime.date(2019, 10, 25),
+                       'cu_1912': datetime.date(2019, 11, 25)
                        }
 
     @staticmethod

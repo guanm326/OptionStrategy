@@ -342,7 +342,8 @@ class BaseOption(BaseProduct):
         if long_short == LongShort.LONG:
             return self.mktprice_close()*self.multiplier()
         else:
-            return self.get_initial_margin(long_short)-self.mktprice_close()*self.multiplier()
+            # return self.get_initial_margin(long_short)-self.mktprice_close()*self.multiplier()
+            return self.get_initial_margin(long_short)
 
     """ init_margin(初始保证金):用于开仓一天，且只有期权卖方收取 """
 

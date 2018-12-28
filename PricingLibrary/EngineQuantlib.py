@@ -238,7 +238,7 @@ class QlBlackFormula(AbstractOptionPricingEngine):
         self.dt_eval = dt_eval
         self.dt_maturity = dt_maturity
         self.option_type = option_type
-        self.values: typing.List[typing.List[float]] = []
+        # self.values: typing.List[typing.List[float]] = []
         self.asset_values: typing.List[typing.List[float]] = []
         self.exercise_values: typing.List[typing.List[float]] = []
         self.strike = strike

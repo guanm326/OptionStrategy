@@ -335,27 +335,27 @@ class QlBlackFormula(AbstractOptionPricingEngine):
             else:
                 r = m
         return m
-
-mdt = datetime.date.today() + datetime.timedelta(days=30)
-p = QlBinomial(datetime.date.today(),mdt,constant.OptionType.PUT,constant.OptionExerciseType.EUROPEAN,
-                   spot=2.5,strike=2.5)
-implied_vol=p.estimate_vol(price=0.1)
-p.reset_vol(implied_vol)
-print(implied_vol)
-print(p.NPV())
-print(p.Delta())
-print(p.Gamma())
-print(p.Theta())
-print(p.Vega())
-
-mdt = datetime.date.today() + datetime.timedelta(days=30)
-p = QlBlackFormula(datetime.date.today(),mdt,constant.OptionType.PUT,
-                   spot=2.5,strike=2.5)
-implied_vol=p.estimate_vol(price=0.1)
-p.reset_vol(implied_vol)
-print(implied_vol)
-print(p.NPV())
-print(p.Delta())
-print(p.Gamma())
-print(p.Theta())
-print(p.Vega())
+#
+# mdt = datetime.date.today() + datetime.timedelta(days=30)
+# p = QlBinomial(datetime.date.today(),mdt,constant.OptionType.PUT,constant.OptionExerciseType.EUROPEAN,
+#                    spot=2.5,strike=2.5)
+# implied_vol=p.estimate_vol(price=0.1)
+# p.reset_vol(implied_vol)
+# print(implied_vol)
+# print(p.NPV())
+# print(p.Delta())
+# print(p.Gamma())
+# print(p.Theta())
+# print(p.Vega())
+#
+# mdt = datetime.date.today() + datetime.timedelta(days=30)
+# p = QlBlackFormula(datetime.date.today(),mdt,constant.OptionType.PUT,
+#                    spot=2.5,strike=2.5)
+# implied_vol=p.estimate_vol(price=0.1)
+# p.reset_vol(implied_vol)
+# print(implied_vol)
+# print(p.NPV())
+# print(p.Delta())
+# print(p.Gamma())
+# print(p.Theta())
+# print(p.Vega())

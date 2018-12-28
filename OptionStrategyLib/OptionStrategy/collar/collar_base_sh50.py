@@ -53,24 +53,32 @@ def close_option_position(account):
     return True
 
 pu = PlotUtil()
-start_date = datetime.date(2016, 1, 1)
-end_date = datetime.date(2018, 11, 1)
+start_date = datetime.date(2015, 2, 9)
+end_date = datetime.date.today()
 dt_histvol = start_date - datetime.timedelta(days=90)
 min_holding = 10
 cd_price = c.CdTradePrice.CLOSE
 slippage = 0
 m = 0.7
 moneyness_call = -2
-moneyness_put = -2
+moneyness_put = -1
 
 """ Data """
-df_metrics = get_data.get_50option_mktdata(start_date, end_date)
-df_index = get_data.get_index_mktdata(start_date, end_date, c.Util.STR_INDEX_50ETF)
-d1 = df_index[c.Util.DT_DATE].values[0]
-d2 = df_metrics[c.Util.DT_DATE].values[0]
-d = max(d1, d2)
-df_metrics = df_metrics[df_metrics[c.Util.DT_DATE] >= d].reset_index(drop=True)
-df_index = df_index[df_index[c.Util.DT_DATE] >= d].reset_index(drop=True)
+df_metrics=pd.read_excel('../../../data/df_metrics.xlsx')
+df_index= pd.read_excel('../../../data/df_index.xlsx')
+
+df_metrics = df_metrics[df_metrics[c.Util.DT_DATE]>=start_date].reset_index(drop=True)
+df_index = df_index[df_index[c.Util.DT_DATE]>=start_date].reset_index(drop=True)
+df_metrics[c.Util.DT_DATE] = df_metrics[c.Util.DT_DATE].apply(lambda x: x.date())
+df_index[c.Util.DT_DATE] = df_index[c.Util.DT_DATE].apply(lambda x: x.date())
+df_metrics[c.Util.DT_MATURITY] = df_metrics[c.Util.DT_MATURITY].apply(lambda x: x.date())
+# df_metrics = get_data.get_50option_mktdata(start_date, end_date)
+# df_index = get_data.get_index_mktdata(start_date, end_date, c.Util.STR_INDEX_50ETF)
+# d1 = df_index[c.Util.DT_DATE].values[0]
+# d2 = df_metrics[c.Util.DT_DATE].values[0]
+# d = max(d1, d2)
+# df_metrics = df_metrics[df_metrics[c.Util.DT_DATE] >= d].reset_index(drop=True)
+# df_index = df_index[df_index[c.Util.DT_DATE] >= d].reset_index(drop=True)
 init_index = df_index[c.Util.AMT_CLOSE].values[0]
 benchmark = [1]
 """ Collar"""
@@ -79,8 +87,8 @@ optionset.init()
 index = BaseInstrument(df_index)
 index.init()
 account = BaseAccount(init_fund=c.Util.BILLION, leverage=1.0, rf=0.03)
-maturity1 = optionset.select_maturity_date(nbr_maturity=1, min_holding=0)
-maturity2 = optionset.select_maturity_date(nbr_maturity=1, min_holding=0)
+maturity1 = optionset.select_maturity_date(nbr_maturity=0, min_holding=min_holding)
+maturity2 = optionset.select_maturity_date(nbr_maturity=0, min_holding=min_holding)
 
 # 标的指数开仓
 unit_index =  np.floor(m*account.cash/index.mktprice_close()/index.multiplier())
@@ -116,8 +124,8 @@ while optionset.has_next():
 
     # 开仓
     if empty_position:
-        maturity1 = optionset.select_maturity_date(nbr_maturity=1, min_holding=0)
-        maturity2 = optionset.select_maturity_date(nbr_maturity=1, min_holding=0)
+        maturity1 = optionset.select_maturity_date(nbr_maturity=0, min_holding=min_holding)
+        maturity2 = optionset.select_maturity_date(nbr_maturity=0, min_holding=min_holding)
         call = select_target_moneyness_option(c.OptionType.CALL,optionset,moneyness_call,maturity1)
         put = select_target_moneyness_option(c.OptionType.PUT,optionset,moneyness_put,maturity2)
         if call is not None:
