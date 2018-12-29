@@ -54,31 +54,31 @@ def close_option_position(account):
 
 pu = PlotUtil()
 start_date = datetime.date(2015, 2, 9)
-end_date = datetime.date.today()
+end_date = datetime.date(2018,11,30)
 dt_histvol = start_date - datetime.timedelta(days=90)
 min_holding = 10
 cd_price = c.CdTradePrice.CLOSE
 slippage = 0
 m = 0.7
 moneyness_call = -2
-moneyness_put = -1
+moneyness_put = -2
 
 """ Data """
-df_metrics=pd.read_excel('../../../data/df_metrics.xlsx')
-df_index= pd.read_excel('../../../data/df_index.xlsx')
-
-df_metrics = df_metrics[df_metrics[c.Util.DT_DATE]>=start_date].reset_index(drop=True)
-df_index = df_index[df_index[c.Util.DT_DATE]>=start_date].reset_index(drop=True)
-df_metrics[c.Util.DT_DATE] = df_metrics[c.Util.DT_DATE].apply(lambda x: x.date())
-df_index[c.Util.DT_DATE] = df_index[c.Util.DT_DATE].apply(lambda x: x.date())
-df_metrics[c.Util.DT_MATURITY] = df_metrics[c.Util.DT_MATURITY].apply(lambda x: x.date())
-# df_metrics = get_data.get_50option_mktdata(start_date, end_date)
-# df_index = get_data.get_index_mktdata(start_date, end_date, c.Util.STR_INDEX_50ETF)
-# d1 = df_index[c.Util.DT_DATE].values[0]
-# d2 = df_metrics[c.Util.DT_DATE].values[0]
-# d = max(d1, d2)
-# df_metrics = df_metrics[df_metrics[c.Util.DT_DATE] >= d].reset_index(drop=True)
-# df_index = df_index[df_index[c.Util.DT_DATE] >= d].reset_index(drop=True)
+# df_metrics=pd.read_excel('../../../data/df_metrics.xlsx')
+# df_index= pd.read_excel('../../../data/df_index.xlsx')
+#
+# df_metrics = df_metrics[df_metrics[c.Util.DT_DATE]>=start_date].reset_index(drop=True)
+# df_index = df_index[df_index[c.Util.DT_DATE]>=start_date].reset_index(drop=True)
+# df_metrics[c.Util.DT_DATE] = df_metrics[c.Util.DT_DATE].apply(lambda x: x.date())
+# df_index[c.Util.DT_DATE] = df_index[c.Util.DT_DATE].apply(lambda x: x.date())
+# df_metrics[c.Util.DT_MATURITY] = df_metrics[c.Util.DT_MATURITY].apply(lambda x: x.date())
+df_metrics = get_data.get_50option_mktdata(start_date, end_date)
+df_index = get_data.get_index_mktdata(start_date, end_date, c.Util.STR_INDEX_50ETF)
+d1 = df_index[c.Util.DT_DATE].values[0]
+d2 = df_metrics[c.Util.DT_DATE].values[0]
+d = max(d1, d2)
+df_metrics = df_metrics[df_metrics[c.Util.DT_DATE] >= d].reset_index(drop=True)
+df_index = df_index[df_index[c.Util.DT_DATE] >= d].reset_index(drop=True)
 init_index = df_index[c.Util.AMT_CLOSE].values[0]
 benchmark = [1]
 """ Collar"""
