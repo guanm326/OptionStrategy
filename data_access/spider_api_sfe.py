@@ -75,7 +75,7 @@ def spider_mktdata(firstdate, enddate):
     date_range = w.tdays(firstdate, enddate, "").Data[0]
     dataset = {}
     for i in range(len(date_range)):
-        time.sleep(3)
+        time.sleep(0.5)
         date = date_range[i]
         year, month, day = date.year, date.month, date.day
         if month < 10: str_month = '0'+str(month)

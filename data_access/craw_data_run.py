@@ -10,8 +10,8 @@ from Utilities import admin_write_util as admin
 
 w.start()
 
-date = datetime.date.today()
-# date = datetime.date(2018,12,4)
+# date = datetime.date.today()
+date = datetime.date(2018,12,28)
 
 dt_date = date.strftime("%Y-%m-%d")
 print(dt_date)
@@ -260,62 +260,64 @@ for (idx_oc, row) in df.iterrows():
 
 # dce futures data
 # dce futures data (type = 0), day
-res = futures_mktdata_daily.select((futures_mktdata_daily.c.dt_date == dt_date)
-                                   & (futures_mktdata_daily.c.cd_exchange == 'dce')
-                                   & (futures_mktdata_daily.c.flag_night == 0)).execute()
-if res.rowcount == 0:
-    ds = dce.spider_mktdata_day(date, date, 0)
-    for dt in ds.keys():
-        data = ds[dt]
-        db_data = dc.table_futures().dce_day(dt, data)
-        if len(db_data) == 0: continue
-        try:
-            conn.execute(futures_mktdata_daily.insert(), db_data)
-            print('dce futures data 0 -- inserted into data base succefully')
-        except Exception as e:
-            print(dt)
-            print(e)
-            continue
-else:
-    print('dce future 0 -- already exists')
+# res = futures_mktdata_daily.select((futures_mktdata_daily.c.dt_date == dt_date)
+#                                    & (futures_mktdata_daily.c.cd_exchange == 'dce')
+#                                    & (futures_mktdata_daily.c.flag_night == 0)).execute()
+# if res.rowcount == 0:
+ds = dce.spider_mktdata_day(date, date, 0)
+for dt in ds.keys():
+    data = ds[dt]
+    db_data = dc.table_futures().dce_day(dt, data)
+    if len(db_data) == 0: continue
+    try:
+        conn.execute(futures_mktdata_daily.insert(), db_data)
+        print('dce futures data 0 -- inserted into data base succefully')
+    except Exception as e:
+        print(dt)
+        print(e)
+        continue
+# else:
+#     print('dce future 0 -- already exists')
 # dce futures data (type = 0), night
-res = futures_mktdata_daily.select((futures_mktdata_daily.c.dt_date == dt_date)
-                                   & (futures_mktdata_daily.c.cd_exchange == 'dce')
-                                   & (futures_mktdata_daily.c.flag_night == 1)).execute()
-if res.rowcount == 0:
-    ds = dce.spider_mktdata_night(date, date, 0)
-    for dt in ds.keys():
-        data = ds[dt]
-        db_data = dc.table_futures().dce_night(dt, data)
-        if len(db_data) == 0: continue
-        try:
-            conn.execute(futures_mktdata_daily.insert(), db_data)
-            print('dce futures data 1 -- inserted into data base succefully')
-        except Exception as e:
-            print(dt)
-            print(e)
-            continue
-else:
-    print('dce future 1 -- already exists')
+# res = futures_mktdata_daily.select((futures_mktdata_daily.c.dt_date == dt_date)
+#                                    & (futures_mktdata_daily.c.cd_exchange == 'dce')
+#                                    & (futures_mktdata_daily.c.flag_night == 1)).execute()
+# if res.rowcount == 0:
+ds = dce.spider_mktdata_night(date, date, 0)
+for dt in ds.keys():
+    data = ds[dt]
+    db_data = dc.table_futures().dce_night(dt, data)
+    if len(db_data) == 0: continue
+    try:
+        conn.execute(futures_mktdata_daily.insert(), db_data)
+        print('dce futures data 1 -- inserted into data base succefully')
+    except Exception as e:
+        print(dt)
+        print(e)
+        continue
+# else:
+#     print('dce future 1 -- already exists')
 
 # sfe futures data
-res = futures_mktdata_daily.select((futures_mktdata_daily.c.dt_date == dt_date)
-                                   & (futures_mktdata_daily.c.cd_exchange == 'sfe')).execute()
-if res.rowcount == 0:
-    ds = sfe.spider_mktdata(date, date)
-    for dt in ds.keys():
-        data = ds[dt]
-        db_data = dc.table_futures().sfe_daily(dt, data)
-        if len(db_data) == 0: continue
-        try:
-            conn.execute(futures_mktdata_daily.insert(), db_data)
-            print('sfe futures data -- inserted into data base succefully')
-        except Exception as e:
-            print(dt)
-            print(e)
-            continue
-else:
-    print('sfe future -- already exists')
+# res = futures_mktdata_daily.select((futures_mktdata_daily.c.dt_date == dt_date)
+#                                    & (futures_mktdata_daily.c.cd_exchange == 'sfe')).execute()
+# # if res.rowcount == 0:
+# if True:
+ds = sfe.spider_mktdata(date, date)
+for dt in ds.keys():
+    data = ds[dt]
+    db_data = dc.table_futures().sfe_daily(dt, data)
+    print(db_data)
+    if len(db_data) == 0: continue
+    try:
+        conn.execute(futures_mktdata_daily.insert(), db_data)
+        print('sfe futures data -- inserted into data base succefully')
+    except Exception as e:
+        print(dt)
+        print(e)
+        continue
+# else:
+#     print('sfe future -- already exists')
 
 # czce futures data
 res = futures_mktdata_daily.select((futures_mktdata_daily.c.dt_date == dt_date)

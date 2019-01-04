@@ -48,8 +48,8 @@ class PlotUtil:
         return axarrs
 
     def plot_line(self, ax, count, x, y, lgd='', x_label='', y_label=''):
-        c = self.colors[count]
-        l = self.lines[count]
+        c = self.colors[count % 10]
+        l = self.lines[count % 10]
         if lgd == '':
             if count == 3:
                 tmp, = ax.plot(x, y, color=c, linestyle=l, linewidth=2)
@@ -93,11 +93,14 @@ class PlotUtil:
         self.set_frame([ax])
 
 
-    def plot_line_chart(self, x, Y, legends, x_label='', y_label=''):
+    def plot_line_chart(self, x, Y, legends=None, x_label='', y_label=''):
         f, ax = plt.subplots()
         for idx, y in enumerate(Y):
-            lgd = legends[idx]
-            self.plot_line(ax, idx, x, y, lgd)
+            if legends is None:
+                self.plot_line(ax, idx, x, y)
+            else:
+                lgd = legends[idx]
+                self.plot_line(ax, idx, x, y, lgd)
         ax.legend(frameon=False)
         ax.set_xlabel(x_label)
         ax.set_ylabel(y_label)

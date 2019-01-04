@@ -10,7 +10,7 @@ import back_test.model.constant as c
 def commodity_option_market_overview_by_month(start_date,end_date,name_code):
     optionMkt = admin.table_options_mktdata()
     futureMkt = admin.table_futures_mktdata()
-    query = admin.session_mktdata().query(optionMkt.c.dt_date,optionMkt.c.id_underlying,
+    query = admin.session_gc().query(optionMkt.c.dt_date,optionMkt.c.id_underlying,
                                               func.sum(optionMkt.c.amt_trading_volume).label('option_trading_volume'),
                                             func.sum(optionMkt.c.amt_trading_value).label('option_trading_value')
                                               ) \
@@ -27,7 +27,7 @@ def commodity_option_market_overview_by_month(start_date,end_date,name_code):
         .filter(futureMkt.c.name_code == name_code) \
         .group_by(futureMkt.c.dt_date, futureMkt.c.id_instrument)
     df_future_trading = pd.read_sql(query_future.statement, query_future.session.bind)
-    query_option_holding = admin.session_mktdata().query(optionMkt.c.dt_date, optionMkt.c.id_underlying,
+    query_option_holding = admin.session_gc().query(optionMkt.c.dt_date, optionMkt.c.id_underlying,
                                                          func.sum(optionMkt.c.amt_holding_volume).label('option_holding_volume')) \
         .filter(optionMkt.c.dt_date >= start_date) \
         .filter(optionMkt.c.dt_date <= end_date) \

@@ -113,8 +113,9 @@ def get_50option_minute(start_date, end_date):
     df = pd.read_sql(query.statement, query.session.bind)
     return df
 
-dt1 = datetime.date(2018, 5, 5)
-dt2 = datetime.date(2018, 5, 7)
+dt1 = datetime.date(2015, 2, 9)
+dt2 = datetime.date(2016, 1, 1)
 # data : 50etf 期权分钟数据
-data = get_50option_minute(dt1, dt2)
+data = get_index_minute(dt1, dt2,'index_50etf')
+data.to_csv('50etf_minute.csv')
 print(data)

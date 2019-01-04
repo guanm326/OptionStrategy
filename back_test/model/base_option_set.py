@@ -29,7 +29,7 @@ class BaseOptionSet(AbstractBaseProductSet):
                  rf: float = 0.03):
         super().__init__()
         self._name_code = df_data.loc[0, Util.ID_INSTRUMENT].split('_')[0]
-        self.df_data: pd.DataFrame = df_data
+        self.df_data = df_data
         if frequency in Util.LOW_FREQUENT:
             self.df_daily_data = df_data
         else:
@@ -125,6 +125,8 @@ class BaseOptionSet(AbstractBaseProductSet):
                 return
         self.df_data[Util.AMT_APPLICABLE_STRIKE] = self.df_data.apply(self.OptionUtilClass.fun_applicable_strike,
                                                                       axis=1)
+        self.df_data = self.df_data.rename(columns={Util.NBR_MULTIPLIER:Util.NBR_MULTIPLIER_AFTER_ADJ})
+        self.df_data[Util.NBR_MULTIPLIER] = self.df_data.apply(self.OptionUtilClass.fun_applicable_multiplier,axis=1)
         groups = self.df_data.groupby([Util.ID_INSTRUMENT])
         if self.df_daily_data is not None:
             groups_daily = self.df_daily_data.groupby([Util.ID_INSTRUMENT])
@@ -165,12 +167,12 @@ class BaseOptionSet(AbstractBaseProductSet):
             if not option.has_next():
                 continue
             option.next()
-            if option.is_valid_option():
+            if option.is_valid_option(self.eval_date):
                 self.add_option(option)
                 if option.maturitydt() not in eligible_maturities:
                     eligible_maturities.append(option.maturitydt())
         for option in self.option_dict.pop(self.eval_date, []):
-            if option.is_valid_option():
+            if option.is_valid_option(self.eval_date):
                 self.add_option(option)
                 if option.maturitydt() not in eligible_maturities:
                     eligible_maturities.append(option.maturitydt())
@@ -240,6 +242,12 @@ class BaseOptionSet(AbstractBaseProductSet):
             else:
                 return False
 
+    def get_baseoption_by_id(self,id):
+        for option in self.eligible_options:
+            if option.id_instrument() == id:
+                return option
+
+
     def get_current_state(self) -> pd.DataFrame:
         df_current_state = self.df_data[self.df_data[Util.DT_DATE] == self.eval_date].reset_index(drop=True)
         return df_current_state
@@ -303,20 +311,24 @@ class BaseOptionSet(AbstractBaseProductSet):
         if cd_option_price == Util.CD_CLOSE_VOLUME_WEIGHTED:
             df_call = df_mdt[df_mdt[Util.CD_OPTION_TYPE] == Util.STR_CALL].rename(
                 columns={Util.AMT_CLOSE_VOLUME_WEIGHTED: Util.AMT_CALL_QUOTE,
-                         Util.AMT_TRADING_VOLUME: Util.AMT_TRADING_VOLUME_CALL})
+                         Util.AMT_TRADING_VOLUME: Util.AMT_TRADING_VOLUME_CALL,
+                         Util.ID_INSTRUMENT: Util.ID_CALL})
             df_put = df_mdt[df_mdt[Util.CD_OPTION_TYPE] == Util.STR_PUT].rename(
                 columns={Util.AMT_CLOSE_VOLUME_WEIGHTED: Util.AMT_PUT_QUOTE,
-                         Util.AMT_TRADING_VOLUME: Util.AMT_TRADING_VOLUME_PUT})
+                         Util.AMT_TRADING_VOLUME: Util.AMT_TRADING_VOLUME_PUT,
+                         Util.ID_INSTRUMENT: Util.ID_PUT})
         else:
             df_call = df_mdt[df_mdt[Util.CD_OPTION_TYPE] == Util.STR_CALL].rename(
-                columns={Util.AMT_CLOSE: Util.AMT_CALL_QUOTE, Util.AMT_TRADING_VOLUME: Util.AMT_TRADING_VOLUME_CALL})
+                columns={Util.AMT_CLOSE: Util.AMT_CALL_QUOTE, Util.AMT_TRADING_VOLUME: Util.AMT_TRADING_VOLUME_CALL,
+                         Util.ID_INSTRUMENT: Util.ID_CALL})
             df_put = df_mdt[df_mdt[Util.CD_OPTION_TYPE] == Util.STR_PUT].rename(
-                columns={Util.AMT_CLOSE: Util.AMT_PUT_QUOTE, Util.AMT_TRADING_VOLUME: Util.AMT_TRADING_VOLUME_PUT})
+                columns={Util.AMT_CLOSE: Util.AMT_PUT_QUOTE, Util.AMT_TRADING_VOLUME: Util.AMT_TRADING_VOLUME_PUT,
+                         Util.ID_INSTRUMENT: Util.ID_PUT})
 
-        df = pd.merge(df_call[[Util.NAME_CONTRACT_MONTH, Util.DT_DATE, Util.AMT_CALL_QUOTE, Util.AMT_APPLICABLE_STRIKE,
+        df = pd.merge(df_call[[Util.ID_CALL,Util.NAME_CONTRACT_MONTH, Util.DT_DATE, Util.AMT_CALL_QUOTE, Util.AMT_APPLICABLE_STRIKE,
                                Util.AMT_STRIKE,
                                Util.DT_MATURITY, Util.AMT_UNDERLYING_CLOSE, Util.AMT_TRADING_VOLUME_CALL]],
-                      df_put[[Util.AMT_PUT_QUOTE, Util.AMT_APPLICABLE_STRIKE, Util.AMT_TRADING_VOLUME_PUT]],
+                      df_put[[Util.ID_PUT,Util.AMT_PUT_QUOTE, Util.AMT_APPLICABLE_STRIKE, Util.AMT_TRADING_VOLUME_PUT]],
                       how='inner', on=Util.AMT_APPLICABLE_STRIKE)
         df[Util.AMT_TRADING_VOLUME] = df[Util.AMT_TRADING_VOLUME_CALL] + df[Util.AMT_TRADING_VOLUME_PUT]
         ttm = ((dt_maturity - self.eval_date).total_seconds() / 60.0) / (365.0 * 1440)
@@ -714,7 +726,7 @@ class BaseOptionSet(AbstractBaseProductSet):
     def select_maturity_date(self, nbr_maturity, min_holding: int = 1):
         maturities = self.get_maturities_list()
         idx_start = 0
-        if (maturities[idx_start] - self.eval_date).days <= min_holding:
+        if (maturities[idx_start] - self.eval_date).days < min_holding:
             idx_start += 1
         idx_maturity = idx_start + nbr_maturity
         if idx_maturity > len(maturities) - 1:

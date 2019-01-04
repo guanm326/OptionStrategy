@@ -20,15 +20,15 @@ class BlackCalculator(object):
             self.iscall = True
         else:
             self.iscall = False
-        stdDev = PricingUtil.get_std(dt_eval, dt_maturity, vol)
         discount = PricingUtil.get_discount(dt_eval, dt_maturity, rf)
         self.dt_eval = dt_eval
         self.dt_maturity = dt_maturity
         self.strike = strike
         self.forward = spot / discount
-        self.stdDev = stdDev
         self.discount = discount
         self.spot = spot
+        stdDev = PricingUtil.get_std(dt_eval, dt_maturity, vol)
+        self.stdDev = stdDev
         if stdDev > 0.0:
             if self.strike == 0.0:
                 n_d1 = 0.0

@@ -3,6 +3,7 @@ import pandas as pd
 from back_test.model.base_product import BaseProduct
 from back_test.model.constant import FrequentType, Util, ExecuteType, LongShort
 from back_test.model.trade import Order
+from typing import Union
 
 
 class BaseInstrument(BaseProduct):
@@ -16,15 +17,37 @@ class BaseInstrument(BaseProduct):
         self._multiplier = 1.0
         self.fee_rate = 0.0
         self.fee_per_unit = 0.0
+        self._margin_rate = 1.0
 
     def __repr__(self) -> str:
         return 'BaseInstrument(id_instrument: {0},eval_date: {1},frequency: {2})' \
             .format(self.id_instrument(), self.eval_date, self.frequency)
 
+    def margin_rate(self) -> Union[float, None]:
+        return self._margin_rate
+
+    def get_fund_required(self, long_short: LongShort) -> float:
+        if long_short == LongShort.LONG:
+            return self.mktprice_close()*self.multiplier()
+        else:
+            return self.get_initial_margin(long_short)
+
+    def get_initial_margin(self,long_short:LongShort) -> Union[float, None]:
+        if long_short == LongShort.LONG: margin = 0.0
+        else:
+            margin = self.mktprice_close() * self._margin_rate * self._multiplier # 假设可以融券的情况下
+        return margin
+
+    def get_maintain_margin(self,long_short:LongShort) -> Union[float, None]:
+        if long_short == LongShort.LONG: margin = 0.0
+        else:
+            margin = self.mktprice_close() * self._margin_rate * self._multiplier
+        return margin
+
     """ Long position only in base instrument. """
 
     def execute_order(self, order: Order, slippage=0,slippage_rate=0.0, execute_type: ExecuteType = ExecuteType.EXECUTE_ALL_UNITS):
-        if order is None: return
+        if order is None or order.trade_unit == 0: return
         # if execute_type == ExecuteType.EXECUTE_ALL_UNITS:
         order.trade_all_unit(slippage=slippage,slippage_rate=slippage_rate)
         # elif execute_type == ExecuteType.EXECUTE_WITH_MAX_VOLUME:
@@ -33,7 +56,8 @@ class BaseInstrument(BaseProduct):
         #     return
         execution_record: pd.Series = order.execution_res
         # calculate margin requirement
-        margin_requirement = 0.0
+        # margin_requirement = 0.0
+        margin_requirement = self.get_initial_margin(order.long_short) * execution_record[Util.TRADE_UNIT]
         if self.fee_per_unit is None:
             # 百分比手续费
             transaction_fee = execution_record[Util.TRADE_PRICE] * self.fee_rate * execution_record[
@@ -60,16 +84,14 @@ class BaseInstrument(BaseProduct):
         if long_short == LongShort.LONG:
             return self.mktprice_close()
         else:
-            return
+            return 0.0
 
     def is_margin_trade(self, long_short):
         if long_short == LongShort.LONG:
             return False
         else:
-            return
+            return True # 包含融券交易
 
     def is_mtm(self):
         return False
 
-    def multiplier(self):
-        return self._multiplier

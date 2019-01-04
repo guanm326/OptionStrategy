@@ -52,12 +52,14 @@ class BaseFutureCoutinuous(BaseProduct):
     def margin_rate(self) -> Union[float, None]:
         return self._margin_rate
 
+    def get_fund_required(self, long_short: LongShort) -> float:
+        return self.get_initial_margin(long_short)
+
     def get_initial_margin(self,long_short:LongShort) -> Union[float, None]:
         # pre_settle_price = self.mktprice_last_settlement()
         margin = self.mktprice_close() * self._margin_rate * self._multiplier
         return margin
 
-    # TODO: USE SETTLEMENT PRICE
     def get_maintain_margin(self,long_short:LongShort) -> Union[float, None]:
         margin = self.mktprice_close() * self._margin_rate * self._multiplier
         return margin

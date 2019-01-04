@@ -174,11 +174,7 @@ class BaseAccount():
             else:
                 # 无保证金交易（期权买方、股票等）加仓价值（execution_record[Util.TRADE_BOOK_VALUE]）从现金账户扣除。
                 self.cash -= execution_record[Util.TRADE_BOOK_VALUE]
-            try:
-                position_current_value = self.get_position_value(id_instrument, trade_unit, trade_long_short)
-            except:
-                print('')
-                pass
+            position_current_value = self.get_position_value(id_instrument, trade_unit, trade_long_short)
         self.trade_book.loc[id_instrument, Util.POSITION_CURRENT_VALUE] = position_current_value
         self.realized_pnl += realized_pnl
         execution_record[Util.TRADE_REALIZED_PNL] = realized_pnl
@@ -537,7 +533,7 @@ class BaseAccount():
         # 年化波动率
         volatility_yr = np.std(returns, ddof=0) * np.sqrt(oneyear)
         # 夏普比率
-        sharpe = (return_yr - self.rf) / volatility_yr
+        sharpe = (return_yr - 0.024) / volatility_yr
         # 回撤
         drawdowns = self.get_maxdrawdown(netvalue)
         # 最大回撤
@@ -576,3 +572,31 @@ class BaseAccount():
         res = self.get_netvalue_analysis(self.account[Util.PORTFOLIO_NPV])
         res['turnover'] = self.get_monthly_turnover(self.account)
         return res
+
+
+    def annual_analyis(self):
+        self.account['year'] = self.account[Util.DT_DATE].apply(lambda x: str(x.year))
+        years = self.account['year'].unique()
+        df_yearly = pd.DataFrame()
+        df_npvs = pd.DataFrame()
+        init_npv = 1
+        for y in years:
+            npv = self.account[self.account['year']==y][Util.PORTFOLIO_NPV]
+            year_npv = npv/init_npv
+            max_absolute_loss = min(year_npv)-1
+            init_npv = npv.iloc[-1]
+            r=self.get_netvalue_analysis(year_npv)
+            df_yearly.loc[y,'accumulate_yield'] = r['accumulate_yield']
+            df_yearly.loc[y,'annual_yield'] = r['annual_yield']
+            df_yearly.loc[y,'annual_volatility'] = r['annual_volatility']
+            df_yearly.loc[y,'max_drawdown'] = r['max_drawdown']
+            df_yearly.loc[y,'prob_of_win(D)'] = r['prob_of_win(D)']
+            df_yearly.loc[y,'win_loss_ratio'] = r['win_loss_ratio']
+            df_yearly.loc[y,'sharpe'] = r['sharpe']
+            df_yearly.loc[y,'Calmar'] = r['Calmar']
+            df_yearly.loc[y,'max_absolute_loss'] = max_absolute_loss
+            df_npvs[y] = year_npv
+        return df_yearly,df_npvs
+
+
+
