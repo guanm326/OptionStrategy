@@ -20,7 +20,7 @@ from OptionStrategyLib.VolatilityModel.historical_volatility import HistoricalVo
 #         else:
 #             return False
 
-def open_position(df_warning, df_vol, dt_date):
+def open_position( df_vol, dt_date):
     # if dt_date in df_warning.index:
     #     if risk_warning(df_warning, optionset.eval_date):
     #         print(optionset.eval_date, 'risk warning, NOT OPEN')
@@ -37,7 +37,7 @@ def open_position(df_warning, df_vol, dt_date):
     else:
         return False
 
-def close_position(df_warning,df_vol, dt_maturity, optionset):
+def close_position(df_vol, dt_maturity, optionset):
     # if risk_warning(df_warning,optionset.eval_date):
     #     print(optionset.eval_date,'risk warning, CLOSE')
     #     return True
@@ -110,9 +110,9 @@ pu.plot_line_chart(dates, [list(df_vol['amt_premium']), list(df_vol['amt_1std'])
 # df_warning['pre_warned'] = df_warning['risk warning'].shift()
 # df_warning = df_warning.set_index('date')
 
-df_warning = pd.read_excel('../../../data/volatility_risk_monitor.xlsx')
-df_warning['date'] = df_warning['DT_DATE'].apply(lambda x: x.date())
-df_warning = df_warning.set_index('date')
+# df_warning = pd.read_excel('../../../data/volatility_risk_monitor.xlsx')
+# df_warning['date'] = df_warning['DT_DATE'].apply(lambda x: x.date())
+# df_warning = df_warning.set_index('date')
 
 df_holding_period = pd.DataFrame()
 
@@ -182,7 +182,7 @@ while optionset.eval_date <= end_date:
 
     # 平仓：距到期8日
     if not empty_position:
-        if close_position(df_warning,df_vol, maturity1, optionset):
+        if close_position(df_vol, maturity1, optionset):
             for option in account.dict_holding.values():
                 order = account.create_close_order(option, cd_trade_price=cd_trade_price)
                 record = option.execute_order(order, slippage=slippage)
@@ -191,7 +191,7 @@ while optionset.eval_date <= end_date:
             empty_position = True
 
     # 开仓：距到期1M
-    if empty_position and open_position(df_warning,df_vol, optionset.eval_date):
+    if empty_position and open_position(df_vol, optionset.eval_date):
         maturity1 = optionset.select_maturity_date(nbr_maturity=0, min_holding=min_holding)
         option_trade_times += 1
         buy_write = c.BuyWrite.WRITE
@@ -215,6 +215,8 @@ while optionset.eval_date <= end_date:
 
     # Delta hedge
     if not empty_position:
+        if optionset.eval_date == datetime.date(2017,11,23):
+            print('')
         iv_htbr = optionset.get_iv_by_otm_iv_curve(dt_maturity=maturity1, strike=atm_call.applicable_strike())
         delta_call = atm_call.get_delta(iv_htbr)
         delta_put = atm_put.get_delta(iv_htbr)

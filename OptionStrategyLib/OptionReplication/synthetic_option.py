@@ -20,7 +20,7 @@ class SytheticOption(BaseFutureCoutinuous):
                  df_futures_all_daily=None,
                  df_index_daily=None,
                  rf=0.03,
-                 frequency=FrequentType.MINUTE
+                 frequency=FrequentType.DAILY
                  ):
         # 将主力合约作为一个产品使用name_code为id，
         df_c1_data = df_c1_data.reset_index(drop=True)

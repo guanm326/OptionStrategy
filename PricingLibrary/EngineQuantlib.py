@@ -239,8 +239,8 @@ class QlBlackFormula(AbstractOptionPricingEngine):
         self.dt_maturity = dt_maturity
         self.option_type = option_type
         # self.values: typing.List[typing.List[float]] = []
-        self.asset_values: typing.List[typing.List[float]] = []
-        self.exercise_values: typing.List[typing.List[float]] = []
+        # self.asset_values: typing.List[typing.List[float]] = []
+        # self.exercise_values: typing.List[typing.List[float]] = []
         self.strike = strike
         self.spot = spot
         self.vol = vol
@@ -282,6 +282,9 @@ class QlBlackFormula(AbstractOptionPricingEngine):
         self.reset_vol(implied_vol)
         return self.ql_option.delta()
 
+    """ 
+    Gamma计算基于标的价格变化的绝对量（而不是百分点），即Delta
+    """
     def Gamma(self,implied_vol:float) -> float:
         self.reset_vol(implied_vol)
         return self.ql_option.gamma()

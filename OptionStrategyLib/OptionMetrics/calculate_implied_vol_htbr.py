@@ -20,17 +20,17 @@ cd_mdt_selection = 'hp_8_1st'
 # cd_mdt_selection = 'hp_8_3rd'
 
 """ namecode : M/SR """
-# name_code = c.Util.STR_SR
-# name_code = c.Util.STR_M
-name_code = c.Util.STR_CU
-df_metrics = get_comoption_mktdata(start_date, end_date,name_code)
-# exercise_type = c.OptionExerciseType.AMERICAN
-exercise_type = c.OptionExerciseType.EUROPEAN
-
-# """ namecode : 50ETF """
-# name_code = c.Util.STR_50ETF
-# df_metrics = get_50option_mktdata(start_date, end_date)
+# # name_code = c.Util.STR_SR
+# # name_code = c.Util.STR_M
+# name_code = c.Util.STR_CU
+# df_metrics = get_comoption_mktdata(start_date, end_date,name_code)
+# # exercise_type = c.OptionExerciseType.AMERICAN
 # exercise_type = c.OptionExerciseType.EUROPEAN
+
+""" namecode : 50ETF """
+name_code = c.Util.STR_50ETF
+df_metrics = get_50option_mktdata(start_date, end_date)
+exercise_type = c.OptionExerciseType.EUROPEAN
 
 table_iv = admin.table_implied_volatilities()
 optionset = BaseOptionSet(df_metrics)
