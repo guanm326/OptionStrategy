@@ -90,6 +90,19 @@ account.add_record(record, atm_call)
 account.daily_accounting(optionset.eval_date)
 _next()
 
+print('平仓')
+order = account.create_trade_order(atm_call, LongShort.LONG, 10)
+record = atm_call.execute_order(order)
+account.add_record(record, atm_call)
+account.daily_accounting(optionset.eval_date)
+_next()
+
+account.daily_accounting(optionset.eval_date)
+_next()
+
+account.daily_accounting(optionset.eval_date)
+_next()
+
 print('期权买方开仓')
 order = account.create_trade_order(atm_put, LongShort.LONG, 10)
 record = atm_put.execute_order(order)

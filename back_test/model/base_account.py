@@ -431,12 +431,12 @@ class BaseAccount():
         #                         portfolio_trades_value + margin_unrealized_pnl
         # Another NPV calculate method.
         total_realized_pnl = self.trade_book[Util.TRADE_REALIZED_PNL].sum()
-        self.realized_pnl_from_closed_out_positions += self.trade_book_daily[self.trade_book_daily[Util.TRADE_UNIT] == 0.0][
+        realized_pnl_from_closed_out_positions = self.trade_book_daily[self.trade_book_daily[Util.TRADE_UNIT] == 0.0][
             Util.TRADE_REALIZED_PNL].sum()
         # portfolio_total_value2 = self.init_fund + margin_unrealized_pnl + nonmargin_unrealized_pnl + \
         #                          total_realized_pnl + self.realized_pnl_from_closed_out_positions
         portfolio_total_value2 = self.init_fund + unrealized_pnl + \
-                                 total_realized_pnl + self.realized_pnl_from_closed_out_positions
+                                 total_realized_pnl + realized_pnl_from_closed_out_positions
         npv = portfolio_total_value / self.init_fund
         npv2 = portfolio_total_value2 / self.init_fund
         if npv != npv2:
