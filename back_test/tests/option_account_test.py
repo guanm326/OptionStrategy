@@ -2,55 +2,83 @@ import datetime
 
 from back_test.model.base_account import BaseAccount
 from back_test.model.base_future_coutinuous import BaseFutureCoutinuous
-from back_test.model.constant import TradeType, Util, FrequentType
+from back_test.model.base_instrument import BaseInstrument
+from back_test.model.base_option_set import BaseOptionSet
+from back_test.model.constant import TradeType, Util, FrequentType, LongShort
 from back_test.model.trade import Trade
-from data_access.get_data import get_dzqh_cf_minute, get_dzqh_cf_daily
+import data_access.get_data as data
 
-start_date = datetime.date(2017, 10, 1)
-end_date = datetime.date(2017, 11, 21)
+start_date = datetime.date(2017, 6, 1)
+end_date = datetime.date(2017, 12, 1)
 
-# df_option_metrics = get_50option_mktdata(start_date, end_date)
-# df_index_metrics = get_index_mktdata(start_date, end_date, 'index_50etf')
-# option_set = BaseOptionSet(df_option_metrics)
-# option_set.init()
-# index = BaseInstrument(df_index_metrics)
-df_cf_minute = get_dzqh_cf_minute(start_date, end_date, 'if')
-df_cf = get_dzqh_cf_daily(start_date, end_date, 'if')
-future = BaseFutureCoutinuous(df_cf_minute, df_cf, frequency=FrequentType.MINUTE)
+df_option_metrics = data.get_50option_mktdata(start_date, end_date)
+df_index_metrics = data.get_index_mktdata(start_date, end_date, 'index_50etf')
+df_cf = data.get_mktdata_future_c1_daily(start_date, end_date, 'ih')
+
+
+
+optionset = BaseOptionSet(df_option_metrics)
+optionset.init()
+instrument = BaseInstrument(df_index_metrics)
+instrument.init()
+future = BaseFutureCoutinuous(df_cf, df_cf, frequency=FrequentType.DAILY)
 future.init()
-account = BaseAccount(Util.BILLION)
-trading_desk = Trade()
-# while future.has_next():
-# for option in option_set.eligible_options:
-# TODO: Create and execute order could be implemented in base_product class.
-order = account.create_trade_order(future,
-                                   TradeType.OPEN_LONG,
-                                   10)
+account = BaseAccount(Util.MILLION)
+def _next():
+    optionset.next()
+    instrument.next()
+    future.next()
 
+order = account.create_trade_order(future,
+                                   LongShort.LONG,
+                                   10)
 execution_res = future.execute_order(order)
 account.add_record(execution_res, future)
-trading_desk.add_pending_order(order)
-future.next()
+account.daily_accounting(future.eval_date)
+_next()
+
 order = account.create_trade_order(future,
-                                   TradeType.OPEN_SHORT,
+                                   LongShort.LONG,
                                    5)
 execution_res = future.execute_order(order)
 account.add_record(execution_res, future)
-trading_desk.add_pending_order(order)
-future.next()
+account.daily_accounting(future.eval_date)
+_next()
+
 order = account.create_trade_order(future,
-                                   TradeType.OPEN_SHORT,
+                                   LongShort.SHORT,
                                    10)
 execution_res = future.execute_order(order)
 account.add_record(execution_res, future)
-trading_desk.add_pending_order(order)
-future.next()
-
 account.daily_accounting(future.eval_date)
+_next()
 
 order = account.create_trade_order(future,
-                                   TradeType.CLOSE_SHORT,
-                                   )
+                                   LongShort.SHORT,
+                                   5)
 execution_res = future.execute_order(order)
 account.add_record(execution_res, future)
-trading_desk.add_pending_order(order)
+
+maturity = optionset.select_maturity_date(nbr_maturity=0, min_holding=20)
+list_atm_call, list_atm_put = optionset.get_options_list_by_moneyness_mthd1(
+    moneyness_rank=0,
+    maturity=maturity)
+atm_call = optionset.select_higher_volume(list_atm_call)
+atm_put = optionset.select_higher_volume(list_atm_put)
+order = account.create_trade_order(atm_call, LongShort.SHORT, 10)
+record = atm_call.execute_order(order)
+account.add_record(record, atm_call)
+
+order = account.create_trade_order(atm_put, LongShort.SHORT, 10)
+record = atm_put.execute_order(order)
+account.add_record(record, atm_put)
+account.daily_accounting(future.eval_date)
+
+print('account')
+print(account.account)
+print('trade_records')
+print(account.trade_records)
+print('analysis')
+print(account.analysis())
+print('final npv is 0.8105329921661538, and returns ',account.account[Util.PORTFOLIO_NPV].values[-1])
+print('final cash is 747083.9201414117, and returns ',account.account[Util.CASH].values[-1])
