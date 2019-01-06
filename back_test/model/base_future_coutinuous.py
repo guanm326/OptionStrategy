@@ -74,10 +74,10 @@ class BaseFutureCoutinuous(BaseProduct):
     def id_instrument(self) -> Union[str, None]:
         return self.current_state[Util.ID_INSTRUMENT]
 
-    """ 用于计算杠杆率 ：保证金交易，current value为零 """
 
-    def get_current_value(self, long_short):
-        return 0.0
+    # comment refactor_1901: 期货逐日盯市头寸的current value即距last price（前收/成本）的浮盈浮亏
+    # def get_current_value(self, long_short, last_price):
+    #     return long_short.value*(self.mktprice_close()-last_price)
 
     def is_margin_trade(self, long_short):
         return True
@@ -113,7 +113,7 @@ class BaseFutureCoutinuous(BaseProduct):
             transaction_fee = execution_record[Util.TRADE_PRICE] * self.fee_rate * execution_record[
                 Util.TRADE_UNIT] * self._multiplier
         else:
-            # 每手手续费
+            # 每手手续费`
             transaction_fee = self.fee_per_unit * execution_record[Util.TRADE_UNIT]
         execution_record[Util.TRANSACTION_COST] += transaction_fee
         transaction_fee_add_to_price = transaction_fee / (execution_record[Util.TRADE_UNIT] * self._multiplier)
@@ -121,11 +121,9 @@ class BaseFutureCoutinuous(BaseProduct):
                                                   Util.TRADE_LONG_SHORT].value * transaction_fee_add_to_price
         position_size = order.long_short.value * execution_record[Util.TRADE_PRICE] * execution_record[
             Util.TRADE_UNIT] * self._multiplier
-        execution_record[
-            Util.TRADE_BOOK_VALUE] = position_size  # 头寸规模（含多空符号），例如，空一手豆粕（3000点，乘数10）得到头寸规模为-30000，而建仓时点头寸市值为0。
+        execution_record[Util.TRADE_BOOK_VALUE] = position_size  # 头寸规模（含多空符号），例如，空一手豆粕（3000点，乘数10）得到头寸规模为-30000，而建仓时点头寸市值为0。
         execution_record[Util.TRADE_MARGIN_CAPITAL] = margin_requirement
-        execution_record[
-            Util.TRADE_MARKET_VALUE] = 0.0  # Init value of a future trade is ZERO, except for transaction cost.
+        execution_record[Util.TRADE_MARKET_VALUE] = 0.0  # 建仓时点头寸市值为0
         return execution_record
 
     # """ 高频数据下按照当日成交量加权均价开仓，结束后时间点移动到本交易日的最后一个bar。 """

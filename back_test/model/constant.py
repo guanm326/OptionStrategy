@@ -963,6 +963,7 @@ class Util:
     PORTFOLIO_NPV = 'npv'
     PORTFOLIO_UNREALIZED_PNL = 'unrealized_pnl'
     PORTFOLIO_LEVERAGE = 'portfolio_leverage'
+    PORTFOLIO_FUND_UTILIZATION = 'portfolio_fund_utilization'
     PORTFOLIO_SHORT_POSITION_SCALE = 'portfolio_short_position_scale'
     PORTFOLIO_LONG_POSITION_SCALE = 'portfolio_long_position_scale'
     MARGIN_UNREALIZED_PNL = 'margin_unrealized_pnl'
@@ -977,14 +978,10 @@ class Util:
                               LAST_PRICE, TRADE_MARGIN_CAPITAL,
                               TRADE_BOOK_VALUE, AVERAGE_POSITION_COST,
                               TRADE_REALIZED_PNL, NBR_MULTIPLIER,
-                              POSITION_CURRENT_VALUE, PORTFOLIO_UNREALIZED_PNL
-                              ]  # ID_INSTRUMENR是df的index
-    ACCOUNT_COLUMNS = [DT_DATE, CASH, PORTFOLIO_MARGIN_CAPITAL, PORTFOLIO_TRADES_VALUE,
-                       PORTFOLIO_VALUE, PORTFOLIO_NPV, PORTFOLIO_UNREALIZED_PNL,
-                       PORTFOLIO_LEVERAGE, TRADE_REALIZED_PNL,
-                       PORTFOLIO_SHORT_POSITION_SCALE, PORTFOLIO_LONG_POSITION_SCALE,
-                       MARGIN_UNREALIZED_PNL, NONMARGIN_UNREALIZED_PNL, PORTFOLIO_DELTA,
-                       DAILY_EXCECUTED_AMOUNT, TURNOVER
+                              TRANSACTION_COST
+                              ]  # ID_INSTRUMENR是index
+    ACCOUNT_COLUMNS = [DT_DATE, PORTFOLIO_NPV, PORTFOLIO_VALUE, CASH, PORTFOLIO_MARGIN_CAPITAL, PORTFOLIO_TRADES_VALUE,
+                       PORTFOLIO_FUND_UTILIZATION, PORTFOLIO_DELTA,DAILY_EXCECUTED_AMOUNT
                        ]
     DICT_FUTURE_MARGIN_RATE = {  # 合约价值的百分比
         'm': 0.05,

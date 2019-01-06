@@ -34,7 +34,7 @@ class Order(object):
                  trade_unit: Union[int, None],
                  trade_price: Union[float, None],
                  time_signal: Union[datetime.datetime, None],
-                 long_short):
+                 long_short: LongShort):
         super().__init__()
         if trade_unit < 0:
             print('Order has negative unit, reset to positive.')

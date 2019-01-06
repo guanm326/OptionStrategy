@@ -240,10 +240,9 @@ class BaseProduct(AbstractBaseProduct):
         # 执行交易指令
         pass
 
-    @abstractmethod
-    def get_current_value(self, long_short: LongShort) -> float:
-        # 保证金交易当前价值为零/基础证券交易不包含保证金current value为当前价格
-        pass
+    # @abstractmethod
+    # def get_current_value(self, long_short: LongShort,last_price:float) -> float:
+    #     pass
 
     @abstractmethod
     def is_margin_trade(self, long_short: LongShort) -> bool:

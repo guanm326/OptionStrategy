@@ -69,22 +69,20 @@ class BaseInstrument(BaseProduct):
         transaction_fee_add_to_price = transaction_fee / (execution_record[Util.TRADE_UNIT] * self._multiplier)
         execution_record[Util.TRADE_PRICE] += execution_record[
                                                   Util.TRADE_LONG_SHORT].value * transaction_fee_add_to_price
-        position_size = order.long_short.value * execution_record[Util.TRADE_PRICE] * execution_record[
+        position_value = order.long_short.value * execution_record[Util.TRADE_PRICE] * execution_record[
             Util.TRADE_UNIT] * self._multiplier
-        execution_record[
-            Util.TRADE_BOOK_VALUE] = position_size  # 头寸规模（含多空符号），例如，空一手豆粕（3000点，乘数10）得到头寸规模为-30000，而建仓时点头寸市值为0。
+        execution_record[Util.TRADE_BOOK_VALUE] = position_value
         execution_record[Util.TRADE_MARGIN_CAPITAL] = margin_requirement
-        # execution_record[
-        #     Util.TRADE_MARKET_VALUE] = position_size  # Init value of a future trade is ZERO, except for transaction cost.
+        execution_record[Util.TRADE_MARKET_VALUE] = position_value
         return execution_record
 
-    """ 用于计算杠杆率 ：基础证券交易不包含保证金current value为当前价格 """
-
-    def get_current_value(self, long_short):
-        if long_short == LongShort.LONG:
-            return self.mktprice_close()
-        else:
-            return 0.0
+    # comment refactor_1901: 非逐日盯市，头寸市值为收盘价
+    # def get_current_value(self, long_short, last_price):
+    #     return long_short.value*self.mktprice_close()
+        # if long_short == LongShort.LONG:
+        #     return self.mktprice_close()
+        # else:
+        #     return 0.0
 
     def is_margin_trade(self, long_short):
         if long_short == LongShort.LONG:

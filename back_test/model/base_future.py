@@ -42,9 +42,9 @@ class BaseFuture(BaseProduct):
     def multiplier(self) -> Union[int,None]:
         return self._multiplier
 
-    """ 用于计算杠杆率 ：保证金交易，current value为零 """
-    def get_current_value(self, long_short):
-        return 0.0
+    # comment refactor_1901: 期货逐日盯市头寸的current value即距last price（前收/成本）的浮盈浮亏
+    # def get_current_value(self, long_short, last_price):
+    #     return long_short.value*(self.mktprice_close()-last_price)
 
     def is_margin_trade(self, long_short):
         return True
