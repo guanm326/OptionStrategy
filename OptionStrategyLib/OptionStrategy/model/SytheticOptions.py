@@ -162,7 +162,7 @@ class SytheticOption(object):
             self.df_base = df_future_c1
             self.base = BaseFutureCoutinuous(df_future_c1=df_future_c1, df_futures_all_daily=df_future_all)
         self.base.init()
-        self.account = BaseAccount(c.Util.BILLION * 10,rf=0.0)
+        self.account = BaseAccount(c.Util.BILLION * 10)
         self._prepare_data()
         self.leverage = 0.75  # Will be multiplied to delta equivalent position
         self.rf = 0.03
