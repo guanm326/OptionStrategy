@@ -395,7 +395,7 @@ class ParityArbitrage(object):
         self.min_holding = 1
         self.nbr_maturity = 0
         self.rank = 3
-        self.slippage = 1/1000.0
+        self.slippage = 0
         self.aggregate_costs = 0.5/100.0
         self.cd_price = c.CdTradePrice.CLOSE
         self.df_arbitrage_window = pd.DataFrame()
@@ -424,8 +424,8 @@ class ParityArbitrage(object):
                 self.df_arbitrage_window.loc[self.optionset.eval_date, 'basis_to_index'] = self.basis_to_index
                 self.df_arbitrage_window.loc[self.optionset.eval_date, 'tracking_error'] = self.tracking_error
                 self.df_arbitrage_window.loc[self.optionset.eval_date, 'index_50'] = self.baseindex.mktprice_close()
-                self.row_max_sythetic['tracking_error'] = self.tracking_error
-                self.row_min_sythetic['tracking_error'] = self.tracking_error
+                # self.row_max_sythetic['tracking_error'] = self.tracking_error
+                # self.row_min_sythetic['tracking_error'] = self.tracking_error
         self.df_arbitrage_window.loc[self.optionset.eval_date,'50etf'] = self.underlying.mktprice_close()
         self.df_arbitrage_window.loc[self.optionset.eval_date,'sythetic_underlying_max'] = self.row_max_sythetic['sythetic_underlying']
         self.df_arbitrage_window.loc[self.optionset.eval_date,'sythetic_underlying_min'] = self.row_min_sythetic['sythetic_underlying']
@@ -543,7 +543,8 @@ class ParityArbitrage(object):
                 return None
         elif cd_strategy == 'conversion_ih': # Converion : Short Sythetic, Long IH # 主要布局IH负基差套利
             if self.optionset.eval_date.month ==5: return None #5月由于股票集中现金分红不做空Synthetic
-            if (self.row_max_sythetic['sythetic_underlying']*1000.0 - self.future.mktprice_close()-self.row_max_sythetic['tracking_error'])/self.future.mktprice_close() > self.aggregate_costs:
+            if (self.row_max_sythetic['sythetic_underlying']*1000.0 - self.future.mktprice_close()-
+                    self.df_arbitrage_window.loc[self.optionset.eval_date,'tracking_error'])/self.future.mktprice_close() > self.aggregate_costs:
                 df = pd.DataFrame(columns=['dt_date', 'id_instrument', 'base_instrument', 'long_short'])
                 df = self.short_sythetic(df)
                 df = self.long_ih(df)
