@@ -209,7 +209,7 @@ class SytheticOption(object):
                 self.strike = max(k,self.strike)
                 # self.strike = k
                 self.target_option = EuropeanOption(self.strike, self.dt_maturity, c.OptionType.CALL)
-                print(self.base.eval_date,' update_option_by_delta')
+                # print(self.base.eval_date,' update_option_by_delta')
                 return
 
 
@@ -408,102 +408,105 @@ df_base[c.Util.ID_INSTRUMENT] = id_instrument
 
 ###############Single BackTest Example ##########################
 
-sythetic = SytheticOption(df_index=df_base)
-sythetic.delta_upper_bound = 0.99
-account = sythetic.back_test()
-account.account.to_csv('../../accounts_data/sythetic_account.csv')
-account.trade_records.to_csv('../../accounts_data/sythetic_records.csv')
-res = account.analysis()
-print(res)
-df_yearly,df_yearly_npvs = account.annual_analyis()
-print(df_yearly)
-# df_yearly.to_csv('../../accounts_data/df_yearly.csv')
-# df_yearly_npvs.to_csv('../../accounts_data/df_yearly_npvs.csv')
-pu = PlotUtil()
-dates = list(account.account.index)
-npv = list(account.account[c.Util.PORTFOLIO_NPV])
-benchmark = list(account.account['benchmark'])
-pu.plot_line_chart(dates, [npv,benchmark], ['npv','benchmark'])
-plt.show()
-
-################## Method 1-5############################
-# strikes = [1.0, 1.0, 1.05, 1.05, 1.05]
-# Ts = [370, 50, 50, 50, 50]
-# fix_maturity = [False, True, True, True, True]
-# delta_upper_bounds = [None, None, None, None, 0.99]
-# delta_criterians = [0.1, 0.1, 0.1, None, None]
-# cd_models = ['fixed_criterian', 'fixed_criterian', 'fixed_criterian', 'ww', 'ww']
-# methods = ['method1','method2','method3','method4','method5']
-#
-# npvs = []
-# df_yield_d = pd.DataFrame()
-# df_mdd_d = pd.DataFrame()
-# df_res_d = pd.DataFrame()
-# for i in np.arange(0,5,1):
-# # for i in [4]:
-#     method = methods[i]
-#     sythetic = SytheticOption(df_index=df_base)
-#     sythetic.k = strikes[i]
-#     sythetic.ttm = Ts[i]
-#     sythetic.flag_fix_ttm = fix_maturity[i]
-#     sythetic.cd_model = cd_models[i]
-#     sythetic.delta_criterian = delta_criterians[i]
-#     sythetic.delta_upper_bound = delta_upper_bounds[i]
-#     print(method, ' ', sythetic.k, ' ', sythetic.ttm, ' ', sythetic.flag_fix_ttm,
-#           ' ', sythetic.cd_model, ' ', sythetic.delta_criterian,' ',sythetic.delta_upper_bound)
-#     account = sythetic.back_test()
-#     npvs.append(list(account.account[c.Util.PORTFOLIO_NPV]))
-#     df_yearly =account.annual_analyis()[0]
-#     df_yield_d[method] = df_yearly['accumulate_yield']
-#     df_mdd_d[method] = df_yearly['max_absolute_loss']
-#     df_res_d[method] = account.analysis()
-#     account.account.to_csv('../../accounts_data/sythetic_account'+method+'.csv')
-#     account.trade_records.to_csv('../../accounts_data/sythetic_records'+method+'.csv')
-#
-#     print(account.analysis())
-#
-# df_res_d.to_csv('../../accounts_data/df_res_methods1-5.csv')
-# df_mdd_d.to_csv('../../accounts_data/df_mdd_methods1-5.csv')
-# df_yield_d.to_csv('../../accounts_data/df_yield_methods1-5.csv')
+# sythetic = SytheticOption(df_index=df_base)
+# sythetic.delta_upper_bound = 0.99
+# account = sythetic.back_test()
+# account.account.to_csv('../../accounts_data/sythetic_account.csv')
+# account.trade_records.to_csv('../../accounts_data/sythetic_records.csv')
+# res = account.analysis()
+# print(res)
+# df_yearly,df_yearly_npvs = account.annual_analyis()
+# print(df_yearly)
+# # df_yearly.to_csv('../../accounts_data/df_yearly.csv')
+# # df_yearly_npvs.to_csv('../../accounts_data/df_yearly_npvs.csv')
 # pu = PlotUtil()
 # dates = list(account.account.index)
-# npvs.append(list(account.account['benchmark']))
-# methods.append('benchmark')
-# pu.plot_line_chart(dates, npvs, methods)
+# npv = list(account.account[c.Util.PORTFOLIO_NPV])
+# benchmark = list(account.account['benchmark'])
+# pu.plot_line_chart(dates, [npv,benchmark], ['npv','benchmark'])
 # plt.show()
 
+################# Method 1-5############################
+strikes = [1.0, 1.0, 1.05, 1.05, 1.05]
+Ts = [370, 50, 50, 50, 50]
+fix_maturity = [False, True, True, True, True]
+delta_upper_bounds = [None, None, None, None, 0.99]
+delta_criterians = [0.1, 0.1, 0.1, None, None]
+cd_models = ['fixed_criterian', 'fixed_criterian', 'fixed_criterian', 'ww', 'ww']
+methods = ['method1','method2','method3','method4','method5']
 
-
-######### Delta Bounds ###################
 npvs = []
 df_yield_d = pd.DataFrame()
 df_mdd_d = pd.DataFrame()
 df_res_d = pd.DataFrame()
-for u in [0.9,0.95,0.99,1]:
-    print(u)
+# for i in np.arange(0,5,1):
+for i in [4]:
+    method = methods[i]
     sythetic = SytheticOption(df_index=df_base)
-    sythetic.k = 1.05
-    sythetic.d = 50
-    sythetic.cd_model = 'ww'
-    sythetic.delta_upper_bound = u
+    sythetic.k = strikes[i]
+    sythetic.ttm = Ts[i]
+    sythetic.flag_fix_ttm = fix_maturity[i]
+    sythetic.cd_model = cd_models[i]
+    sythetic.delta_criterian = delta_criterians[i]
+    sythetic.delta_upper_bound = delta_upper_bounds[i]
+    print(method, ' ', sythetic.k, ' ', sythetic.ttm, ' ', sythetic.flag_fix_ttm,
+          ' ', sythetic.cd_model, ' ', sythetic.delta_criterian,' ',sythetic.delta_upper_bound)
     account = sythetic.back_test()
     npvs.append(list(account.account[c.Util.PORTFOLIO_NPV]))
     df_yearly =account.annual_analyis()[0]
-    df_yield_d[str(u)] = df_yearly['accumulate_yield']
-    df_mdd_d[str(u)] = df_yearly['max_absolute_loss']
-    df_res_d[str(u)] = account.analysis()
-    # account.account.to_csv('../../accounts_data/sythetic_account'+str(sythetic.k)+str(sythetic.delta_criterian)+'.csv')
-    # account.trade_records.to_csv('../../accounts_data/sythetic_records'+str(sythetic.k)+str(sythetic.delta_criterian)+'.csv')
+    df_yield_d[method] = df_yearly['accumulate_yield']
+    df_mdd_d[method] = df_yearly['max_absolute_loss']
+    df_res_d[method] = account.analysis()
+    account.account.to_csv('../../accounts_data/sythetic_account'+method+'.csv')
+    account.trade_records.to_csv('../../accounts_data/sythetic_records'+method+'.csv')
 
-df_res_d.to_csv('../../accounts_data/df_res_.csv')
-df_mdd_d.to_csv('../../accounts_data/df_mdd_.csv')
-df_yield_d.to_csv('../../accounts_data/df_yield_.csv')
-print(account.analysis())
+    print(account.analysis())
+
+df_res_d.to_csv('../../accounts_data/df_res_methods5.csv')
+df_mdd_d.to_csv('../../accounts_data/df_mdd_methods5.csv')
+df_yield_d.to_csv('../../accounts_data/df_yield_methods5.csv')
 pu = PlotUtil()
 dates = list(account.account.index)
 npvs.append(list(account.account['benchmark']))
-pu.plot_line_chart(dates, npvs, ['行权价重置期权阈值0.9','行权价重置期权阈值0.95','行权价重置期权阈值0.99','行权价重置期权阈值1','benchmark'])
+methods.append('benchmark')
+deltas = list(account.account['delta'])
+pu.plot_line_chart(dates, npvs, methods)
+pu.plot_line_chart(dates, [deltas], ['delta'])
+
 plt.show()
+
+
+
+######### Delta Bounds ###################
+# npvs = []
+# df_yield_d = pd.DataFrame()
+# df_mdd_d = pd.DataFrame()
+# df_res_d = pd.DataFrame()
+# for u in [0.9,0.95,0.99,1]:
+#     print(u)
+#     sythetic = SytheticOption(df_index=df_base)
+#     sythetic.k = 1.05
+#     sythetic.d = 50
+#     sythetic.cd_model = 'ww'
+#     sythetic.delta_upper_bound = u
+#     account = sythetic.back_test()
+#     npvs.append(list(account.account[c.Util.PORTFOLIO_NPV]))
+#     df_yearly =account.annual_analyis()[0]
+#     df_yield_d[str(u)] = df_yearly['accumulate_yield']
+#     df_mdd_d[str(u)] = df_yearly['max_absolute_loss']
+#     df_res_d[str(u)] = account.analysis()
+#     # account.account.to_csv('../../accounts_data/sythetic_account'+str(sythetic.k)+str(sythetic.delta_criterian)+'.csv')
+#     # account.trade_records.to_csv('../../accounts_data/sythetic_records'+str(sythetic.k)+str(sythetic.delta_criterian)+'.csv')
+#
+# df_res_d.to_csv('../../accounts_data/df_res_.csv')
+# df_mdd_d.to_csv('../../accounts_data/df_mdd_.csv')
+# df_yield_d.to_csv('../../accounts_data/df_yield_.csv')
+# print(account.analysis())
+# pu = PlotUtil()
+# dates = list(account.account.index)
+# npvs.append(list(account.account['benchmark']))
+# pu.plot_line_chart(dates, npvs, ['行权价重置期权阈值0.9','行权价重置期权阈值0.95','行权价重置期权阈值0.99','行权价重置期权阈值1','benchmark'])
+# plt.show()
 
 ######### Strikes ###################
 

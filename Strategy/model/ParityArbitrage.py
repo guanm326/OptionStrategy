@@ -1,19 +1,13 @@
-from back_test.model.base_instrument import BaseInstrument
-from back_test.model.base_future_coutinuous import BaseFutureCoutinuous
-from back_test.model.base_option_set import BaseOptionSet
-import back_test.model.constant as c
-from back_test.model.base_account import BaseAccount
-import data_access.get_data as get_data
-from PricingLibrary.BlackCalculator import BlackCalculator
-from PricingLibrary.Options import EuropeanOption
-from OptionStrategyLib.VolatilityModel.historical_volatility import HistoricalVolatilityModels as histvol
-from Utilities.PlotUtil import PlotUtil
-import matplotlib.pyplot as plt
 import datetime
-import pandas as pd
+import matplotlib.pyplot as plt
 import numpy as np
-import math
-from OptionStrategyLib.OptionStrategy.model import TradingDesk
+import pandas as pd
+import back_test.model.constant as c
+from Utilities.PlotUtil import PlotUtil
+from back_test.model.base_account import BaseAccount
+from back_test.model.base_future_coutinuous import BaseFutureCoutinuous
+from back_test.model.base_instrument import BaseInstrument
+from back_test.model.base_option_set import BaseOptionSet
 
 # class ParityArbitrage1(object):
 #     def __init__(self, df_option, df_index, df_future_c1=None, df_future_all=None,df_index1=None):
@@ -381,7 +375,7 @@ class ParityArbitrage(object):
     def __init__(self, df_option, df_underlying, df_future_c1=None, df_future_all=None,df_index=None):
         self.underlying = BaseInstrument(df_underlying)
         self.underlying.init()
-        self.underlying_unit_ratio = 1
+        # self.underlying_unit_ratio = 1
         # self.underlying_m = 0.75
         self.future = None
         self.baseindex = None
@@ -402,7 +396,7 @@ class ParityArbitrage(object):
         self.nbr_maturity = 0
         self.rank = 3
         self.slippage = 1/1000.0
-        self.aggregate_costs = 5/1000.0
+        self.aggregate_costs = 0.5/100.0
         self.cd_price = c.CdTradePrice.CLOSE
         self.df_arbitrage_window = pd.DataFrame()
 
@@ -430,112 +424,159 @@ class ParityArbitrage(object):
                 self.df_arbitrage_window.loc[self.optionset.eval_date, 'basis_to_index'] = self.basis_to_index
                 self.df_arbitrage_window.loc[self.optionset.eval_date, 'tracking_error'] = self.tracking_error
                 self.df_arbitrage_window.loc[self.optionset.eval_date, 'index_50'] = self.baseindex.mktprice_close()
+                self.row_max_sythetic['tracking_error'] = self.tracking_error
+                self.row_min_sythetic['tracking_error'] = self.tracking_error
         self.df_arbitrage_window.loc[self.optionset.eval_date,'50etf'] = self.underlying.mktprice_close()
         self.df_arbitrage_window.loc[self.optionset.eval_date,'sythetic_underlying_max'] = self.row_max_sythetic['sythetic_underlying']
         self.df_arbitrage_window.loc[self.optionset.eval_date,'sythetic_underlying_min'] = self.row_min_sythetic['sythetic_underlying']
+
+    def short_sythetic(self,df):
+        # Short Sythetic
+        self.conversion_call = self.optionset.get_baseoption_by_id(self.row_max_sythetic[c.Util.ID_CALL])
+        fund_requirement = self.conversion_call.get_fund_required(c.LongShort.SHORT)
+        df = df.append({'dt_date': self.optionset.eval_date,
+                        'cd_posiiton': 'C_call',
+                        'id_instrument': self.row_max_sythetic[c.Util.ID_CALL],
+                        'base_instrument': self.conversion_call,
+                        'long_short': c.LongShort.SHORT,
+                        'fund_requirement': fund_requirement,
+                        'cashflow_t0': self.conversion_call.mktprice_close() * self.conversion_call.multiplier(),
+                        'unit_ratio' : 1},
+                       ignore_index=True)
+        self.conversion_put = self.optionset.get_baseoption_by_id(self.row_max_sythetic[c.Util.ID_PUT])
+        fund_requirement = self.conversion_put.get_fund_required(c.LongShort.LONG)
+        df = df.append({'dt_date': self.optionset.eval_date,
+                        'cd_posiiton': 'C_put',
+                        'id_instrument': self.row_max_sythetic[c.Util.ID_PUT],
+                        'base_instrument': self.conversion_put,
+                        'long_short': c.LongShort.LONG,
+                        'fund_requirement': fund_requirement,
+                        'cashflow_t0': -self.conversion_put.mktprice_close() * self.conversion_put.multiplier(),
+                        'unit_ratio' : 1},
+                       ignore_index=True)
+        return df
+
+    def long_sythetic(self,df):
+        # Reverse : Long Sythetic
+        self.reverse_call = self.optionset.get_baseoption_by_id(self.row_min_sythetic[c.Util.ID_CALL])
+        fund_requirement = self.reverse_call.get_fund_required(c.LongShort.LONG)
+        df = df.append({'dt_date': self.optionset.eval_date,
+                        'cd_posiiton': 'R_call',
+                        'id_instrument': self.row_min_sythetic[c.Util.ID_CALL],
+                        'base_instrument': self.reverse_call,
+                        'long_short': c.LongShort.LONG,
+                        'fund_requirement': fund_requirement,
+                        'cashflow_t0': -self.reverse_call.mktprice_close() * self.reverse_call.multiplier()},
+                       ignore_index=True)
+        self.reverse_put = self.optionset.get_baseoption_by_id(self.row_min_sythetic[c.Util.ID_PUT])
+        fund_requirement = self.reverse_put.get_fund_required(c.LongShort.SHORT)
+        df = df.append({'dt_date': self.optionset.eval_date,
+                        'cd_posiiton': 'R_put',
+                        'id_instrument': self.row_min_sythetic[c.Util.ID_PUT],
+                        'base_instrument': self.reverse_put,
+                        'long_short': c.LongShort.SHORT,
+                        'fund_requirement': fund_requirement,
+                        'cashflow_t0': self.reverse_put.mktprice_close() * self.reverse_put.multiplier()},
+                       ignore_index=True)
+        return df
+
+    def long_etf(self,df):
+        unit_ratio = self.conversion_put.multiplier()
+        fund_requirement = self.conversion_put.multiplier() * self.underlying.mktprice_close()
+        df = df.append({'dt_date': self.optionset.eval_date,
+                        'cd_posiiton': 'underlying',
+                        'id_instrument': self.underlying.id_instrument(),
+                        'base_instrument': self.underlying,
+                        'long_short': c.LongShort.LONG,
+                        'fund_requirement': fund_requirement,
+                        'cashflow_t0': -self.underlying.mktprice_close() * self.underlying.multiplier()*unit_ratio,
+                        'unit_ratio' : unit_ratio},
+                       ignore_index=True)
+        return df
+
+    def long_ih(self,df):
+        unit_ratio = self.conversion_put.multiplier()/self.future.multiplier()/1000.0
+        fund_requirement = self.future.mktprice_close()*self.future.multiplier()*unit_ratio
+        df = df.append({'dt_date': self.optionset.eval_date,
+                        'cd_posiiton': 'underlying',
+                        'id_instrument': self.future.id_instrument(),
+                        'base_instrument': self.future,
+                        'long_short': c.LongShort.LONG,
+                        'fund_requirement': fund_requirement,
+                        'cashflow_t0': -self.future.mktprice_close() * self.future.multiplier()*unit_ratio,
+                        'unit_ratio' : unit_ratio},
+                       ignore_index=True)
+        return df
+
+    def short_ih(self,df):
+        unit_ratio = self.reverse_put.multiplier()/self.future.multiplier()/1000.0
+        fund_requirement = self.future.mktprice_close()*self.future.multiplier()*unit_ratio
+        df = df.append({'dt_date': self.optionset.eval_date,
+                        'cd_posiiton': 'underlying',
+                        'id_instrument': self.future.id_instrument(),
+                        'base_instrument': self.future,
+                        'long_short': c.LongShort.SHORT,
+                        'fund_requirement': fund_requirement,
+                        'cashflow_t0': -self.future.mktprice_close() * self.future.multiplier()*unit_ratio,
+                        'unit_ratio' : unit_ratio},
+                       ignore_index=True)
+        return df
+
 
 
     def open_signal(self,cd_strategy):
         if cd_strategy == 'box':
             if (self.row_max_sythetic['sythetic_underlying'] - self.row_min_sythetic['sythetic_underlying'])/self.underlying.mktprice_close() > self.aggregate_costs:
                 df = pd.DataFrame(columns=['dt_date','id_instrument','base_instrument','long_short'])
-                # Converion : Short Sythetic
-                self.conversion_call = self.optionset.get_baseoption_by_id(self.row_max_sythetic[c.Util.ID_CALL])
-                fund_requirement = self.conversion_call.get_fund_required(c.LongShort.SHORT)
-                df = df.append({'dt_date':self.optionset.eval_date,
-                                'cd_posiiton':'C_call',
-                                'id_instrument':self.row_max_sythetic[c.Util.ID_CALL],
-                                'base_instrument':self.conversion_call,
-                                'long_short':c.LongShort.SHORT,
-                                'fund_requirement':fund_requirement,
-                                'cashflow_t0':self.conversion_call.mktprice_close()*self.conversion_call.multiplier()},ignore_index=True)
-                self.conversion_put = self.optionset.get_baseoption_by_id(self.row_max_sythetic[c.Util.ID_PUT])
-                fund_requirement = self.conversion_put.get_fund_required(c.LongShort.LONG)
-                df = df.append({'dt_date':self.optionset.eval_date,
-                                'cd_posiiton': 'C_put',
-                                'id_instrument':self.row_max_sythetic[c.Util.ID_PUT],
-                                'base_instrument':self.conversion_put,
-                                'long_short':c.LongShort.LONG,
-                                'fund_requirement':fund_requirement,
-                                'cashflow_t0':-self.conversion_put.mktprice_close()*self.conversion_put.multiplier()},ignore_index=True)
-                # Reverse : Long Sythetic
-                self.reverse_call = self.optionset.get_baseoption_by_id(self.row_min_sythetic[c.Util.ID_CALL])
-                fund_requirement = self.reverse_call.get_fund_required(c.LongShort.LONG)
-                df = df.append({'dt_date':self.optionset.eval_date,
-                                'cd_posiiton': 'R_call',
-                                'id_instrument':self.row_min_sythetic[c.Util.ID_CALL],
-                                'base_instrument':self.reverse_call,
-                                'long_short':c.LongShort.LONG,
-                                'fund_requirement':fund_requirement,
-                                'cashflow_t0':-self.reverse_call.mktprice_close()*self.reverse_call.multiplier()},ignore_index=True)
-                self.reverse_put = self.optionset.get_baseoption_by_id(self.row_min_sythetic[c.Util.ID_PUT])
-                fund_requirement = self.reverse_put.get_fund_required(c.LongShort.SHORT)
-                df = df.append({'dt_date':self.optionset.eval_date,
-                                'cd_posiiton': 'R_put',
-                                'id_instrument':self.row_min_sythetic[c.Util.ID_PUT],
-                                'base_instrument':self.reverse_put,
-                                'long_short':c.LongShort.SHORT,
-                                'fund_requirement':fund_requirement,
-                                'cashflow_t0':self.reverse_put.mktprice_close()*self.reverse_put.multiplier()},ignore_index=True)
-                print(self.optionset.eval_date, ' open position')
+                df = self.short_sythetic(df)
+                df = self.long_sythetic(df)
                 return df
             else:
                 return None
-        elif cd_strategy == 'conversion':# Converion : Short Sythetic, Long ETF
+        elif cd_strategy == 'conversion': # Converion : Short Sythetic, Long ETF
             if (self.row_max_sythetic['sythetic_underlying'] - self.underlying.mktprice_close())/self.underlying.mktprice_close() > self.aggregate_costs:
                 df = pd.DataFrame(columns=['dt_date','id_instrument','base_instrument','long_short'])
-                # Short Sythetic
-                self.conversion_call = self.optionset.get_baseoption_by_id(self.row_max_sythetic[c.Util.ID_CALL])
-                fund_requirement = self.conversion_call.get_fund_required(c.LongShort.SHORT)
-                df = df.append({'dt_date':self.optionset.eval_date,
-                                'cd_posiiton':'C_call',
-                                'id_instrument':self.row_max_sythetic[c.Util.ID_CALL],
-                                'base_instrument':self.conversion_call,
-                                'long_short':c.LongShort.SHORT,
-                                'fund_requirement':fund_requirement,
-                                'cashflow_t0':self.conversion_call.mktprice_close()*self.conversion_call.multiplier()},ignore_index=True)
-                self.conversion_put = self.optionset.get_baseoption_by_id(self.row_max_sythetic[c.Util.ID_PUT])
-                fund_requirement = self.conversion_put.get_fund_required(c.LongShort.LONG)
-                df = df.append({'dt_date':self.optionset.eval_date,
-                                'cd_posiiton': 'C_put',
-                                'id_instrument':self.row_max_sythetic[c.Util.ID_PUT],
-                                'base_instrument':self.conversion_put,
-                                'long_short':c.LongShort.LONG,
-                                'fund_requirement':fund_requirement,
-                                'cashflow_t0':-self.conversion_put.mktprice_close()*self.conversion_put.multiplier()},ignore_index=True)
-                # Long underlying
-                fund_requirement = self.conversion_put.multiplier()*self.underlying.mktprice_close()
-                df = df.append({'dt_date': self.optionset.eval_date,
-                                'cd_posiiton': 'underlying',
-                                'id_instrument': self.underlying.id_instrument(),
-                                'base_instrument': self.underlying,
-                                'long_short': c.LongShort.LONG,
-                                'fund_requirement': fund_requirement,
-                                'cashflow_t0': -self.underlying.mktprice_close() * self.conversion_put.multiplier()},
-                               ignore_index=True)
+                df = self.short_sythetic(df)
+                df = self.long_etf(df)
                 return df
             else:
                 return None
-        # elif cd_strategy == 'reverse_ih': # Reverse: Long Sythetic, Short IH
+        elif cd_strategy == 'conversion_ih': # Converion : Short Sythetic, Long IH # 主要布局IH负基差套利
+            if self.optionset.eval_date.month ==5: return None #5月由于股票集中现金分红不做空Synthetic
+            if (self.row_max_sythetic['sythetic_underlying']*1000.0 - self.future.mktprice_close()-self.row_max_sythetic['tracking_error'])/self.future.mktprice_close() > self.aggregate_costs:
+                df = pd.DataFrame(columns=['dt_date', 'id_instrument', 'base_instrument', 'long_short'])
+                df = self.short_sythetic(df)
+                df = self.long_ih(df)
+                return df
+            else:
+                return None
+        elif cd_strategy == 'ih_basis_arbitrage':
+            # if self.df_arbitrage_window.loc[self.optionset.eval_date, 'basis_to_index'] > self.aggregate_costs: # 期货升水
+            #     df = pd.DataFrame(columns=['dt_date', 'id_instrument', 'base_instrument', 'long_short'])
+            #     df = self.short_ih(df)
+            #     df = self.long_sythetic(df)
+            #     return df
+            if self.df_arbitrage_window.loc[self.optionset.eval_date, 'basis_to_index'] < -self.aggregate_costs:  # 期货贴水
+                df = pd.DataFrame(columns=['dt_date', 'id_instrument', 'base_instrument', 'long_short'])
+                df = self.short_sythetic(df)
+                df = self.long_ih(df)
+                return df
+            else:
+                return None
+        elif cd_strategy == 'may_effect': # Reverse: Long Sythetic, Short IH # 5-9月分红期
+            if self.optionset.eval_date.month ==5: #5月由于股票集中现金分红不做空Synthetic
+                df = pd.DataFrame(columns=['dt_date', 'id_instrument', 'base_instrument', 'long_short'])
+                df = self.long_sythetic(df)
+                df = self.short_ih(df)
+                return df
+            else:
+                return None
 
-
-
-    def open_excute(self,open_signal):
-        if open_signal is None:
-            return False
-        else:
-            fund_per_unit = open_signal['fund_requirement'].sum()
-            unit = np.floor(self.account.cash*0.8/fund_per_unit) # TODO
-            for (idx,row) in open_signal.iterrows():
-                option = row['base_instrument']
-                order = self.account.create_trade_order(option, row['long_short'], unit,
-                                                        cd_trade_price=self.cd_price)
-                record = option.execute_order(order, slippage=self.slippage)
-                self.account.add_record(record, option)
-            return True
 
     def close_signal(self,cd_strategy,df_position):
         if cd_strategy == 'box':
+            if self.reverse_call.maturitydt() == self.optionset.eval_date or self.conversion_call.maturitydt() == self.optionset.eval_date :
+                return True
             # C_call = df_position[df_position['cd_position']=='C_call']['base_instrument'].values[0]
             # C_put = df_position[df_position['cd_position']=='C_put']['base_instrument'].values[0]
             # R_call = df_position[df_position['cd_position']=='R_call']['base_instrument'].values[0]
@@ -545,14 +586,48 @@ class ParityArbitrage(object):
             reverse_sythetic = self.reverse_call.mktprice_close()-self.reverse_put.mktprice_close()+self.reverse_put.applicable_strike()*discount_r # Longed
             conversion_sythetic = self.conversion_call.mktprice_close()-self.conversion_put.mktprice_close()+self.conversion_put.applicable_strike()*discount_c # shorted
             if conversion_sythetic <= reverse_sythetic:
-                print(self.optionset.eval_date, ' close position')
+                return True
+            else:
+                return False
+        elif cd_strategy == 'conversion_ih': # Short Sythetic, Long IH # 主要布局IH负基差套利
+            if self.conversion_call.maturitydt() == self.optionset.eval_date:
+                return True
+            discount_c = c.PricingUtil.get_discount(self.optionset.eval_date, self.conversion_put.maturitydt(), self.rf)
+            conversion_sythetic = self.conversion_call.mktprice_close() - self.conversion_put.mktprice_close() + self.conversion_put.applicable_strike() * discount_c  # shorted
+            if conversion_sythetic*1000.0 <= self.future.mktprice_close():
+                return True
+            else:
+                return False
+        elif cd_strategy == 'ih_basis_arbitrage':
+            if self.df_arbitrage_window.loc[self.optionset.eval_date, 'basis_to_index'] >= 0:
+                return True
+            else:
+                return False
+        elif cd_strategy == 'may_effect': # Reverse: Long Sythetic, Short IH # 5-9月分红期
+            if self.optionset.eval_date.month !=5: #5月由于股票集中现金分红不做空Synthetic
                 return True
             else:
                 return False
 
+    def open_excute(self,open_signal):
+        if open_signal is None:
+            return False
+        else:
+            fund_per_unit = open_signal['fund_requirement'].sum()
+            unit = np.floor(self.account.cash*0.9/fund_per_unit) # TODO
+            for (idx,row) in open_signal.iterrows():
+                option = row['base_instrument']
+                order = self.account.create_trade_order(option, row['long_short'], unit*row['unit_ratio'],
+                                                        cd_trade_price=self.cd_price)
+                record = option.execute_order(order, slippage=self.slippage)
+                self.account.add_record(record, option)
+            print(self.optionset.eval_date, ' open position')
+            return True
+
 
     def close_excute(self):
         self.close_out()
+        print(self.optionset.eval_date, ' close position')
         return True
         # else:
         #     for (idx,row) in close_signal.iterrows():
@@ -570,11 +645,14 @@ class ParityArbitrage(object):
                 .execute_order(order, slippage=self.slippage, execute_type=c.ExecuteType.EXECUTE_ALL_UNITS)
             self.account.add_record(execution_record, self.account.dict_holding[order.id_instrument])
 
-    def back_test_box(self):
-        cd_strategy = 'box'# Box
+
+    def back_test(self, cd_strategy):
+        # TODO: 50ETF DIVIDEND
         empty_position = True
         df_position = None
         while self.optionset.has_next():
+            if self.optionset.eval_date == datetime.date(2015,6,19):
+                print('')
             self.update_sythetics()
             if empty_position:
                 df_position = self.open_signal(cd_strategy)
@@ -590,20 +668,21 @@ class ParityArbitrage(object):
             if self.baseindex is not None: self.baseindex.next()
         return self.account
 
+
 start_date = datetime.date(2015, 5, 1)
-end_date = datetime.date.today()
-# end_date = datetime.date(2016,1,1)
+# end_date = datetime.date.today()
+end_date = datetime.date(2016,1,1)
 # df_metrics = get_data.get_50option_mktdata(start_date, end_date)
 # df_index = get_data.get_index_mktdata(start_date,end_date,c.Util.STR_INDEX_50ETF)
 # df_f_c1 = get_data.get_mktdata_future_c1_daily(start_date,end_date,c.Util.STR_IH)
 # df_f_all = get_data.get_future_mktdata(start_date,end_date,c.Util.STR_IH)
 # df_sh50 = get_data.get_index_mktdata(start_date,end_date,c.Util.STR_INDEX_50SH)
 
-df_sh50=pd.read_excel('../../../data/df_sh50.xlsx')
-df_metrics=pd.read_excel('../../../data/df_metrics.xlsx')
-df_index= pd.read_excel('../../../data/df_index.xlsx')
-df_f_c1=pd.read_excel('../../../data/df_f_c1.xlsx')
-df_f_all=pd.read_excel('../../../data/df_f_all.xlsx')
+df_sh50=pd.read_excel('../../data/df_sh50.xlsx')
+df_metrics=pd.read_excel('../../data/df_metrics.xlsx')
+df_index= pd.read_excel('../../data/df_index.xlsx')
+df_f_c1=pd.read_excel('../../data/df_f_c1.xlsx')
+df_f_all=pd.read_excel('../../data/df_f_all.xlsx')
 
 df_metrics = df_metrics[df_metrics[c.Util.DT_DATE]>=start_date].reset_index(drop=True)
 df_index = df_index[df_index[c.Util.DT_DATE]>=start_date].reset_index(drop=True)
@@ -620,14 +699,15 @@ df_sh50[c.Util.DT_DATE] = df_sh50[c.Util.DT_DATE].apply(lambda x: x.date())
 df_metrics[c.Util.DT_MATURITY] = df_metrics[c.Util.DT_MATURITY].apply(lambda x: x.date())
 df_f_all[c.Util.DT_MATURITY] = df_f_all[c.Util.DT_MATURITY].apply(lambda x: x.date())
 parity = ParityArbitrage(df_metrics,df_index,df_future_c1=df_f_c1,df_future_all=df_f_all,df_index=df_sh50)
-
 # parity = ParityArbitrage(df_metrics,df_index)
-# account = parity.back_test_r()
-account = parity.back_test_box()
-# account = parity.back_test_c()
+
+account = parity.back_test('conversion_ih')
+# account = parity.back_test('ih_basis_arbitrage')
+# account = parity.back_test('may_effect')
+
 # parity.df_arbitrage_window.to_csv('../../accounts_data/ParityArbitrage-window.csv')
-account.account.to_csv('../../accounts_data/ParityArbitrage-account.csv')
-account.trade_records.to_csv('../../accounts_data/ParityArbitrage-records.csv')
+# account.account.to_csv('../../accounts_data/ParityArbitrage-account.csv')
+# account.trade_records.to_csv('../../accounts_data/ParityArbitrage-records.csv')
 print(account.trade_records)
 res = account.analysis()
 print(res)

@@ -440,10 +440,10 @@ class BaseAccount():
                                  total_realized_pnl + realized_pnl_from_closed_out_positions
         npv = portfolio_total_value / self.init_fund
         npv2 = portfolio_total_value2 / self.init_fund
-        if npv != npv2:
-            print(eval_date ,' npv1 is ', npv,'npv2 is ', npv2)
-        else:
-            print(eval_date, ' npv matched ')
+        # if npv != npv2:
+        #     print(eval_date ,' npv1 is ', npv,'npv2 is ', npv2)
+        # else:
+        #     print(eval_date, ' npv matched ')
         if self.trade_records.empty:
             daily_executed_amount = 0.0
             # turnover = 0.0
