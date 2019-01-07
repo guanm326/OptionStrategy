@@ -162,7 +162,7 @@ class SytheticOption(object):
             self.df_base = df_future_c1
             self.base = BaseFutureCoutinuous(df_future_c1=df_future_c1, df_futures_all_daily=df_future_all)
         self.base.init()
-        self.account = BaseAccount(c.Util.BILLION * 10)
+        self.account = BaseAccount(c.Util.BILLION * 10,rf=0.0)
         self._prepare_data()
         self.leverage = 0.75  # Will be multiplied to delta equivalent position
         self.rf = 0.03
@@ -408,23 +408,23 @@ df_base[c.Util.ID_INSTRUMENT] = id_instrument
 
 ###############Single BackTest Example ##########################
 
-# sythetic = SytheticOption(df_index=df_base)
-# sythetic.delta_upper_bound = 0.99
-# account = sythetic.back_test()
-# account.account.to_csv('../../accounts_data/sythetic_account.csv')
-# account.trade_records.to_csv('../../accounts_data/sythetic_records.csv')
-# res = account.analysis()
-# print(res)
-# df_yearly,df_yearly_npvs = account.annual_analyis()
-# print(df_yearly)
-# # df_yearly.to_csv('../../accounts_data/df_yearly.csv')
-# # df_yearly_npvs.to_csv('../../accounts_data/df_yearly_npvs.csv')e
-# pu = PlotUtil()
-# dates = list(account.account.index)
-# npv = list(account.account[c.Util.PORTFOLIO_NPV])
-# benchmark = list(account.account['benchmark'])
-# pu.plot_line_chart(dates, [npv,benchmark], ['npv','benchmark'])
-# plt.show()
+sythetic = SytheticOption(df_index=df_base)
+sythetic.delta_upper_bound = 0.99
+account = sythetic.back_test()
+account.account.to_csv('../../accounts_data/sythetic_account.csv')
+account.trade_records.to_csv('../../accounts_data/sythetic_records.csv')
+res = account.analysis()
+print(res)
+df_yearly,df_yearly_npvs = account.annual_analyis()
+print(df_yearly)
+# df_yearly.to_csv('../../accounts_data/df_yearly.csv')
+# df_yearly_npvs.to_csv('../../accounts_data/df_yearly_npvs.csv')
+pu = PlotUtil()
+dates = list(account.account.index)
+npv = list(account.account[c.Util.PORTFOLIO_NPV])
+benchmark = list(account.account['benchmark'])
+pu.plot_line_chart(dates, [npv,benchmark], ['npv','benchmark'])
+plt.show()
 
 ################## Method 1-5############################
 # strikes = [1.0, 1.0, 1.05, 1.05, 1.05]

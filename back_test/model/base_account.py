@@ -208,88 +208,88 @@ class BaseAccount():
         execution_record[Util.ABS_TRADE_BOOK_VALUE] = abs(execution_record[Util.TRADE_BOOK_VALUE])
         self.trade_records = self.trade_records.append(execution_record, ignore_index=True)
 
-    # 用于衡量投资组合中非保证金交易部分的市值。
-    def get_position_current_value(self, id_instrument, trade_unit, long_short, last_price):
-        base_product = self.dict_holding[id_instrument]
-        # comment refactor_1901: 头寸当前市值通过调用子类方法，逐日盯市期货头寸市值：距last price（前收/成本）的浮盈浮亏；期权：权利金市值；股票：市值。
-        if base_product.is_mtm():
-            position_current_value = long_short.value * (base_product.mktprice_close() - last_price) * trade_unit * base_product.multiplier()
-        else:
-            position_current_value = long_short.value * base_product.mktprice_close() * trade_unit * base_product.multiplier()
-        # position_current_value = base_product.get_current_value(long_short, last_price) * trade_unit * base_product.multiplier()
-        # if base_product.is_margin_trade(long_short):
-        #     # 对于保证金交易，头寸价值为未实现损益（unrealized pnl）
-        #     position_current_value = 0.0
-        # else:
-        #     # 对于非保证金交易：购买股票/期权买方等，头寸价值为当前市值（close price）
-        #     position_current_value = base_product.get_current_value(long_short) * trade_unit * base_product.multiplier()
-        return position_current_value
+    # # 用于衡量投资组合中非保证金交易部分的市值。
+    # def get_position_current_value(self, id_instrument, trade_unit, long_short, last_price):
+    #     base_product = self.dict_holding[id_instrument]
+    #     # comment refactor_1901: 头寸当前市值通过调用子类方法，逐日盯市期货头寸市值：距last price（前收/成本）的浮盈浮亏；期权：权利金市值；股票：市值。
+    #     if base_product.is_mtm():
+    #         position_current_value = long_short.value * (base_product.mktprice_close() - last_price) * trade_unit * base_product.multiplier()
+    #     else:
+    #         position_current_value = long_short.value * base_product.mktprice_close() * trade_unit * base_product.multiplier()
+    #     # position_current_value = base_product.get_current_value(long_short, last_price) * trade_unit * base_product.multiplier()
+    #     # if base_product.is_margin_trade(long_short):
+    #     #     # 对于保证金交易，头寸价值为未实现损益（unrealized pnl）
+    #     #     position_current_value = 0.0
+    #     # else:
+    #     #     # 对于非保证金交易：购买股票/期权买方等，头寸价值为当前市值（close price）
+    #     #     position_current_value = base_product.get_current_value(long_short) * trade_unit * base_product.multiplier()
+    #     return position_current_value
 
-    # 用于杠杆率计算：总保证金交易的市值（按照last trade price，不考虑日内未实现损益），多空绝对市值相加。
-    def get_portfolio_margin_trade_scale(self):
-        portfolio_margin_trade_scale = 0.0
-        for (id_instrument, row) in self.trade_book.iterrows():
-            long_short = row[Util.TRADE_LONG_SHORT]
-            base_product = self.dict_holding[id_instrument]
-            if base_product.is_margin_trade(long_short):
-                portfolio_margin_trade_scale += row[Util.TRADE_UNIT] * row[Util.NBR_MULTIPLIER] * row[
-                    Util.LAST_PRICE]
-        return portfolio_margin_trade_scale
+    # # 用于杠杆率计算：总保证金交易的市值（按照last trade price，不考虑日内未实现损益），多空绝对市值相加。
+    # def get_portfolio_margin_trade_scale(self):
+    #     portfolio_margin_trade_scale = 0.0
+    #     for (id_instrument, row) in self.trade_book.iterrows():
+    #         long_short = row[Util.TRADE_LONG_SHORT]
+    #         base_product = self.dict_holding[id_instrument]
+    #         if base_product.is_margin_trade(long_short):
+    #             portfolio_margin_trade_scale += row[Util.TRADE_UNIT] * row[Util.NBR_MULTIPLIER] * row[
+    #                 Util.LAST_PRICE]
+    #     return portfolio_margin_trade_scale
 
-    # For calculate MAX trade unit before execute order.
-    def get_investable_cash(self):
-        portfolio_margin_trade_scale = self.get_portfolio_margin_trade_scale()
-        total_margin_capital = self.get_portfolio_margin_capital()
-        investable_cash = max(0.0,
-                              self.cash + total_margin_capital -
-                              portfolio_margin_trade_scale / self.max_leverage)
-        return investable_cash * self.max_leverage
+    # # For calculate MAX trade unit before execute order.
+    # def get_investable_cash(self):
+    #     portfolio_margin_trade_scale = self.get_portfolio_margin_trade_scale()
+    #     total_margin_capital = self.get_portfolio_margin_capital()
+    #     investable_cash = max(0.0,
+    #                           self.cash + total_margin_capital -
+    #                           portfolio_margin_trade_scale / self.max_leverage)
+    #     return investable_cash * self.max_leverage
 
-    def create_trade_order_check_leverage(self, base_product,
-                                          # trade_type: TradeType,
-                                          long_short: LongShort,
-                                          trade_unit: int = None,
-                                          trade_price: float = None,
-                                          ):
-        trade_unit = abs(trade_unit)  # unit的正负取绝对值，方向主要看trade type
-        dt_trade = base_product.eval_date
-        id_instrument = base_product.id_instrument()
-        if trade_price is None:
-            trade_price = base_product.mktprice_close()
-        time_signal = base_product.eval_datetime
-        multiplier = base_product.multiplier()
-        # long_short = self.get_long_short(trade_type)
-        # if trade_type == TradeType.CLOSE_OUT:
-        #     trade_unit = book_series[Util.TRADE_UNIT]
-        #     print("Close out all positions! ")
-        # Close position时不检查保证金
-        # if trade_type == TradeType.CLOSE_SHORT or trade_type == TradeType.CLOSE_LONG:
-        if id_instrument in self.trade_book.index:
-            book_series = self.trade_book.loc[id_instrument]
-            if long_short != self.trade_book.loc[id_instrument, Util.TRADE_LONG_SHORT]:
-                # if trade_type == TradeType.CLOSE_SHORT and book_series[Util.TRADE_LONG_SHORT] == LongShort.LONG:
-                #     print('no short position to close')
-                #     return
-                # elif trade_type == TradeType.CLOSE_LONG and book_series[Util.TRADE_LONG_SHORT] == LongShort.SHORT:
-                #     print('no short position to close')
-                #     return
-                order = Order(dt_trade, id_instrument, trade_unit, trade_price,
-                              time_signal, long_short)
-                return order
-        if trade_unit is None:
-            raise ValueError("trade_unit is None when opening position !")
-        if base_product.is_margin_trade(long_short):
-            investable_market_value = self.get_investable_cash()
-        else:
-            investable_market_value = self.get_investable_cash() * self.max_leverage
-        max_unit = np.floor(investable_market_value / (trade_price * multiplier))
-        if max_unit < 1:
-            return
-        else:
-            trade_unit = min(max_unit, trade_unit)
-            order = Order(dt_trade, id_instrument, trade_unit, trade_price,
-                          time_signal, long_short)
-            return order
+    # def create_trade_order_check_leverage(self, base_product,
+    #                                       # trade_type: TradeType,
+    #                                       long_short: LongShort,
+    #                                       trade_unit: int = None,
+    #                                       trade_price: float = None,
+    #                                       ):
+    #     trade_unit = abs(trade_unit)  # unit的正负取绝对值，方向主要看trade type
+    #     dt_trade = base_product.eval_date
+    #     id_instrument = base_product.id_instrument()
+    #     if trade_price is None:
+    #         trade_price = base_product.mktprice_close()
+    #     time_signal = base_product.eval_datetime
+    #     multiplier = base_product.multiplier()
+    #     # long_short = self.get_long_short(trade_type)
+    #     # if trade_type == TradeType.CLOSE_OUT:
+    #     #     trade_unit = book_series[Util.TRADE_UNIT]
+    #     #     print("Close out all positions! ")
+    #     # Close position时不检查保证金
+    #     # if trade_type == TradeType.CLOSE_SHORT or trade_type == TradeType.CLOSE_LONG:
+    #     if id_instrument in self.trade_book.index:
+    #         book_series = self.trade_book.loc[id_instrument]
+    #         if long_short != self.trade_book.loc[id_instrument, Util.TRADE_LONG_SHORT]:
+    #             # if trade_type == TradeType.CLOSE_SHORT and book_series[Util.TRADE_LONG_SHORT] == LongShort.LONG:
+    #             #     print('no short position to close')
+    #             #     return
+    #             # elif trade_type == TradeType.CLOSE_LONG and book_series[Util.TRADE_LONG_SHORT] == LongShort.SHORT:
+    #             #     print('no short position to close')
+    #             #     return
+    #             order = Order(dt_trade, id_instrument, trade_unit, trade_price,
+    #                           time_signal, long_short)
+    #             return order
+    #     if trade_unit is None:
+    #         raise ValueError("trade_unit is None when opening position !")
+    #     if base_product.is_margin_trade(long_short):
+    #         investable_market_value = self.get_investable_cash()
+    #     else:
+    #         investable_market_value = self.get_investable_cash() * self.max_leverage
+    #     max_unit = np.floor(investable_market_value / (trade_price * multiplier))
+    #     if max_unit < 1:
+    #         return
+    #     else:
+    #         trade_unit = min(max_unit, trade_unit)
+    #         order = Order(dt_trade, id_instrument, trade_unit, trade_price,
+    #                       time_signal, long_short)
+    #         return order
 
     def get_trade_price(self, cd_trade_price: CdTradePrice, base_product: BaseProduct):
         if cd_trade_price == CdTradePrice.CLOSE:
@@ -355,6 +355,7 @@ class BaseAccount():
             return order_list
 
     def estimate_npv(self):
+        # TODO: refactor_1901
         margin_unrealized_pnl = 0.0
         nonmargin_unrealized_pnl = 0.0
         portfolio_trades_value = 0.0
