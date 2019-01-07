@@ -15,7 +15,7 @@ from OptionStrategyLib.VolatilityModel.historical_volatility import HistoricalVo
 
 
 class VolAbtgHvIv(object):
-    def __init__(self, start_date, end_date, name_code):
+    def __init__(self, start_date, end_date, name_code=None):
         self.min_holding = 20
         self.slippage = 0
         self.nbr_maturity = 0
@@ -24,10 +24,17 @@ class VolAbtgHvIv(object):
         self.cd_option_price = c.CdTradePrice.VOLUME_WEIGHTED
         self.cd_future_price = c.CdTradePrice.CLOSE
         dt_histvol = start_date - datetime.timedelta(days=300)
-        df_metrics = get_data.get_comoption_mktdata(start_date, end_date, name_code)
-        df_future_c1_daily = get_data.get_future_c1_by_option_daily(dt_histvol, end_date, name_code, min_holding=5)
+        if name_code == 'index_50etf':
+            name_code_future = c.Util.STR_IH
+            df_metrics = get_data.get_50option_mktdata(start_date, end_date)
+            df_future_c1_daily = get_data.get_mktdata_future_c1_daily(dt_histvol, end_date, name_code_future)
+        else:
+            name_code_future = name_code
+            df_metrics = get_data.get_comoption_mktdata(start_date, end_date, name_code)
+            df_future_c1_daily = get_data.get_future_c1_by_option_daily(dt_histvol, end_date, name_code_future,
+                                                                      min_holding=5)
         df_futures_all_daily = get_data.get_mktdata_future_daily(start_date, end_date,
-                                                                 name_code)  # daily data of all future contracts
+                                                                 name_code_future)  # daily data of all future contracts
         df_future_c1_daily['amt_hv'] = histvol.hist_vol(df_future_c1_daily[c.Util.AMT_CLOSE], n=30)
         df_iv = get_data.get_iv_by_moneyness(dt_histvol, end_date, name_code)
         df_iv_htbr = df_iv[df_iv[c.Util.CD_OPTION_TYPE] == 'put_call_htbr']
@@ -199,14 +206,14 @@ class VolAbtgHvIv(object):
 
 
 dt_start = datetime.date(2018, 1, 1)
-dt_end = datetime.date(2018, 11, 30)
-name_code = 'cu'
-vol_arbitrage = VolAbtgHvIv(dt_start, dt_end, name_code)
+dt_end = datetime.date.today()
+name_code = 'index_50etf'
+vol_arbitrage = VolAbtgHvIv(dt_start, dt_end,name_code)
 
 account = vol_arbitrage.back_test()
 
-account.account.to_csv('../../accounts_data/iv_hv_account_comdty.csv')
-account.trade_records.to_csv('../../accounts_data/iv_hv_record_comdty.csv')
+account.account.to_csv('../../accounts_data/iv_hv_account.csv')
+account.trade_records.to_csv('../../accounts_data/iv_hv_record.csv')
 res = account.analysis()
 print(res)
 pu = PlotUtil()

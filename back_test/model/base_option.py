@@ -42,9 +42,9 @@ class BaseOption(BaseProduct):
         # self.df_data[Util.AMT_OPTION_PRICE] = self.df_data.apply(OptionFilter.fun_option_price, axis=1)
         # For Dividend Adjusts
         self.df_data[Util.AMT_NEAREST_STRIKE] = self.df_data.apply(OptionFilter.nearest_strike_level, axis=1)
-        if self.name_code() == Util.STR_50ETF:
-            self.df_data[Util.AMT_STRIKE_BEFORE_ADJ] = self.df_data.apply(Option50ETF.fun_strike_before_adj, axis=1)
-            self.df_data[Util.AMT_APPLICABLE_STRIKE] = self.df_data.apply(Option50ETF.fun_applicable_strike, axis=1)
+        # if self.name_code() == Util.STR_50ETF:
+        #     self.df_data[Util.AMT_STRIKE_BEFORE_ADJ] = self.df_data.apply(Option50ETF.fun_strike_before_adj, axis=1)
+        #     self.df_data[Util.AMT_APPLICABLE_STRIKE] = self.df_data.apply(Option50ETF.fun_applicable_strike, axis=1)
 
     def _generate_required_columns_if_missing(self) -> None:
         required_column_list = Util.OPTION_COLUMN_LIST

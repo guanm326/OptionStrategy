@@ -513,10 +513,10 @@ class ParityArbitrage(object):
                                 'fund_requirement': fund_requirement,
                                 'cashflow_t0': -self.underlying.mktprice_close() * self.conversion_put.multiplier()},
                                ignore_index=True)
-                return True
+                return df
             else:
                 return None
-        elif cd_strategy == 'reverse_ih': # Reverse: Long Sythetic, Short IH
+        # elif cd_strategy == 'reverse_ih': # Reverse: Long Sythetic, Short IH
 
 
 
@@ -525,7 +525,7 @@ class ParityArbitrage(object):
             return False
         else:
             fund_per_unit = open_signal['fund_requirement'].sum()
-            unit = np.floor(self.account.cash*0.8/fund_per_unit)
+            unit = np.floor(self.account.cash*0.8/fund_per_unit) # TODO
             for (idx,row) in open_signal.iterrows():
                 option = row['base_instrument']
                 order = self.account.create_trade_order(option, row['long_short'], unit,
@@ -551,18 +551,17 @@ class ParityArbitrage(object):
                 return False
 
 
-    def close_excute(self,close_signal=None):
-        if close_signal is None:
-            self.close_out()
-            return True
-        else:
-            for (idx,row) in close_signal.iterrows():
-                option = row['base_instrument']
-                order = self.account.create_trade_order(option, row['long_short'], row['unit'],
-                                                        cd_trade_price=self.cd_price)
-                record = option.execute_order(order, slippage=self.slippage)
-                self.account.add_record(record, option)
-            return True
+    def close_excute(self):
+        self.close_out()
+        return True
+        # else:
+        #     for (idx,row) in close_signal.iterrows():
+        #         option = row['base_instrument']
+        #         order = self.account.create_trade_order(option, row['long_short'], row['unit'],
+        #                                                 cd_trade_price=self.cd_price)
+        #         record = option.execute_order(order, slippage=self.slippage)
+        #         self.account.add_record(record, option)
+        #     return True
 
     def close_out(self):
         close_out_orders = self.account.creat_close_out_order(cd_trade_price=c.CdTradePrice.CLOSE)
