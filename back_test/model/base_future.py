@@ -19,6 +19,10 @@ class BaseFuture(BaseProduct):
         return 'BaseInstrument(id_instrument: {0},eval_date: {1},frequency: {2})' \
             .format(self.id_instrument(), self.eval_date, self.frequency)
 
+    def is_valid_future(self, eval_date) -> bool:
+        return True
+
+
     """ getters """
 
     def contract_month(self) -> Union[str, None]:
