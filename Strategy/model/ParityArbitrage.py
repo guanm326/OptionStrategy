@@ -396,7 +396,7 @@ class ParityArbitrage(object):
         self.nbr_maturity = 0
         self.rank = 3
         self.slippage = 0
-        self.aggregate_costs = 0.5/100.0
+        self.aggregate_costs = 1.5/100.0
         self.cd_price = c.CdTradePrice.CLOSE
         self.df_arbitrage_window = pd.DataFrame()
 

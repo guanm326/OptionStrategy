@@ -9,7 +9,7 @@ from back_test.model.base_option import BaseOption
 from back_test.model.constant import FrequentType, Util, OptionFilter, OptionType, OptionUtil, Option50ETF, \
     OptionExerciseType,CdPriceType
 from PricingLibrary.EngineQuantlib import QlBinomial, QlBlackFormula, QlBAW
-from PricingLibrary.BinomialModel import BinomialTree
+# from PricingLibrary.BinomialModel import BinomialTree
 
 
 class BaseOptionSet(AbstractBaseProductSet):

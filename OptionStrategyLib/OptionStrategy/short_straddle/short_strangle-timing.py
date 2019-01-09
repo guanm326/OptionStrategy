@@ -60,12 +60,12 @@ def filtration(df_iv_stats, name_column):
     return df_iv_stats
 
 pu = PlotUtil()
-start_date = datetime.date(2015, 2, 1)
-end_date = datetime.date(2018, 10, 8)
+start_date = datetime.date(2017, 1, 1)
+end_date = datetime.date(2017, 12, 31)
 dt_histvol = start_date - datetime.timedelta(days=90)
-min_holding = 15 # 20 sharpe ratio较优
+min_holding = 20 # 20 sharpe ratio较优
 init_fund = c.Util.BILLION
-slippage = 0
+slippage = 1.0/1000.0
 m = 1 # 期权notional倍数
 moneyness_rank = -2
 cd_trade_price=c.CdTradePrice.VOLUME_WEIGHTED
@@ -123,7 +123,7 @@ while optionset.eval_date <= end_date:
     if maturity1 > end_date:  # Final close out all.
         close_out_orders = account.creat_close_out_order()
         for order in close_out_orders:
-            execution_record = account.dict_holding[order.id_instrument].execute_order(order, slippage=0,
+            execution_record = account.dict_holding[order.id_instrument].execute_order(order, slippage_rate=slippage,
                                                                                        execute_type=c.ExecuteType.EXECUTE_ALL_UNITS)
             account.add_record(execution_record, account.dict_holding[order.id_instrument])
         account.daily_accounting(optionset.eval_date)
@@ -132,7 +132,7 @@ while optionset.eval_date <= end_date:
     if not empty_position and close_signal(optionset.eval_date,maturity1,df_iv_stats):
         for option in account.dict_holding.values():
             order = account.create_close_order(option, cd_trade_price=cd_trade_price)
-            record = option.execute_order(order, slippage=slippage)
+            record = option.execute_order(order, slippage_rate=slippage)
             account.add_record(record, option)
         empty_position = True
         maturity1 = optionset.select_maturity_date(nbr_maturity=0, min_holding=15)
@@ -156,8 +156,8 @@ while optionset.eval_date <= end_date:
         unit_p = np.floor(np.floor(account.portfolio_total_value / atm_put.strike()) / atm_put.multiplier()) * m
         order_c = account.create_trade_order(atm_call, long_short, unit_c, cd_trade_price=cd_trade_price)
         order_p = account.create_trade_order(atm_put, long_short, unit_p, cd_trade_price=cd_trade_price)
-        record_call = atm_call.execute_order(order_c, slippage=slippage)
-        record_put = atm_put.execute_order(order_p, slippage=slippage)
+        record_call = atm_call.execute_order(order_c, slippage_rate=slippage)
+        record_put = atm_put.execute_order(order_p, slippage_rate=slippage)
         account.add_record(record_call, atm_call)
         account.add_record(record_put, atm_put)
         empty_position = False

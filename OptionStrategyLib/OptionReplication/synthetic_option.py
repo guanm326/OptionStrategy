@@ -1,6 +1,7 @@
 import numpy as np
 from copy import copy
-from PricingLibrary.BlackCalculator import BlackCalculator
+# from PricingLibrary.BlackCalculator import BlackCalculator
+from PricingLibrary.EngineQuantlib import QlBlackFormula
 from PricingLibrary.Options import EuropeanOption
 from back_test.model.base_future_coutinuous import BaseFutureCoutinuous
 from back_test.model.constant import Util, FrequentType, DeltaBound, BuyWrite
@@ -43,9 +44,10 @@ class SytheticOption(BaseFutureCoutinuous):
     def get_black_delta(self, option: EuropeanOption, vol: float, spot: float = None):
         if spot is None:
             spot = self.mktprice_close()
-        black = BlackCalculator(self.eval_date, option.dt_maturity, option.strike,
-                                option.option_type, spot, vol, self.rf)
-        delta = black.Delta()
+        black = QlBlackFormula(dt_eval=self.eval_date, dt_maturity=option.dt_maturity,
+                               option_type=option.option_type, spot=spot,
+                               strike=option.strike, vol=vol, rf=self.rf)
+        delta = black.Delta(vol)
         return delta
 
     # Get synthetic position in trade unit
@@ -95,9 +97,10 @@ class SytheticOption(BaseFutureCoutinuous):
     def whalley_wilmott(self, eval_date, option, vol, spot=None, rho=0.5, fee=6.9 / 10000.0):
         if spot is None:
             spot = self.mktprice_close()
-        black = BlackCalculator(self.eval_date, option.dt_maturity, option.strike,
-                                option.option_type, spot, vol, self.rf)
-        gamma = black.Gamma()
+        black = QlBlackFormula(dt_eval=self.eval_date, dt_maturity=option.dt_maturity,
+                               option_type=option.option_type, spot=spot,
+                               strike=option.strike, vol=vol, rf=self.rf)
+        gamma = black.Gamma(vol)
         ttm = PricingUtil.get_ttm(eval_date, option.dt_maturity)
         H = (1.5 * math.exp(-self.rf * ttm) * fee * spot * (gamma ** 2) / rho) ** (1 / 3)
         return H

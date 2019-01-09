@@ -767,7 +767,6 @@ class Calendar(object):
 # c.init()
 # print(c.firstBusinessDayNextMonth(datetime.date(2017,1,1)))
 
-
 class PricingUtil:
     @staticmethod
     def payoff(spot: float, strike: float, option_type: OptionType):
@@ -779,6 +778,7 @@ class PricingUtil:
         N365 = 365 * 1440.0
         ttm = N / N365
         return ttm
+
 
     @staticmethod
     def get_std(dt_eval, dt_maturity, annualized_vol):
@@ -919,6 +919,9 @@ class Util:
     STR_SR = 'sr'
     STR_ALL = 'all'
     STR_CU = 'cu'
+    STR_CF = 'cf'
+    STR_C = 'c'
+    STR_RU = 'ru'
     NAN_VALUE = -999.0
 
     LOW_FREQUENT = [FrequentType.DAILY, FrequentType.WEEKLY, FrequentType.MONTHLY, FrequentType.YEARLY]

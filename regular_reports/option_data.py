@@ -222,6 +222,17 @@ def hist_vol(dt_start, df_future_c1_daily, df_res, name_code):
     return df_res
 
 
+def hist_vol1(df_future_c1_daily):
+    m = 100
+    df_future_c1_daily.loc[:, 'histvol_10'] = Histvol.hist_vol(df_future_c1_daily[c.Util.AMT_CLOSE], n=10) * m
+    df_future_c1_daily.loc[:, 'histvol_20'] = Histvol.hist_vol(df_future_c1_daily[c.Util.AMT_CLOSE], n=20) * m
+    df_future_c1_daily.loc[:, 'histvol_30'] = Histvol.hist_vol(df_future_c1_daily[c.Util.AMT_CLOSE], n=30) * m
+    df_future_c1_daily.loc[:, 'histvol_60'] = Histvol.hist_vol(df_future_c1_daily[c.Util.AMT_CLOSE], n=60) * m
+    df_future_c1_daily.loc[:, 'histvol_90'] = Histvol.hist_vol(df_future_c1_daily[c.Util.AMT_CLOSE], n=90) * m
+    return df_future_c1_daily
+
+
+
 """ 隐含波动率 """
 
 
@@ -254,10 +265,14 @@ def implied_vol(last_week, end_date, df_metrics, df_res, name_code):
     optionset.init()
     list_res_iv = []
     while optionset.current_index < optionset.nbr_index:
-        # if optionset.eval_date ==datetime.date(2018,12,17):
+        # if optionset.eval_date ==datetime.date(2018,12,19):
         #     print('')
         dt_maturity = optionset.select_maturity_date(nbr_maturity=0, min_holding=min_holding)
-        iv = optionset.get_atm_iv_by_htbr(dt_maturity)
+        try:
+            iv = optionset.get_atm_iv_by_htbr(dt_maturity)
+        except:
+            iv = None
+            pass
         # print({'date': optionset.eval_date, 'iv': iv})
         list_res_iv.append({'date': optionset.eval_date, 'iv': iv})
         if not optionset.has_next(): break
@@ -287,29 +302,23 @@ def implied_vol_vw(last_week, end_date, df_metrics, df_res, name_code):
 
 """"""
 
-end_date = datetime.date.today()
-# end_date = datetime.date(2018,11,30)
+# end_date = datetime.date.today()
+end_date = datetime.date(2019,1,8)
 start_date = datetime.date(2017, 1, 1)
-# last_week = datetime.date(2018,11,9)
-dt_histvol = datetime.date(2014,1,1)
 min_holding = 10
-
 
 writer = ExcelWriter('../data/option_data_python.xlsx')
 name_codes = [c.Util.STR_50ETF,c.Util.STR_CU, c.Util.STR_M, c.Util.STR_SR]
-# name_codes = [ c.Util.STR_CU]
-# core_ids = ['index_50etf','cu_1901', 'm_1901', 'sr_1901']
-# core_ids = ['m_1901', 'sr_1901']
+# name_codes = [ c.Util.STR_M]
 for (idx, name_code) in enumerate(name_codes):
     print(name_code)
     df_res = pd.DataFrame()
-    # core_id = core_ids[idx]
     if name_code==c.Util.STR_50ETF:
         df_metrics = get_data.get_50option_mktdata(start_date,end_date)
-        df_future_c1_daily = get_data.get_mktdata_future_c1_daily(dt_histvol, end_date, c.Util.STR_IH)
+        df_future_c1_daily = get_data.get_mktdata_future_c1_daily(start_date, end_date, c.Util.STR_IH)
     else:
         df_metrics = get_data.get_comoption_mktdata(start_date, end_date, name_code)
-        df_future_c1_daily = get_data.get_future_c1_by_option_daily(dt_histvol, end_date, name_code, min_holding)
+        df_future_c1_daily = get_data.get_future_c1_by_option_daily(start_date, end_date, name_code, min_holding)
     df_res = hist_vol(start_date, df_future_c1_daily, df_res, name_code)
     dt_start = max(df_metrics[c.Util.DT_DATE].values[0], df_future_c1_daily[c.Util.DT_DATE].values[0])
     df_metrics = df_metrics[(df_metrics[c.Util.DT_DATE] >= dt_start) & (df_metrics[c.Util.DT_DATE] <= end_date)].reset_index(
@@ -325,4 +334,15 @@ for (idx, name_code) in enumerate(name_codes):
     print('Finished ',name_code,dt_end,dt_yesterday)
     # df_holdings = trade_volume(dt_end, dt_yesterday, df_metrics, name_code, core_id,df_res)
     # df_holdings.to_excel(writer, 'holdings_'+name_code)
+
+name_codes = [c.Util.STR_CF, c.Util.STR_C, c.Util.STR_RU, c.Util.STR_M,c.Util.STR_CU]
+
+dt_start = datetime.date(2015,1,1)
+for (idx1, name_code) in enumerate(name_codes):
+    print(name_code)
+    df_res = pd.DataFrame()
+    df_future_c1_daily = get_data.get_gc_future_c1_daily(dt_start, end_date, name_code)
+    df_future_c1_daily = hist_vol1(df_future_c1_daily)
+    df_future_c1_daily = df_future_c1_daily.sort_values(by=c.Util.DT_DATE, ascending=False)
+    df_future_c1_daily.to_excel(writer, name_code+'_hv')
 writer.save()

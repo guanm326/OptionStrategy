@@ -47,7 +47,6 @@ def close_position(df_vol, dt_maturity, optionset):
     amt_premium = df_vol.loc[dt_date, 'amt_premium']
     # iv_percentile = df_vol.loc[dt_date,'iv_percentile']
     # if iv_percentile > 95:
-    #     print(optionset.eval_date,'iv warning')
     #     return True
     if amt_premium < 0:
         return True
@@ -56,12 +55,12 @@ def close_position(df_vol, dt_maturity, optionset):
 
 
 pu = PlotUtil()
-start_date = datetime.date(2016, 1, 1)
-end_date = datetime.date.today()
+start_date = datetime.date(2017, 1, 1)
+end_date = datetime.date(2017, 12, 31)
 dt_histvol = start_date - datetime.timedelta(days=300)
 min_holding = 20  # 20 sharpe ratio较优
 init_fund = c.Util.BILLION
-slippage = 0
+slippage = 0.0/1000.0
 m = 1  # 期权notional倍数
 cd_trade_price = c.CdTradePrice.VOLUME_WEIGHTED
 cd_hedge_price = c.CdTradePrice.CLOSE
@@ -95,12 +94,12 @@ df_vol['amt_1std'] = c.Statistics.standard_deviation(df_vol['amt_premium'], n=h)
 df_vol['amt_2std'] = 2*c.Statistics.standard_deviation(df_vol['amt_premium'], n=h)
 df_vol = df_vol.set_index(c.Util.DT_DATE)
 df_vol['iv_percentile'] = c.Statistics.standard_deviation(df_vol['amt_iv'],n=252)
-df_vol.to_csv('../../accounts_data/implied_vol_premium.csv')
-print('premium mean : ',df_vol['amt_premium'].sum()/len(df_vol['amt_premium']))
-dates = list(df_vol.index)
-pu.plot_line_chart(dates, [list(df_vol['amt_premium']), list(df_vol['amt_1std']),list(df_vol['amt_2std'])],
-                   ['隐含与历史波动率价差','基于'+str(h)+'日移动平均的1倍标准差','基于'+str(h)+'日移动平均的2倍标准差'])
-
+# df_vol.to_csv('../../accounts_data/implied_vol_premium.csv')
+# print('premium mean : ',df_vol['amt_premium'].sum()/len(df_vol['amt_premium']))
+# dates = list(df_vol.index)
+# pu.plot_line_chart(dates, [list(df_vol['amt_premium']), list(df_vol['amt_1std']),list(df_vol['amt_2std'])],
+#                    ['隐含与历史波动率价差','基于'+str(h)+'日移动平均的1倍标准差','基于'+str(h)+'日移动平均的2倍标准差'])
+#
 # plt.show()
 
 """ Risk Monitor """
@@ -143,11 +142,11 @@ id_future = hedging.current_state[c.Util.ID_FUTURE]
 idx_hedge = 0
 flag_hedge = False
 while optionset.eval_date <= end_date:
-    if account.cash <= 0: break
+    # if account.cash <= 0: break
     if maturity1 > end_date:  # Final close out all.
         close_out_orders = account.creat_close_out_order()
         for order in close_out_orders:
-            execution_record = account.dict_holding[order.id_instrument].execute_order(order, slippage=0,
+            execution_record = account.dict_holding[order.id_instrument].execute_order(order, slippage_rate=slippage,
                                                                                        execute_type=c.ExecuteType.EXECUTE_ALL_UNITS)
             account.add_record(execution_record, account.dict_holding[order.id_instrument])
 
@@ -174,7 +173,7 @@ while optionset.eval_date <= end_date:
                     0] / hedging.multiplier()
                 order = Order(holding.eval_date, hedging.name_code(), trade_unit, trade_price,
                               holding.eval_datetime, long_short)
-                record = hedging.execute_order(order, slippage=slippage)
+                record = hedging.execute_order(order, slippage_rate=slippage)
                 account.add_record(record, holding)
         hedging.synthetic_unit = 0
         id_future = hedging.current_state[c.Util.ID_FUTURE]
@@ -185,7 +184,7 @@ while optionset.eval_date <= end_date:
         if close_position(df_vol, maturity1, optionset):
             for option in account.dict_holding.values():
                 order = account.create_close_order(option, cd_trade_price=cd_trade_price)
-                record = option.execute_order(order, slippage=slippage)
+                record = option.execute_order(order, slippage_rate=slippage)
                 account.add_record(record, option)
                 hedging.synthetic_unit = 0
             empty_position = True
@@ -207,16 +206,16 @@ while optionset.eval_date <= end_date:
         unit_p = np.floor(np.floor(account.portfolio_total_value / atm_put.strike()) / atm_put.multiplier()) * m
         order_c = account.create_trade_order(atm_call, long_short, unit_c, cd_trade_price=cd_trade_price)
         order_p = account.create_trade_order(atm_put, long_short, unit_p, cd_trade_price=cd_trade_price)
-        record_call = atm_call.execute_order(order_c, slippage=slippage)
-        record_put = atm_put.execute_order(order_p, slippage=slippage)
+        record_call = atm_call.execute_order(order_c, slippage_rate=slippage)
+        record_put = atm_put.execute_order(order_p, slippage_rate=slippage)
         account.add_record(record_call, atm_call)
         account.add_record(record_put, atm_put)
         empty_position = False
 
     # Delta hedge
     if not empty_position:
-        if optionset.eval_date == datetime.date(2017,11,23):
-            print('')
+        # if optionset.eval_date == datetime.date(2017,11,23):
+        #     print('')
         iv_htbr = optionset.get_iv_by_otm_iv_curve(dt_maturity=maturity1, strike=atm_call.applicable_strike())
         delta_call = atm_call.get_delta(iv_htbr)
         delta_put = atm_put.get_delta(iv_htbr)
@@ -228,19 +227,20 @@ while optionset.eval_date <= end_date:
         else:
             long_short = c.LongShort.SHORT
         order_u = account.create_trade_order(hedging, long_short, hedge_unit, cd_trade_price=cd_hedge_price)
-        record_u = hedging.execute_order(order_u, slippage=slippage)
+        record_u = hedging.execute_order(order_u, slippage_rate=slippage)
         account.add_record(record_u, hedging)
         flag_hedge = False
 
     idx_hedge += 1
     account.daily_accounting(optionset.eval_date)
-    total_liquid_asset = account.cash + account.get_portfolio_margin_capital()
+    # print(optionset.eval_date,account.account.loc[optionset.eval_date,c.Util.PORTFOLIO_NPV])
+    # total_liquid_asset = account.cash + account.get_portfolio_margin_capital()
     if not optionset.has_next(): break
     optionset.next()
     hedging.next()
 
-account.account.to_csv('../../accounts_data/iv_hv_account_1.csv')
-account.trade_records.to_csv('../../accounts_data/iv_hv_record_1.csv')
+# account.account.to_csv('../../accounts_data/iv_hv_account_slippage.csv')
+# account.trade_records.to_csv('../../accounts_data/iv_hv_record_slippage.csv')
 res = account.analysis()
 res['期权平均持仓天数'] = len(account.account) / option_trade_times
 print(res)
