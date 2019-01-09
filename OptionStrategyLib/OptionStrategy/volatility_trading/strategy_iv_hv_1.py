@@ -55,14 +55,14 @@ def close_position(df_vol, dt_maturity, optionset):
 
 
 pu = PlotUtil()
-start_date = datetime.date(2017, 1, 1)
-end_date = datetime.date(2017, 12, 31)
+start_date = datetime.date(2016, 12, 31)
+end_date = datetime.date(2018, 1, 1)
 dt_histvol = start_date - datetime.timedelta(days=300)
 min_holding = 20  # 20 sharpe ratio较优
 init_fund = c.Util.BILLION
 slippage = 0.0/1000.0
-m = 1  # 期权notional倍数
-cd_trade_price = c.CdTradePrice.VOLUME_WEIGHTED
+m = 2  # 期权notional倍数
+cd_trade_price = c.CdTradePrice.CLOSE
 cd_hedge_price = c.CdTradePrice.CLOSE
 
 name_code = c.Util.STR_IH
@@ -88,7 +88,8 @@ df_data = df_iv_htbr.reset_index(drop=True).rename(columns={c.Util.PCT_IMPLIED_V
 # df_data.loc[:, 'amt_iv'] = (df_data.loc[:, 'iv_call'] + df_data.loc[:, 'iv_put']) / 2
 df_vol = pd.merge(df_data[[c.Util.DT_DATE, 'amt_iv']], df_future_c1_daily[[c.Util.DT_DATE, 'amt_hv']],
                   on=c.Util.DT_DATE)
-df_vol['amt_premium'] = (df_vol['amt_iv'] - df_vol['amt_hv']).shift()
+df_vol['amt_premium'] = df_vol['amt_iv'] - df_vol['amt_hv']
+# df_vol['amt_premium1'] = (df_vol['amt_iv'] - df_vol['amt_hv']).shift()
 h = 90
 df_vol['amt_1std'] = c.Statistics.standard_deviation(df_vol['amt_premium'], n=h)
 df_vol['amt_2std'] = 2*c.Statistics.standard_deviation(df_vol['amt_premium'], n=h)
@@ -197,7 +198,7 @@ while optionset.eval_date <= end_date:
         long_short = c.LongShort.SHORT
         list_atm_call, list_atm_put = optionset.get_options_list_by_moneyness_mthd1(moneyness_rank=0,
                                                                                     maturity=maturity1,
-                                                                                    cd_price=c.CdPriceType.OPEN)
+                                                                                    cd_price=c.CdPriceType.CLOSE)
         atm_call = optionset.select_higher_volume(list_atm_call)
         atm_put = optionset.select_higher_volume(list_atm_put)
         atm_strike = atm_call.strike()
