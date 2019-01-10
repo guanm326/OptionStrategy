@@ -14,76 +14,63 @@ from back_test.model.trade import Order
 from OptionStrategyLib.VolatilityModel.historical_volatility import HistoricalVolatilityModels as histvol
 
 
-class DeltaHedgedStrategy(object):
-    def __init__(self, start_date, end_date, name_code):
+class VolTrading(object):
+    """
+    隐含与历史波动率策略报告原版参数设定
+    """
+    def __init__(self, start_date, end_date, df_metrics,df_vol,df_future_c1_daily,df_futures_all_daily):
         self.min_holding = 20
         self.slippage = 0
         self.nbr_maturity = 0
         self.moneyness_rank = 0
         self.m = 1
-        self.cd_option_price = c.CdTradePrice.VOLUME_WEIGHTED
+        self.rf = 0.03
+        self.h = 90
+        self.cd_option_price = c.CdTradePrice.CLOSE
         self.cd_future_price = c.CdTradePrice.CLOSE
-        dt_histvol = start_date - datetime.timedelta(days=300)
-        df_metrics = get_data.get_comoption_mktdata(start_date, end_date, name_code)
-        df_future_c1_daily = get_data.get_future_c1_by_option_daily(dt_histvol, end_date, name_code, min_holding=5)
-        df_futures_all_daily = get_data.get_mktdata_future_daily(start_date, end_date,
-                                                                 name_code)  # daily data of all future contracts
+        self.cd_price = c.CdPriceType.CLOSE
         df_future_c1_daily['amt_hv'] = histvol.hist_vol(df_future_c1_daily[c.Util.AMT_CLOSE], n=30)
-        df_iv = get_data.get_iv_by_moneyness(dt_histvol, end_date, name_code)
-        df_iv_htbr = df_iv[df_iv[c.Util.CD_OPTION_TYPE] == 'put_call_htbr']
-        df_data = df_iv_htbr.reset_index(drop=True).rename(columns={c.Util.PCT_IMPLIED_VOL: 'amt_iv'})
-        self.df_vol = pd.merge(df_data[[c.Util.DT_DATE, 'amt_iv']], df_future_c1_daily[[c.Util.DT_DATE, 'amt_hv']],
-                               on=c.Util.DT_DATE)
-
         dt_start = max(df_future_c1_daily[c.Util.DT_DATE].values[0], df_metrics[c.Util.DT_DATE].values[0])
         self.end_date = min(df_future_c1_daily[c.Util.DT_DATE].values[-1], df_metrics[c.Util.DT_DATE].values[-1])
         df_metrics = df_metrics[df_metrics[c.Util.DT_DATE] >= dt_start].reset_index(drop=True)
         df_c1 = df_future_c1_daily[df_future_c1_daily[c.Util.DT_DATE] >= dt_start].reset_index(drop=True)
         df_all = df_futures_all_daily[df_futures_all_daily[c.Util.DT_DATE] >= dt_start].reset_index(drop=True)
-
+        self.df_vol = pd.merge(df_vol, df_future_c1_daily[[c.Util.DT_DATE, 'amt_hv']],on=c.Util.DT_DATE).set_index(c.Util.DT_DATE)
         self.optionset = BaseOptionSet(df_metrics)
         self.optionset.init()
         self.hedging = SytheticOption(df_c1, df_futures_all_daily=df_all)
         self.hedging.init()
-        self.account = BaseAccount(init_fund=c.Util.BILLION, leverage=1.0, rf=0.03)
+        self.account = BaseAccount(init_fund=c.Util.BILLION, leverage=1.0, rf=self.rf)
+        self.prepare_timing()
 
     def prepare_timing(self):
-        h = 60
-        self.df_vol['amt_premium'] = (self.df_vol['amt_iv'] - self.df_vol['amt_hv']).shift()
-        self.df_vol['amt_iv_previous'] = self.df_vol['amt_iv'].shift()
-        self.df_vol['amt_1std'] = c.Statistics.moving_average(self.df_vol['amt_premium'],
-                                                              n=h) + c.Statistics.standard_deviation(
-            self.df_vol['amt_premium'], n=h)
-        self.df_vol['amt_n1std'] = c.Statistics.moving_average(self.df_vol['amt_premium'],
-                                                               n=h) - c.Statistics.standard_deviation(
-            self.df_vol['amt_premium'], n=h)
-        self.df_vol['amt_2std'] = c.Statistics.moving_average(self.df_vol['amt_premium'],
-                                                              n=h) + 2 * c.Statistics.standard_deviation(
-            self.df_vol['amt_premium'], n=h)
-        self.df_vol['amt_n2std'] = c.Statistics.moving_average(self.df_vol['amt_premium'],
-                                                               n=h) - 2 * c.Statistics.standard_deviation(
-            self.df_vol['amt_premium'], n=h)
-        self.df_vol = self.df_vol.set_index(c.Util.DT_DATE)
-        self.df_vol['iv_percentile'] = c.Statistics.standard_deviation(self.df_vol['amt_iv'], n=252)
-
+        h = self.h
+        self.df_vol['amt_premium'] = self.df_vol[c.Util.PCT_IMPLIED_VOL] - self.df_vol['amt_hv']
+        self.df_vol['amt_1std'] = c.Statistics.standard_deviation(self.df_vol['amt_premium'], n=h)
+        self.df_vol['amt_2std'] = 2 * c.Statistics.standard_deviation(self.df_vol['amt_premium'], n=h)
+        self.df_vol['percentile_95'] = c.Statistics.percentile(self.df_vol[c.Util.PCT_IMPLIED_VOL], n=252, percent=0.95)
+        # self.df_vol['amt_premium'] = (self.df_vol['amt_iv'] - self.df_vol['amt_hv']).shift()
+        # self.df_vol['amt_iv_previous'] = self.df_vol['amt_iv'].shift()
+        # self.df_vol['amt_1std'] = c.Statistics.moving_average(self.df_vol['amt_premium'],
+        #                                                       n=h) + c.Statistics.standard_deviation(
+        #     self.df_vol['amt_premium'], n=h)
+        # self.df_vol['amt_n1std'] = c.Statistics.moving_average(self.df_vol['amt_premium'],
+        #                                                        n=h) - c.Statistics.standard_deviation(
+        #     self.df_vol['amt_premium'], n=h)
+        # self.df_vol['amt_2std'] = c.Statistics.moving_average(self.df_vol['amt_premium'],
+        #                                                       n=h) + 2 * c.Statistics.standard_deviation(
+        #     self.df_vol['amt_premium'], n=h)
+        # self.df_vol['amt_n2std'] = c.Statistics.moving_average(self.df_vol['amt_premium'],
+        #                                                        n=h) - 2 * c.Statistics.standard_deviation(
+        #     self.df_vol['amt_premium'], n=h)
+        # self.df_vol = self.df_vol.set_index(c.Util.DT_DATE)
+        # self.df_vol['iv_percentile'] = c.Statistics.standard_deviation(self.df_vol['amt_iv'], n=252)
 
     def open_signal(self):
-        return self.open_signal_fixed_ttm()
+        return self.open_signal_ivhv()
 
     def close_signal(self):
-        return self.close_signal_fixed_ttm()
-
-    def open_signal_fixed_ttm(self):
-        return True
-
-    def close_signal_fixed_ttm(self):
-        dt_maturity = None
-        for option in self.account.dict_holding.values():
-            if isinstance(option, BaseOption) and option is not None:
-                dt_maturity = option.maturitydt()
-                break
-        if (dt_maturity - self.optionset.eval_date).days <= 5:
-            return True
+        return self.close_signal_ivhv()
 
     def open_signal_ivhv(self):
         dt_date = self.optionset.eval_date
@@ -91,7 +78,8 @@ class DeltaHedgedStrategy(object):
             return False
         amt_premium = self.df_vol.loc[dt_date, 'amt_premium']
         amt_1std = self.df_vol.loc[dt_date, 'amt_1std']
-        if amt_premium > amt_1std and amt_premium > 0:
+        # if amt_premium > amt_1std and amt_premium > 0:
+        if amt_premium > amt_1std:
             print(dt_date, ' open position')
             return True
         else:
@@ -107,21 +95,22 @@ class DeltaHedgedStrategy(object):
             return True
         dt_date = self.optionset.eval_date
         amt_premium = self.df_vol.loc[dt_date, 'amt_premium']
-        amt_n1std = self.df_vol.loc[dt_date, 'amt_n1std']
-        if amt_premium < amt_n1std or amt_premium <= 0:
+        # amt_n1std = self.df_vol.loc[dt_date, 'amt_n1std']
+        # if amt_premium < amt_n1std or amt_premium <= 0:
+        if amt_premium < 0:
             print(dt_date, ' close position')
             return True
         else:
             return False
 
     def strategy(self):
-        self.short_straddle()
+        return self.short_straddle()
 
     def short_straddle(self):
         maturity = self.optionset.select_maturity_date(nbr_maturity=self.nbr_maturity, min_holding=self.min_holding)
         list_atm_call, list_atm_put = self.optionset.get_options_list_by_moneyness_mthd1(
             moneyness_rank=self.moneyness_rank,
-            maturity=maturity, cd_price=c.CdPriceType.OPEN)
+            maturity=maturity, cd_price=self.cd_price)
         atm_call = self.optionset.select_higher_volume(list_atm_call)
         atm_put = self.optionset.select_higher_volume(list_atm_put)
         if atm_call is None or atm_put is None:
@@ -131,19 +120,18 @@ class DeltaHedgedStrategy(object):
 
     def excute(self, strategy):
         if strategy is None:
-            return True
+            return False
         else:
             pv = self.account.portfolio_total_value
             self.option_holding = {}
             for option in strategy:
-                unit = np.floor(
-                    np.floor(pv / option.strike()) / option.multiplier()) * self.m
+                unit = np.floor(np.floor(pv / option.strike()) / option.multiplier()) * self.m
                 order = self.account.create_trade_order(option, c.LongShort.SHORT, unit,
                                                         cd_trade_price=self.cd_option_price)
                 record = option.execute_order(order, slippage=self.slippage)
                 self.account.add_record(record, option)
-                self.option_holding.update({option: order})
-            return False
+                self.option_holding.update({option: unit})
+            return True
 
     def close_out(self):
         close_out_orders = self.account.creat_close_out_order(cd_trade_price=c.CdTradePrice.CLOSE)
@@ -182,50 +170,56 @@ class DeltaHedgedStrategy(object):
         self.account.daily_accounting(self.optionset.eval_date)
 
     def back_test(self):
-
+        empty_position = True
         while self.optionset.eval_date <= self.end_date:
-            # if account.cash <= 0: break
             if self.optionset.eval_date >= self.end_date:  # Final close out all.
                 self.close_out()
+                self.account.daily_accounting(self.optionset.eval_date)
                 print(self.optionset.eval_date, ' close out ')
                 print(self.optionset.eval_date, self.hedging.eval_date,
                       self.account.account.loc[self.optionset.eval_date, c.Util.PORTFOLIO_NPV],
                       int(self.account.cash))
                 break
-
             # 标的移仓换月
             self.hedging.shift_contract_month(self.account, self.slippage, cd_price=c.CdTradePrice.CLOSE)
-
-            # 平仓：距到期8日
+            # 平仓
             if not empty_position:
                 if self.close_signal():
                     self.close_out_1()
                     empty_position = True
-
-            # 开仓：距到期1M
+            # 开仓
             if empty_position and self.open_signal():
-                self.strategy()
-                empty_position = False
-
+                s = self.strategy()
+                empty_position = not self.excute(s)
             # Delta hedge
             if not empty_position:
                 self.delta_hedge()
-
-            if not self.optionset.has_next(): break
+            self.account.daily_accounting(self.optionset.eval_date)
+            if not self.optionset.has_next():
+                break
             self.optionset.next()
             self.hedging.next()
         return self.account
 
 
-dt_start = datetime.date(2018, 1, 1)
-dt_end = datetime.date(2018, 11, 30)
-name_code = 'cu'
-vol_arbitrage = DeltaHedgedStrategy(dt_start, dt_end, name_code)
+
+dt_start = datetime.date(2016, 12, 31)
+dt_end = datetime.date(2017, 12, 31)
+dt_histvol = dt_start - datetime.timedelta(days=300)
+name_code = c.Util.STR_IH
+name_code_option = c.Util.STR_50ETF
+df_metrics = get_data.get_50option_mktdata(dt_start, dt_end)
+df_future_c1_daily = get_data.get_mktdata_future_c1_daily(dt_histvol, dt_end, name_code)
+df_futures_all_daily = get_data.get_mktdata_future_daily(dt_start, dt_end,name_code)
+df_iv = get_data.get_iv_by_moneyness(dt_histvol, dt_end, name_code_option)
+df_iv = df_iv[df_iv[c.Util.CD_OPTION_TYPE] == 'put_call_htbr'][[c.Util.DT_DATE,c.Util.PCT_IMPLIED_VOL]].reset_index(drop=True)
+# df_iv = df_iv.rename(columns={c.Util.PCT_IMPLIED_VOL: 'amt_iv'})
+vol_arbitrage = VolTrading(dt_start, dt_end, df_metrics,df_iv,df_future_c1_daily,df_futures_all_daily)
 
 account = vol_arbitrage.back_test()
 
-account.account.to_csv('../../accounts_data/iv_hv_account_comdty.csv')
-account.trade_records.to_csv('../../accounts_data/iv_hv_record_comdty.csv')
+account.account.to_csv('../iv_hv_account.csv')
+account.trade_records.to_csv('../iv_hv_record.csv')
 res = account.analysis()
 print(res)
 pu = PlotUtil()

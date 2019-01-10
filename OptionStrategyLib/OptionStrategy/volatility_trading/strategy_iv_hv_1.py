@@ -11,26 +11,14 @@ import pandas as pd
 from back_test.model.trade import Order
 from OptionStrategyLib.VolatilityModel.historical_volatility import HistoricalVolatilityModels as histvol
 
-# def risk_warning(df_warning, dt_date):
-#     if dt_date not in df_warning.index:
-#         return False
-#     else:
-#         if df_warning.loc[dt_date, 'pre_warned'] >= 2:
-#             return True
-#         else:
-#             return False
 
 def open_position( df_vol, dt_date):
-    # if dt_date in df_warning.index:
-    #     if risk_warning(df_warning, optionset.eval_date):
-    #         print(optionset.eval_date, 'risk warning, NOT OPEN')
-    #         return False
     if dt_date not in df_vol.index:
         return False
     amt_premium = df_vol.loc[dt_date, 'amt_premium']
     amt_1std = df_vol.loc[dt_date, 'amt_1std']
-    # iv_percentile = df_vol.loc[dt_date,'iv_percentile']
-    # if iv_percentile > 95:
+    # percentile_95 = df_vol.loc[dt_date,'percentile_95']
+    # if amt_premium >= percentile_95:
     #     return False
     if amt_premium > amt_1std:
         return True
@@ -38,15 +26,13 @@ def open_position( df_vol, dt_date):
         return False
 
 def close_position(df_vol, dt_maturity, optionset):
-    # if risk_warning(df_warning,optionset.eval_date):
-    #     print(optionset.eval_date,'risk warning, CLOSE')
-    #     return True
     if (dt_maturity - optionset.eval_date).days <= 5:
         return True
     dt_date = optionset.eval_date
     amt_premium = df_vol.loc[dt_date, 'amt_premium']
-    # iv_percentile = df_vol.loc[dt_date,'iv_percentile']
-    # if iv_percentile > 95:
+    # percentile_95 = df_vol.loc[dt_date,'percentile_95']
+    # if amt_premium >= percentile_95:
+    #     print(optionset.eval_date,'reached percentile 95')
     #     return True
     if amt_premium < 0:
         return True
@@ -56,14 +42,17 @@ def close_position(df_vol, dt_maturity, optionset):
 
 pu = PlotUtil()
 start_date = datetime.date(2016, 12, 31)
-end_date = datetime.date(2018, 1, 1)
+end_date = datetime.date(2017, 12, 31)
 dt_histvol = start_date - datetime.timedelta(days=300)
 min_holding = 20  # 20 sharpe ratio较优
 init_fund = c.Util.BILLION
 slippage = 0.0/1000.0
-m = 2  # 期权notional倍数
+m = 1  # 期权notional倍数
+rf = 0.0
+h = 90
 cd_trade_price = c.CdTradePrice.CLOSE
 cd_hedge_price = c.CdTradePrice.CLOSE
+cd_price=c.CdPriceType.CLOSE
 
 name_code = c.Util.STR_IH
 name_code_option = c.Util.STR_50ETF
@@ -72,47 +61,17 @@ df_future_c1_daily = get_data.get_mktdata_future_c1_daily(dt_histvol, end_date, 
 df_futures_all_daily = get_data.get_mktdata_future_daily(start_date, end_date,
                                                          name_code)  # daily data of all future contracts
 
-
 df_future_c1_daily['amt_hv'] = histvol.hist_vol(df_future_c1_daily[c.Util.AMT_CLOSE])
-
 df_iv = get_data.get_iv_by_moneyness(dt_histvol, end_date, c.Util.STR_50ETF)
-# df_iv_call = df_iv[df_iv[c.Util.CD_OPTION_TYPE] == 'call']
-# df_iv_put = df_iv[df_iv[c.Util.CD_OPTION_TYPE] == 'put']
 df_iv_htbr = df_iv[df_iv[c.Util.CD_OPTION_TYPE]=='put_call_htbr']
-# df_data = df_iv_call[[c.Util.DT_DATE, c.Util.PCT_IMPLIED_VOL]].rename(columns={c.Util.PCT_IMPLIED_VOL: 'iv_call'})
-# df_data = df_data.join(df_iv_put[[c.Util.DT_DATE, c.Util.PCT_IMPLIED_VOL]].set_index(c.Util.DT_DATE), on=c.Util.DT_DATE,
-#                        how='outer') \
-#     .rename(columns={c.Util.PCT_IMPLIED_VOL: 'iv_put'})
-# df_data = df_data.dropna().reset_index(drop=True)
 df_data = df_iv_htbr.reset_index(drop=True).rename(columns={c.Util.PCT_IMPLIED_VOL:'amt_iv'})
-# df_data.loc[:, 'amt_iv'] = (df_data.loc[:, 'iv_call'] + df_data.loc[:, 'iv_put']) / 2
 df_vol = pd.merge(df_data[[c.Util.DT_DATE, 'amt_iv']], df_future_c1_daily[[c.Util.DT_DATE, 'amt_hv']],
                   on=c.Util.DT_DATE)
 df_vol['amt_premium'] = df_vol['amt_iv'] - df_vol['amt_hv']
-# df_vol['amt_premium1'] = (df_vol['amt_iv'] - df_vol['amt_hv']).shift()
-h = 90
 df_vol['amt_1std'] = c.Statistics.standard_deviation(df_vol['amt_premium'], n=h)
 df_vol['amt_2std'] = 2*c.Statistics.standard_deviation(df_vol['amt_premium'], n=h)
+df_vol['percentile_95'] = c.Statistics.percentile(df_vol['amt_iv'],n=252,percent=0.95)
 df_vol = df_vol.set_index(c.Util.DT_DATE)
-df_vol['iv_percentile'] = c.Statistics.standard_deviation(df_vol['amt_iv'],n=252)
-# df_vol.to_csv('../../accounts_data/implied_vol_premium.csv')
-# print('premium mean : ',df_vol['amt_premium'].sum()/len(df_vol['amt_premium']))
-# dates = list(df_vol.index)
-# pu.plot_line_chart(dates, [list(df_vol['amt_premium']), list(df_vol['amt_1std']),list(df_vol['amt_2std'])],
-#                    ['隐含与历史波动率价差','基于'+str(h)+'日移动平均的1倍标准差','基于'+str(h)+'日移动平均的2倍标准差'])
-#
-# plt.show()
-
-""" Risk Monitor """
-# df_warning = pd.read_excel('../../../data/risk_monitor.xlsx')
-# df_warning['date'] = df_warning['dt_date'].apply(lambda x: x.date())
-# df_warning = df_warning[['date', 'risk warning']]
-# df_warning['pre_warned'] = df_warning['risk warning'].shift()
-# df_warning = df_warning.set_index('date')
-
-# df_warning = pd.read_excel('../../../data/volatility_risk_monitor.xlsx')
-# df_warning['date'] = df_warning['DT_DATE'].apply(lambda x: x.date())
-# df_warning = df_warning.set_index('date')
 
 df_holding_period = pd.DataFrame()
 
@@ -130,8 +89,7 @@ hedging = SytheticOption(df_c1, frequency=c.FrequentType.DAILY, df_c1_daily=df_c
 hedging.init()
 hedging.amt_option = 1 / 1000  # 50ETF与IH点数之比
 
-account = BaseAccount(init_fund=c.Util.BILLION, leverage=1.0, rf=0.03)
-
+account = BaseAccount(init_fund=c.Util.BILLION, rf=rf)
 option_trade_times = 0
 empty_position = True
 unit_p = None
@@ -143,7 +101,7 @@ id_future = hedging.current_state[c.Util.ID_FUTURE]
 idx_hedge = 0
 flag_hedge = False
 while optionset.eval_date <= end_date:
-    # if account.cash <= 0: break
+    if account.cash <= 0: break
     if maturity1 > end_date:  # Final close out all.
         close_out_orders = account.creat_close_out_order()
         for order in close_out_orders:
@@ -198,7 +156,7 @@ while optionset.eval_date <= end_date:
         long_short = c.LongShort.SHORT
         list_atm_call, list_atm_put = optionset.get_options_list_by_moneyness_mthd1(moneyness_rank=0,
                                                                                     maturity=maturity1,
-                                                                                    cd_price=c.CdPriceType.CLOSE)
+                                                                                    cd_price=cd_price)
         atm_call = optionset.select_higher_volume(list_atm_call)
         atm_put = optionset.select_higher_volume(list_atm_put)
         atm_strike = atm_call.strike()
@@ -240,8 +198,8 @@ while optionset.eval_date <= end_date:
     optionset.next()
     hedging.next()
 
-# account.account.to_csv('../../accounts_data/iv_hv_account_slippage.csv')
-# account.trade_records.to_csv('../../accounts_data/iv_hv_record_slippage.csv')
+account.account.to_csv('../../accounts_data/iv_hv_account_2017.csv')
+account.trade_records.to_csv('../../accounts_data/iv_hv_record_2017.csv')
 res = account.analysis()
 res['期权平均持仓天数'] = len(account.account) / option_trade_times
 print(res)

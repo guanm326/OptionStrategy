@@ -12,7 +12,7 @@ w.start()
 
 
 # date = datetime.date.today()
-date = datetime.date(2018,12,21)
+date = datetime.date(2019,1,9)
 
 dt_date = date.strftime("%Y-%m-%d")
 print(dt_date)
