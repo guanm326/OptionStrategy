@@ -21,12 +21,14 @@ def open_position( df_vol, dt_date):
     # if amt_premium >= percentile_95:
     #     return False
     if amt_premium > amt_1std:
+        print(dt_date,' open position')
         return True
     else:
         return False
 
 def close_position(df_vol, dt_maturity, optionset):
     if (dt_maturity - optionset.eval_date).days <= 5:
+        print(optionset.eval_date,' close position')
         return True
     dt_date = optionset.eval_date
     amt_premium = df_vol.loc[dt_date, 'amt_premium']
@@ -35,6 +37,7 @@ def close_position(df_vol, dt_maturity, optionset):
     #     print(optionset.eval_date,'reached percentile 95')
     #     return True
     if amt_premium < 0:
+        print(dt_date,' close position')
         return True
     else:
         return False
@@ -48,7 +51,7 @@ min_holding = 20  # 20 sharpe ratio较优
 init_fund = c.Util.BILLION
 slippage = 0.0/1000.0
 m = 1  # 期权notional倍数
-rf = 0.0
+rf = 0.03
 h = 90
 cd_trade_price = c.CdTradePrice.CLOSE
 cd_hedge_price = c.CdTradePrice.CLOSE
@@ -101,6 +104,8 @@ id_future = hedging.current_state[c.Util.ID_FUTURE]
 idx_hedge = 0
 flag_hedge = False
 while optionset.eval_date <= end_date:
+    if optionset.eval_date == datetime.date(2017,1,19):
+        print('')
     if account.cash <= 0: break
     if maturity1 > end_date:  # Final close out all.
         close_out_orders = account.creat_close_out_order()
@@ -117,6 +122,8 @@ while optionset.eval_date <= end_date:
         break
 
     # 标的移仓换月
+    # hedging.shift_contract_month(account, slippage)
+    # hedging.synthetic_unit = 0
     if id_future != hedging.current_state[c.Util.ID_FUTURE]:
         for holding in account.dict_holding.values():
             if isinstance(holding, SytheticOption):

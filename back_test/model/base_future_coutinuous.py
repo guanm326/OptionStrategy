@@ -204,7 +204,8 @@ class BaseFutureCoutinuous(BaseProduct):
                         trade_price = df[Util.AMT_CLOSE].values[0]
                     order = Order(holding.eval_date, self.name_code(), trade_unit, trade_price,
                                   holding.eval_datetime, long_short)
-                    record = self.execute_order(order, slippage=slippage)
+                    record = self.execute_order(order, slippage_rate=slippage)
+
                     account.add_record(record, holding)
 
                     # open
@@ -213,6 +214,37 @@ class BaseFutureCoutinuous(BaseProduct):
                                   holding.eval_datetime, position_direction)
                     record = self.execute_order(order, slippage=slippage)
                     account.add_record(record, holding)
-
             self.id_future = self.current_state[Util.ID_FUTURE]
+            return True
+        else:
+            return False
 
+    def close_old_contract_month(self,account,slippage,cd_price=CdTradePrice.VOLUME_WEIGHTED):
+        # 移仓换月仅平仓上月合约
+        if self.id_future != self.current_state[Util.ID_FUTURE]:
+            for holding in account.dict_holding.values():
+                if isinstance(holding, BaseFutureCoutinuous):
+                    # close previous contract
+                    df = self.df_all_futures_daily[
+                        (self.df_all_futures_daily[Util.DT_DATE] == self.eval_date) & (
+                            self.df_all_futures_daily[Util.ID_FUTURE] == self.id_future)]
+                    trade_unit = account.trade_book.loc[self.name_code(), Util.TRADE_UNIT]
+                    position_direction = account.trade_book.loc[self.name_code(), Util.TRADE_LONG_SHORT]
+                    if position_direction == LongShort.LONG:
+                        long_short = LongShort.SHORT
+                    else:
+                        long_short = LongShort.LONG
+                    if cd_price == CdTradePrice.VOLUME_WEIGHTED:
+                        trade_price = df[Util.AMT_TRADING_VALUE].values[0] / df[Util.AMT_TRADING_VOLUME].values[
+                            0] / self.multiplier()
+                    else:
+                        trade_price = df[Util.AMT_CLOSE].values[0]
+                    order = Order(holding.eval_date, self.name_code(), trade_unit, trade_price,
+                                  holding.eval_datetime, long_short)
+                    record = self.execute_order(order, slippage_rate=slippage)
+
+                    account.add_record(record, holding)
+            self.id_future = self.current_state[Util.ID_FUTURE]
+            return True
+        else:
+            return False

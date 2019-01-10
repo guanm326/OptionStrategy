@@ -377,10 +377,12 @@ class BaseAccount():
         return npv
 
     def daily_accounting(self, eval_date, flag_interest=True):
-        margin_unrealized_pnl = 0.0
-        total_short_scale = 0.0
-        total_long_scale = 0.0
-        nonmargin_unrealized_pnl = 0.0
+        # margin_unrealized_pnl = 0.0
+        # total_short_scale = 0.0
+        # total_long_scale = 0.0
+        # nonmargin_unrealized_pnl = 0.0
+        if eval_date in self.account.index:
+            return
         portfolio_current_value = 0.0
         portfolio_delta = 0.0
         unrealized_pnl = 0.0
