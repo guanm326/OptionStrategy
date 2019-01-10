@@ -625,6 +625,9 @@ class BaseAccount():
     def analysis(self):
         res = self.get_netvalue_analysis(self.account[Util.PORTFOLIO_NPV])
         res['turnover'] = self.get_monthly_turnover(self.account)
+        self.account.loc[:,'margin_percent'] = self.account.loc[:,Util.PORTFOLIO_MARGIN_CAPITAL]/self.account.loc[:,Util.PORTFOLIO_VALUE]
+        res['avg_margin'] = self.account[self.account['margin_percent'] != 0]['margin_percent'].mean()
+        res['max_margin'] = self.account[self.account['margin_percent'] != 0]['margin_percent'].max()
         return res
 
     def annual_analyis(self):
