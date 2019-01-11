@@ -14,7 +14,7 @@ class BaseProduct(AbstractBaseProduct):
     """
 
     def __init__(self, df_data: pd.DataFrame, df_daily_data: pd.DataFrame = None,
-                 rf: float = 0.03, frequency: FrequentType = FrequentType.DAILY):
+                 frequency: FrequentType = FrequentType.DAILY):
         super().__init__()
         self.frequency: FrequentType = frequency
         self.df_data: pd.DataFrame = df_data
@@ -28,7 +28,7 @@ class BaseProduct(AbstractBaseProduct):
         self.eval_datetime: datetime.datetime = None
         self.current_state: pd.Series = None
         self.current_daily_state: pd.Series = None
-        self.rf = rf
+        # self.rf = rf
 
     def init(self) -> None:
         self.validate_data()

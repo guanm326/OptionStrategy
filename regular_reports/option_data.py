@@ -8,11 +8,10 @@ import pandas as pd
 import datetime
 from pandas import ExcelWriter
 
-
 """当日成交持仓数据"""
 
 
-def trade_volume(dt_date, dt_last_week, df_option_metrics, name_code, core_instrumentid,df_res):
+def trade_volume(dt_date, dt_last_week, df_option_metrics, name_code, core_instrumentid, df_res):
     df = df_option_metrics[
         (df_option_metrics['dt_date'] == dt_date) & (df_option_metrics[c.Util.ID_UNDERLYING] == core_instrumentid)]
     df_lw = df_option_metrics[
@@ -97,14 +96,14 @@ def trade_volume(dt_date, dt_last_week, df_option_metrics, name_code, core_instr
 """成交持仓认沽认购比P/C"""
 
 
-def pcr_commodity_option(dt_start, dt_end, name_code, df_res,min_holding):
+def pcr_commodity_option(dt_start, dt_end, name_code, df_res, min_holding):
     optionMkt = admin.table_options_mktdata()
     futureMkt = admin.table_futures_mktdata()
     query_pcr = admin.session_gc().query(optionMkt.c.dt_date, optionMkt.c.cd_option_type,
-                                              optionMkt.c.id_underlying,
-                                              func.sum(optionMkt.c.amt_holding_volume).label('total_holding_volume'),
-                                              func.sum(optionMkt.c.amt_trading_volume).label('total_trading_volume')
-                                              ) \
+                                         optionMkt.c.id_underlying,
+                                         func.sum(optionMkt.c.amt_holding_volume).label('total_holding_volume'),
+                                         func.sum(optionMkt.c.amt_trading_volume).label('total_trading_volume')
+                                         ) \
         .filter(optionMkt.c.dt_date >= dt_start) \
         .filter(optionMkt.c.dt_date <= dt_end) \
         .filter(optionMkt.c.name_code == name_code) \
@@ -115,7 +114,8 @@ def pcr_commodity_option(dt_start, dt_end, name_code, df_res,min_holding):
     # df = df_pcr[df_pcr.groupby(['dt_date', 'cd_option_type'])['total_holding_volume'].transform(max) == df_pcr[
     #     'total_holding_volume']]
     # 持仓与成交量计算用所有合约加总
-    df = df_pcr.groupby(['dt_date', 'cd_option_type'])['total_holding_volume', 'total_trading_volume'].sum().reset_index()
+    df = df_pcr.groupby(['dt_date', 'cd_option_type'])[
+        'total_holding_volume', 'total_trading_volume'].sum().reset_index()
     df_call = df[df['cd_option_type'] == 'call'].reset_index()
     df_put = df[df['cd_option_type'] == 'put'].reset_index()
     pc_ratio = []
@@ -152,10 +152,10 @@ def pcr_etf_option(dt_start, dt_end, name_code, df_res):
     optionMkt = admin.table_options_mktdata()
     Index_mkt = admin.table_indexes_mktdata()
     query_pcr = admin.session_gc().query(optionMkt.c.dt_date, optionMkt.c.cd_option_type,
-                                              optionMkt.c.id_underlying,
-                                              func.sum(optionMkt.c.amt_holding_volume).label('total_holding_volume'),
-                                              func.sum(optionMkt.c.amt_trading_volume).label('total_trading_volume')
-                                              ) \
+                                         optionMkt.c.id_underlying,
+                                         func.sum(optionMkt.c.amt_holding_volume).label('total_holding_volume'),
+                                         func.sum(optionMkt.c.amt_trading_volume).label('total_trading_volume')
+                                         ) \
         .filter(optionMkt.c.dt_date >= dt_start) \
         .filter(optionMkt.c.dt_date <= dt_end) \
         .filter(optionMkt.c.name_code == name_code) \
@@ -167,7 +167,8 @@ def pcr_etf_option(dt_start, dt_end, name_code, df_res):
         .filter(Index_mkt.c.dt_date >= dt_start).filter(Index_mkt.c.dt_date <= dt_end) \
         .filter(Index_mkt.c.id_instrument == 'index_50etf')
     df_50etf = pd.read_sql(query_etf.statement, query_etf.session.bind)
-    df = df_pcr.groupby(['dt_date', 'cd_option_type'])['total_holding_volume', 'total_trading_volume'].sum().reset_index()
+    df = df_pcr.groupby(['dt_date', 'cd_option_type'])[
+        'total_holding_volume', 'total_trading_volume'].sum().reset_index()
     df_call = df[df['cd_option_type'] == 'call'].reset_index()
     df_put = df[df['cd_option_type'] == 'put'].reset_index()
     pc_ratio = []
@@ -230,7 +231,6 @@ def hist_vol1(df_future_c1_daily):
     df_future_c1_daily.loc[:, 'histvol_60'] = Histvol.hist_vol(df_future_c1_daily[c.Util.AMT_CLOSE], n=60) * m
     df_future_c1_daily.loc[:, 'histvol_90'] = Histvol.hist_vol(df_future_c1_daily[c.Util.AMT_CLOSE], n=90) * m
     return df_future_c1_daily
-
 
 
 """ 隐含波动率 """
@@ -302,47 +302,54 @@ def implied_vol_vw(last_week, end_date, df_metrics, df_res, name_code):
 
 """"""
 
-# end_date = datetime.date.today()
-end_date = datetime.date(2019,1,8)
+end_date = datetime.date.today()
+# end_date = datetime.date(2019, 1, 11)
 start_date = datetime.date(2017, 1, 1)
 min_holding = 10
 
 writer = ExcelWriter('../data/option_data_python.xlsx')
-name_codes = [c.Util.STR_50ETF,c.Util.STR_CU, c.Util.STR_M, c.Util.STR_SR]
+name_codes = [c.Util.STR_50ETF, c.Util.STR_CU, c.Util.STR_M, c.Util.STR_SR]
 # name_codes = [ c.Util.STR_M]
 for (idx, name_code) in enumerate(name_codes):
     print(name_code)
     df_res = pd.DataFrame()
-    if name_code==c.Util.STR_50ETF:
-        df_metrics = get_data.get_50option_mktdata(start_date,end_date)
+    if name_code == c.Util.STR_50ETF:
+        df_metrics = get_data.get_50option_mktdata(start_date, end_date)
         df_future_c1_daily = get_data.get_mktdata_future_c1_daily(start_date, end_date, c.Util.STR_IH)
     else:
         df_metrics = get_data.get_comoption_mktdata(start_date, end_date, name_code)
         df_future_c1_daily = get_data.get_future_c1_by_option_daily(start_date, end_date, name_code, min_holding)
     df_res = hist_vol(start_date, df_future_c1_daily, df_res, name_code)
     dt_start = max(df_metrics[c.Util.DT_DATE].values[0], df_future_c1_daily[c.Util.DT_DATE].values[0])
-    df_metrics = df_metrics[(df_metrics[c.Util.DT_DATE] >= dt_start) & (df_metrics[c.Util.DT_DATE] <= end_date)].reset_index(
-            drop=True)
+    df_metrics = df_metrics[
+        (df_metrics[c.Util.DT_DATE] >= dt_start) & (df_metrics[c.Util.DT_DATE] <= end_date)].reset_index(
+        drop=True)
     if name_code == c.Util.STR_50ETF:
         df_res = pcr_etf_option(dt_start, end_date, name_code, df_res)
     else:
-        df_res = pcr_commodity_option(dt_start, end_date, name_code, df_res,min_holding)
+        df_res = pcr_commodity_option(dt_start, end_date, name_code, df_res, min_holding)
     df_res = implied_vol(dt_start, end_date, df_metrics, df_res, name_code)
     df_res.to_excel(writer, name_code)
     dt_end = df_metrics[c.Util.DT_DATE].unique()[-1]
     dt_yesterday = df_metrics[c.Util.DT_DATE].unique()[-2]
-    print('Finished ',name_code,dt_end,dt_yesterday)
+    print('Finished ', name_code, dt_end, dt_yesterday)
     # df_holdings = trade_volume(dt_end, dt_yesterday, df_metrics, name_code, core_id,df_res)
     # df_holdings.to_excel(writer, 'holdings_'+name_code)
 
-name_codes = [c.Util.STR_CF, c.Util.STR_C, c.Util.STR_RU, c.Util.STR_M,c.Util.STR_CU]
+name_codes = [c.Util.STR_CF, c.Util.STR_C, c.Util.STR_RU, c.Util.STR_M, c.Util.STR_CU,c.Util.STR_SR]
 
-dt_start = datetime.date(2015,1,1)
+dt_start = datetime.date(2010, 1, 1)
 for (idx1, name_code) in enumerate(name_codes):
     print(name_code)
     df_res = pd.DataFrame()
     df_future_c1_daily = get_data.get_gc_future_c1_daily(dt_start, end_date, name_code)
-    df_future_c1_daily = hist_vol1(df_future_c1_daily)
+    df_future_c1_daily = hist_vol1(df_future_c1_daily[[c.Util.DT_DATE,c.Util.AMT_CLOSE]])
     df_future_c1_daily = df_future_c1_daily.sort_values(by=c.Util.DT_DATE, ascending=False)
-    df_future_c1_daily.to_excel(writer, name_code+'_hv')
+    df_future_c1_daily.to_excel(writer, name_code + '_hv')
+
+df_50etf = get_data.get_index_mktdata(dt_start, end_date, 'index_50etf')
+df_50etf = hist_vol1(df_50etf[[c.Util.DT_DATE,c.Util.AMT_CLOSE]])
+df_50etf = df_50etf.sort_values(by=c.Util.DT_DATE, ascending=False)
+df_50etf.to_excel(writer, 'index_50etf' + '_hv')
+
 writer.save()

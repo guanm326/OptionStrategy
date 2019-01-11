@@ -18,9 +18,9 @@ class VolTrading(object):
         self.moneyness_rank = 0
         self.m_notional = 1
         self.rf = 0.03
-        self.n_premium_std = 90
+        self.n_premium_std = 90 #用于计算权利金溢价1倍标准差的数据期限
         self.n_hv = 20 # 用与期权期限相匹配的历史波动率期限
-        self.n_cloese_by_maturity = 5
+        self.n_close_by_maturity = 5
         self.min_premium = 2.0 / 100.0  # 对冲成本对应的开平仓最低隐含波动率溢价
         self.n_llt = 5
         self.cd_option_price = c.CdTradePrice.CLOSE
@@ -45,7 +45,7 @@ class VolTrading(object):
             c.Util.DT_DATE)
         self.optionset = BaseOptionSet(self.df_metrics)
         self.optionset.init()
-        self.hedging = SytheticOption(self.df_f_c1, df_futures_all_daily=self.df_f_all)
+        self.hedging = SytheticOption(self.df_f_c1,rf=self.rf, df_futures_all_daily=self.df_f_all)
         self.hedging.init()
         self.hedging.amt_option = 1 / 1000  # 50ETF与IH点数之比
         self.account = BaseAccount(init_fund=c.Util.BILLION, rf=self.rf)
@@ -66,15 +66,9 @@ class VolTrading(object):
         self.df_vol['LLT_signal_' + str(self.n_llt)] = self.df_vol['LLT_' + str(self.n_llt)].diff()
 
     def open_signal(self):
-        # return self.open_signal_ivhv()
-        # return self.open_signal_llt()
-        # return self.open_signal_ivhv() and self.open_signal_llt()
         pass
 
     def close_signal(self):
-        # return self.close_signal_maturity() or self.close_signal_ivhv()
-        # return self.close_signal_maturity() or self.close_signal_llt()
-        # return self.close_signal_maturity() or self.close_signal_ivhv() or self. close_signal_llt()
         pass
 
     def open_signal_llt(self):
@@ -120,7 +114,7 @@ class VolTrading(object):
             if isinstance(option, BaseOption) and option is not None:
                 dt_maturity = option.maturitydt()
                 break
-        if (dt_maturity - self.optionset.eval_date).days <= self.n_cloese_by_maturity:
+        if (dt_maturity - self.optionset.eval_date).days <= self.n_close_by_maturity:
             return True
         else:
             return False
@@ -228,6 +222,26 @@ class VolTrading(object):
             self.optionset.next()
             self.hedging.next()
         return self.account
+
+class VolTradingComdy(VolTrading):
+
+    def init(self):
+        df_future_histvol = self.df_f_c1.copy()
+        df_future_histvol['amt_hv'] = histvol.hist_vol(df_future_histvol[c.Util.AMT_CLOSE], n=self.n_hv)
+        self.dt_start = max(self.df_f_c1[c.Util.DT_DATE].values[0], self.df_metrics[c.Util.DT_DATE].values[0])
+        self.end_date = min(self.df_f_c1[c.Util.DT_DATE].values[-1], self.df_metrics[c.Util.DT_DATE].values[-1])
+        self.df_metrics = self.df_metrics[self.df_metrics[c.Util.DT_DATE] >= self.dt_start].reset_index(drop=True)
+        self.df_f_c1 = self.df_f_c1[self.df_f_c1[c.Util.DT_DATE] >= self.dt_start].reset_index(drop=True)
+        self.df_f_all = self.df_f_all[self.df_f_all[c.Util.DT_DATE] >= self.dt_start].reset_index(drop=True)
+        self.df_vol = pd.merge(self.df_vol, df_future_histvol[[c.Util.DT_DATE, 'amt_hv']], on=c.Util.DT_DATE).set_index(
+            c.Util.DT_DATE)
+        self.optionset = BaseOptionSet(self.df_metrics)
+        self.optionset.init()
+        self.hedging = SytheticOption(self.df_f_c1,rf=self.rf, df_futures_all_daily=self.df_f_all)
+        self.hedging.init()
+        self.account = BaseAccount(init_fund=c.Util.BILLION, rf=self.rf)
+        self.prepare_timing()
+
 
 
 class VolTradingIvHv(VolTrading):

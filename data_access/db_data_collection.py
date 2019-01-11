@@ -926,6 +926,16 @@ class DataCollection():
             df_windcode = pd.read_sql(query.statement, query.session.bind)
             return df_windcode
 
+        def wind_cfe_contracts(self):
+            dict_code_multiplier = {"IF.CFE": 300,
+                                    "IH.CFE":300,
+                                    "IC.CFE":200}
+            db_data = []
+            for category_code in dict_code_multiplier.keys():
+                nbr_multiplier = dict_code_multiplier[category_code]
+                db_data.extend( self.wind_future_contracts(category_code,nbr_multiplier))
+            return db_data
+
         def wind_future_contracts(self, category_code, nbr_multiplier):
             db_data = []
 

@@ -18,9 +18,9 @@ class BaseOption(BaseProduct):
     def __init__(self, df_data: pd.DataFrame, df_daily_data: pd.DataFrame = None,
                  frequency: FrequentType = FrequentType.DAILY,
                  flag_calculate_iv: bool = True, rf: float = 0.03):
-        super().__init__(df_data, df_daily_data, rf, frequency)
+        super().__init__(df_data, df_daily_data, frequency)
         self.flag_calculate_iv = flag_calculate_iv
-        # self.black_calculater: BlackCalculator = None
+        self.rf = rf
         self.implied_vol: float = None
         self.fee_rate = Util.DICT_OPTION_TRANSACTION_FEE_RATE[self.name_code()]
         self.fee_per_unit = Util.DICT_OPTION_TRANSACTION_FEE[self.name_code()]

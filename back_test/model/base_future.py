@@ -11,8 +11,8 @@ class BaseFuture(BaseProduct):
     """
 
     def __init__(self, df_data: pd.DataFrame, df_daily_data: pd.DataFrame = None,
-                 rf: float = 0.03, frequency: FrequentType = FrequentType.DAILY):
-        super().__init__(df_data, df_daily_data, rf, frequency)
+                 frequency: FrequentType = FrequentType.DAILY):
+        super().__init__(df_data, df_daily_data, frequency)
         self._multiplier = Util.DICT_CONTRACT_MULTIPLIER[self.name_code()]
 
     def __repr__(self) -> str:
@@ -45,10 +45,6 @@ class BaseFuture(BaseProduct):
 
     def multiplier(self) -> Union[int,None]:
         return self._multiplier
-
-    # comment refactor_1901: 期货逐日盯市头寸的current value即距last price（前收/成本）的浮盈浮亏
-    # def get_current_value(self, long_short, last_price):
-    #     return long_short.value*(self.mktprice_close()-last_price)
 
     def is_margin_trade(self, long_short):
         return True

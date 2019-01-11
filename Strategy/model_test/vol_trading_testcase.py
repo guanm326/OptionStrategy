@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import back_test.model.constant as c
 import data_access.get_data as get_data
 from Utilities.PlotUtil import PlotUtil
-from Strategy.model.VolTrading_HvIvSignal import VolTrading
+from Strategy.model.VolTrading import VolTrading
 
 """
 隐含与历史波动率策略报告原版参数设定：
@@ -26,7 +26,7 @@ from Strategy.model.VolTrading_HvIvSignal import VolTrading
     max_drawdown        -0.010365
     prob_of_win(D)       0.815574
     win_loss_ratio       0.490094
-    sharpe               2.104261
+    sharpe               1.747877
     Calmar               5.733450
     turnover             2.025159
 """
@@ -74,7 +74,7 @@ account = vol_arbitrage.back_test()
 # account.trade_records.to_csv('../iv_hv_record-test.csv')
 print('-' * 50)
 res = account.analysis()
-# print(res)
+print(res)
 print('TEST CASE ')
 print('-' * 50)
 if abs(res['accumulate_yield'] - 0.057487) < 0.0001:

@@ -12,8 +12,8 @@ class BaseInstrument(BaseProduct):
     """
 
     def __init__(self, df_data: pd.DataFrame, df_daily_data: pd.DataFrame = None,
-                 rf: float = 0.03, frequency: FrequentType = FrequentType.DAILY):
-        super().__init__(df_data, df_daily_data, rf, frequency)
+                 frequency: FrequentType = FrequentType.DAILY):
+        super().__init__(df_data, df_daily_data, frequency)
         self._multiplier = 1.0
         self.fee_rate = 0.0
         self.fee_per_unit = 0.0

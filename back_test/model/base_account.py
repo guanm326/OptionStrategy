@@ -587,7 +587,7 @@ class BaseAccount():
         # 年化波动率
         volatility_yr = np.std(returns, ddof=0) * np.sqrt(oneyear)
         # 夏普比率
-        sharpe = (return_yr - 0.024) / volatility_yr
+        sharpe = (return_yr - self.rf) / volatility_yr
         # 回撤
         drawdowns = self.get_maxdrawdown(netvalue)
         # 最大回撤
@@ -634,7 +634,7 @@ class BaseAccount():
         self.account['year'] = self.account[Util.DT_DATE].apply(lambda x: str(x.year))
         years = self.account['year'].unique()
         df_yearly = pd.DataFrame()
-        df_npvs = pd.DataFrame()
+        # df_npvs = pd.DataFrame()
         init_npv = 1
         for y in years:
             npv = self.account[self.account['year'] == y][Util.PORTFOLIO_NPV]
@@ -651,5 +651,5 @@ class BaseAccount():
             df_yearly.loc[y, 'sharpe'] = r['sharpe']
             df_yearly.loc[y, 'Calmar'] = r['Calmar']
             df_yearly.loc[y, 'max_absolute_loss'] = max_absolute_loss
-            df_npvs[y] = year_npv
-        return df_yearly, df_npvs
+            # df_npvs[y] = year_npv
+        return df_yearly
