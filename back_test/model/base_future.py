@@ -15,6 +15,7 @@ class BaseFuture(BaseProduct):
                  frequency: FrequentType = FrequentType.DAILY):
         super().__init__(df_data, df_daily_data, frequency)
         self._multiplier = Util.DICT_CONTRACT_MULTIPLIER[self.name_code()]
+        self._margin_rate = Util.DICT_FUTURE_MARGIN_RATE[self.name_code()]
         self.fee_rate = Util.DICT_TRANSACTION_FEE_RATE[self.name_code()]
         self.fee_per_unit = Util.DICT_TRANSACTION_FEE[self.name_code()]
 
@@ -34,13 +35,13 @@ class BaseFuture(BaseProduct):
     def get_fund_required(self, long_short: LongShort) -> float:
         return self.get_initial_margin(long_short)
 
-    def get_initial_margin(self,long_short:LongShort) -> Union[float,None]:
-        return self.get_maintain_margin(long_short)
+    def get_initial_margin(self,long_short:LongShort) -> Union[float, None]:
+        # pre_settle_price = self.mktprice_last_settlement()
+        margin = self.mktprice_close() * self._margin_rate * self._multiplier
+        return margin
 
-    def get_maintain_margin(self,long_short:LongShort) -> Union[float,None]:
-        margin_rate = Util.DICT_FUTURE_MARGIN_RATE[self.name_code()]
-        pre_settle_price = self.mktprice_last_settlement()
-        margin = pre_settle_price * margin_rate * self._multiplier
+    def get_maintain_margin(self,long_short:LongShort) -> Union[float, None]:
+        margin = self.mktprice_close() * self._margin_rate * self._multiplier
         return margin
 
     def maturitydt(self) -> Union[datetime.date,None]:

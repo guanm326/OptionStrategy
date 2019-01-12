@@ -57,11 +57,6 @@ class BaseAccount():
                     else:
                         self.cash += book_series[Util.TRADE_MARGIN_CAPITAL] - execution_record[Util.TRADE_MARKET_VALUE]
                     trade_realized_pnl = book_series[Util.TRADE_REALIZED_PNL] + realized_pnl # This position total realized pnl.
-                    # if base_product.is_margin_trade(trade_long_short):
-                    #     # 开仓为保证金交易，将已实现损益加入现金账户
-                    #     self.cash += book_series[Util.TRADE_MARGIN_CAPITAL] + realized_pnl
-                    # else:  # 无保证金交易（期权买方、股票等）最终平仓收入（- execution_record[Util.TRADE_BOOK_VALUE]）加入现金账户
-                    #     self.cash += - execution_record[Util.TRADE_BOOK_VALUE]
                 # """ 减仓 """
                 elif book_series[Util.TRADE_UNIT] > execution_record[Util.TRADE_UNIT]:
                     excuted_ratio = execution_record[Util.TRADE_UNIT] / book_series[Util.TRADE_UNIT]
@@ -85,14 +80,6 @@ class BaseAccount():
                     else:
                         self.cash += margin_released - execution_record[Util.TRADE_MARKET_VALUE]
                     trade_realized_pnl = book_series[Util.TRADE_REALIZED_PNL] + realized_pnl
-                    # if base_product.is_margin_trade(trade_long_short):
-                    #     # 开仓为保证金交易，将已实现损益加入现金账户
-                    #     self.cash += realized_pnl + margin_released
-                    # else:  # 无保证金交易（期权买方、股票等）最终平仓收入（- execution_record[Util.TRADE_BOOK_VALUE]）加入现金账户。
-                    #     self.cash += - execution_record[Util.TRADE_BOOK_VALUE]
-                    # position_current_value = self.get_position_value(id_instrument, trade_unit,
-                    #                                                  trade_long_short
-                    #                                                  )
                 # """ 反向开仓 """
                 else:
                     trade_long_short = execution_record[Util.TRADE_LONG_SHORT]
@@ -100,8 +87,6 @@ class BaseAccount():
                     trade_margin_capital = execution_record[Util.TRADE_MARGIN_CAPITAL] * (
                                 trade_unit / execution_record[Util.TRADE_UNIT])  # 开仓所需保证金
                     margin_released = book_series[Util.TRADE_MARGIN_CAPITAL]  # 平掉头寸的保证金账户
-                    # trade_book_value = book_series[Util.NBR_MULTIPLIER] * execution_record[Util.TRADE_LONG_SHORT].value \
-                    #                    * trade_unit * execution_record[Util.TRADE_PRICE]
                     trade_book_value = execution_record[Util.TRADE_BOOK_VALUE] * (
                                 trade_unit / execution_record[Util.TRADE_UNIT])
                     realized_pnl = book_series[Util.NBR_MULTIPLIER] * book_series[Util.TRADE_UNIT] * \
@@ -119,25 +104,6 @@ class BaseAccount():
                     average_position_cost = execution_record[Util.TRADE_PRICE]
                     last_price = execution_record[Util.TRADE_PRICE]  # 开仓价即最新价，与新开仓相同
                     trade_realized_pnl = book_series[Util.TRADE_REALIZED_PNL] + realized_pnl
-                    # if trade_long_short == LongShort.LONG:
-                    #     open_long_short = LongShort.SHORT
-                    # else:
-                    #     open_long_short = LongShort.LONG
-                    # if base_product.is_margin_trade(open_long_short):
-                    #     # 开仓为保证金交易，将已实现损益加入现金账户。如果初始开仓为卖出期权，当前反向买入更多的期权无需保证金，
-                    #     # 因而账户需支出权利金（-trade_book_value），返还之前的保证金（margin_released），
-                    #     # 收入之前保证金卖出期权的实际损益（realized_pnl）。
-                    #     if isinstance(base_product, BaseOption):
-                    #         self.cash += realized_pnl + trade_book_value + margin_released
-                    #     else:
-                    #         self.cash += realized_pnl - trade_margin_capital + margin_released
-                    # else:
-                    #     # 无保证金交易,且仅用于期权，股票不具有反向开仓功能。卖出更多的期权，将一部分之前的买权平仓，对应的权利金为平仓收入全部加入账户。
-                    #     # 现金账户收到权利金（trade_book_value）、支出保证金（trade_margin_capital）
-                    #     self.cash += trade_book_value - trade_margin_capital
-                    # position_current_value = self.get_position_value(id_instrument, trade_unit,
-                    #                                                  trade_long_short
-                    #                                                  )
             # """ 加仓 """"
             else:
                 trade_long_short = execution_record[Util.TRADE_LONG_SHORT]
@@ -155,14 +121,6 @@ class BaseAccount():
                 realized_pnl = 0.0
                 trade_realized_pnl = book_series[Util.TRADE_REALIZED_PNL]  # No added realized pnl
                 self.cash -= execution_record[Util.TRADE_MARGIN_CAPITAL] + execution_record[Util.TRADE_MARKET_VALUE]
-                # if base_product.is_margin_trade(trade_long_short):
-                #     # 开仓为保证金交易: 加仓仅需要加保证金
-                #     self.cash -= margin_add
-                # else:
-                #     # 无保证金交易（期权买方、股票等）加仓价值（为正，execution_record[Util.TRADE_BOOK_VALUE]）从现金账户扣除。
-                #     self.cash -= execution_record[Util.TRADE_BOOK_VALUE]
-                # position_current_value = self.get_position_value(id_instrument, trade_unit,
-                #                                                  trade_long_short)
             self.trade_book.loc[id_instrument, Util.TRADE_LONG_SHORT] = trade_long_short
             self.trade_book.loc[id_instrument, Util.LAST_PRICE] = last_price
             self.trade_book.loc[id_instrument, Util.TRADE_UNIT] = trade_unit
@@ -183,7 +141,6 @@ class BaseAccount():
                 Util.TRADE_LONG_SHORT: trade_long_short,
                 Util.AVERAGE_POSITION_COST: average_position_cost,
                 Util.TRADE_REALIZED_PNL: 0.0,
-                # 'mtm_cashed_unrealized_pnl': 0.0, # comment refactor_1901
                 Util.NBR_MULTIPLIER: base_product.multiplier()
             })
             realized_pnl = 0.0
@@ -192,104 +149,12 @@ class BaseAccount():
             # refactor_1901: 现金账户、保证金账户、头寸市值 三者之间进行调整
             # 例如：期货开仓现金转保证金，头寸市值为零不变；期权卖方头寸开仓现金转保证金，头寸市值（权利金）转现金，即卖出期权计负market value
             self.cash -= execution_record[Util.TRADE_MARGIN_CAPITAL] + execution_record[Util.TRADE_MARKET_VALUE]
-            # if base_product.is_margin_trade(trade_long_short):
-            #     # 开仓为保证金交易: 加仓仅需要加保证金
-            #     self.cash -= execution_record[Util.TRADE_MARGIN_CAPITAL]
-            # else:
-            #     # 无保证金交易（期权买方、股票等）加仓价值（execution_record[Util.TRADE_BOOK_VALUE]）从现金账户扣除。
-            #     self.cash -= execution_record[Util.TRADE_BOOK_VALUE]
-            # position_current_value = self.get_position_current_value(id_instrument, trade_unit, trade_long_short, average_position_cost)
-        # self.trade_book.loc[id_instrument, Util.POSITION_CURRENT_VALUE] = position_current_value
         self.trade_book.loc[id_instrument, Util.TRANSACTION_COST] += execution_record[
             Util.TRANSACTION_COST]  # comment refactor_1901: added position total trasaction costs
-        # self.realized_pnl += realized_pnl
         execution_record[Util.TRADE_REALIZED_PNL] = realized_pnl
         execution_record[Util.CASH] = self.cash
         execution_record[Util.ABS_TRADE_BOOK_VALUE] = abs(execution_record[Util.TRADE_BOOK_VALUE])
         self.trade_records = self.trade_records.append(execution_record, ignore_index=True)
-
-    # # 用于衡量投资组合中非保证金交易部分的市值。
-    # def get_position_current_value(self, id_instrument, trade_unit, long_short, last_price):
-    #     base_product = self.dict_holding[id_instrument]
-    #     # comment refactor_1901: 头寸当前市值通过调用子类方法，逐日盯市期货头寸市值：距last price（前收/成本）的浮盈浮亏；期权：权利金市值；股票：市值。
-    #     if base_product.is_mtm():
-    #         position_current_value = long_short.value * (base_product.mktprice_close() - last_price) * trade_unit * base_product.multiplier()
-    #     else:
-    #         position_current_value = long_short.value * base_product.mktprice_close() * trade_unit * base_product.multiplier()
-    #     # position_current_value = base_product.get_current_value(long_short, last_price) * trade_unit * base_product.multiplier()
-    #     # if base_product.is_margin_trade(long_short):
-    #     #     # 对于保证金交易，头寸价值为未实现损益（unrealized pnl）
-    #     #     position_current_value = 0.0
-    #     # else:
-    #     #     # 对于非保证金交易：购买股票/期权买方等，头寸价值为当前市值（close price）
-    #     #     position_current_value = base_product.get_current_value(long_short) * trade_unit * base_product.multiplier()
-    #     return position_current_value
-
-    # # 用于杠杆率计算：总保证金交易的市值（按照last trade price，不考虑日内未实现损益），多空绝对市值相加。
-    # def get_portfolio_margin_trade_scale(self):
-    #     portfolio_margin_trade_scale = 0.0
-    #     for (id_instrument, row) in self.trade_book.iterrows():
-    #         long_short = row[Util.TRADE_LONG_SHORT]
-    #         base_product = self.dict_holding[id_instrument]
-    #         if base_product.is_margin_trade(long_short):
-    #             portfolio_margin_trade_scale += row[Util.TRADE_UNIT] * row[Util.NBR_MULTIPLIER] * row[
-    #                 Util.LAST_PRICE]
-    #     return portfolio_margin_trade_scale
-
-    # # For calculate MAX trade unit before execute order.
-    # def get_investable_cash(self):
-    #     portfolio_margin_trade_scale = self.get_portfolio_margin_trade_scale()
-    #     total_margin_capital = self.get_portfolio_margin_capital()
-    #     investable_cash = max(0.0,
-    #                           self.cash + total_margin_capital -
-    #                           portfolio_margin_trade_scale / self.max_leverage)
-    #     return investable_cash * self.max_leverage
-
-    # def create_trade_order_check_leverage(self, base_product,
-    #                                       # trade_type: TradeType,
-    #                                       long_short: LongShort,
-    #                                       trade_unit: int = None,
-    #                                       trade_price: float = None,
-    #                                       ):
-    #     trade_unit = abs(trade_unit)  # unit的正负取绝对值，方向主要看trade type
-    #     dt_trade = base_product.eval_date
-    #     id_instrument = base_product.id_instrument()
-    #     if trade_price is None:
-    #         trade_price = base_product.mktprice_close()
-    #     time_signal = base_product.eval_datetime
-    #     multiplier = base_product.multiplier()
-    #     # long_short = self.get_long_short(trade_type)
-    #     # if trade_type == TradeType.CLOSE_OUT:
-    #     #     trade_unit = book_series[Util.TRADE_UNIT]
-    #     #     print("Close out all positions! ")
-    #     # Close position时不检查保证金
-    #     # if trade_type == TradeType.CLOSE_SHORT or trade_type == TradeType.CLOSE_LONG:
-    #     if id_instrument in self.trade_book.index:
-    #         book_series = self.trade_book.loc[id_instrument]
-    #         if long_short != self.trade_book.loc[id_instrument, Util.TRADE_LONG_SHORT]:
-    #             # if trade_type == TradeType.CLOSE_SHORT and book_series[Util.TRADE_LONG_SHORT] == LongShort.LONG:
-    #             #     print('no short position to close')
-    #             #     return
-    #             # elif trade_type == TradeType.CLOSE_LONG and book_series[Util.TRADE_LONG_SHORT] == LongShort.SHORT:
-    #             #     print('no short position to close')
-    #             #     return
-    #             order = Order(dt_trade, id_instrument, trade_unit, trade_price,
-    #                           time_signal, long_short)
-    #             return order
-    #     if trade_unit is None:
-    #         raise ValueError("trade_unit is None when opening position !")
-    #     if base_product.is_margin_trade(long_short):
-    #         investable_market_value = self.get_investable_cash()
-    #     else:
-    #         investable_market_value = self.get_investable_cash() * self.max_leverage
-    #     max_unit = np.floor(investable_market_value / (trade_price * multiplier))
-    #     if max_unit < 1:
-    #         return
-    #     else:
-    #         trade_unit = min(max_unit, trade_unit)
-    #         order = Order(dt_trade, id_instrument, trade_unit, trade_price,
-    #                       time_signal, long_short)
-    #         return order
 
     def get_trade_price(self, cd_trade_price: CdTradePrice, base_product: BaseProduct):
         if cd_trade_price == CdTradePrice.CLOSE:
@@ -377,10 +242,6 @@ class BaseAccount():
         return npv
 
     def daily_accounting(self, eval_date, flag_interest=True):
-        # margin_unrealized_pnl = 0.0
-        # total_short_scale = 0.0
-        # total_long_scale = 0.0
-        # nonmargin_unrealized_pnl = 0.0
         if eval_date in self.account.index:
             return
         portfolio_current_value = 0.0
@@ -400,22 +261,12 @@ class BaseAccount():
             else:
                 delta = 0
             portfolio_delta += delta
-            # if trade_long_short == LongShort.SHORT:
-            #     total_short_scale -= trade_unit * price * base_product.multiplier()
-            # else:
-            #     total_long_scale += trade_unit * price * base_product.multiplier()
             unrealized_pnl += trade_long_short.value * (base_product.mktprice_close() - row[Util.AVERAGE_POSITION_COST]) * row[Util.TRADE_UNIT] * \
                              row[Util.NBR_MULTIPLIER]
-            # if base_product.is_margin_trade(trade_long_short):
-            #     margin_unrealized_pnl += unrealized_pnl
-            # else:
-            #     nonmargin_unrealized_pnl += unrealized_pnl
             margin_add = base_product.get_maintain_margin(trade_long_short) * row[Util.TRADE_UNIT] - \
                          row[Util.TRADE_MARGIN_CAPITAL]
             self.trade_book.loc[id_instrument, Util.TRADE_MARGIN_CAPITAL] += margin_add
             self.cash -= margin_add
-            # position_current_value = self.get_position_current_value(id_instrument, trade_unit, trade_long_short,
-            #                                                          row[Util.LAST_PRICE])
             if base_product.is_mtm():
                 position_current_value = trade_long_short.value * (
                             base_product.mktprice_close() - row[Util.LAST_PRICE]) * trade_unit * base_product.multiplier()
@@ -426,18 +277,11 @@ class BaseAccount():
             self.trade_book.loc[id_instrument, Util.LAST_PRICE] = base_product.mktprice_close()
             self.trade_book.loc[id_instrument, Util.DT_DATE] = eval_date
 
-
         portfolio_margin_capital = self.get_portfolio_margin_capital()
-        # portfolio_trades_value = self.get_portfolio_current_value()
         portfolio_total_value = self.cash + portfolio_margin_capital + portfolio_current_value
-        # portfolio_total_value = self.cash + portfolio_margin_capital + \
-        #                         portfolio_trades_value + margin_unrealized_pnl
-        # Another NPV calculate method.
         total_realized_pnl = self.trade_book[Util.TRADE_REALIZED_PNL].sum()
         realized_pnl_from_closed_out_positions = self.trade_book_daily[self.trade_book_daily[Util.TRADE_UNIT] == 0.0][
             Util.TRADE_REALIZED_PNL].sum()
-        # portfolio_total_value2 = self.init_fund + margin_unrealized_pnl + nonmargin_unrealized_pnl + \
-        #                          total_realized_pnl + self.realized_pnl_from_closed_out_positions
         portfolio_total_value2 = self.init_fund + unrealized_pnl + \
                                  total_realized_pnl + realized_pnl_from_closed_out_positions
         npv = portfolio_total_value / self.init_fund
@@ -448,12 +292,9 @@ class BaseAccount():
         #     print(eval_date, ' npv matched ')
         if self.trade_records.empty:
             daily_executed_amount = 0.0
-            # turnover = 0.0
         else:
             daily_executed_amount = self.trade_records[self.trade_records[Util.DT_TRADE] == eval_date][
                 Util.ABS_TRADE_BOOK_VALUE].sum()
-            # turnover = daily_executed_amount / self.portfolio_total_value
-        # actual_leverage = portfolio_total_scale / portfolio_total_value
         if flag_interest:
             self.cash = self.cash * (1 + self.rf * (1.0 / 252.0))
         account_today = pd.Series({

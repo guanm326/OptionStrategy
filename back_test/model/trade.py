@@ -136,7 +136,6 @@ class Order(object):
                 Util.TRADE_LONG_SHORT: self.long_short,
                 Util.TRADE_UNIT: executed_units,
                 Util.TRADE_PRICE: executed_price,
-                # Util.TRADE_TYPE: self.trade_type,
                 Util.TIME_SIGNAL: self.time_signal,
                 Util.TRANSACTION_COST: slippage_cost
             }
