@@ -85,18 +85,6 @@ class BaseFutureCoutinuous(BaseProduct):
     def is_mtm(self):
         return True
 
-    """ Intraday Weighted Average Price """
-
-    # def volume_weigted_average_price(self) -> Union[float, None]:
-    #     if self.frequency in Util.LOW_FREQUENT:
-    #         return self.mktprice_close()
-    #     else:
-    #         df_today = self.df_data[self.df_data[Util.DT_DATE] == self.eval_date]
-    #         df_today.loc[:, 'volume_price'] = df_today[Util.AMT_TRADING_VOLUME] * df_today[Util.AMT_CLOSE]
-    #         vwap = df_today['volume_price'].sum() / df_today[Util.AMT_TRADING_VOLUME].sum()
-    #         return vwap
-
-
     def execute_order(self, order: Order, slippage=0,slippage_rate=0.0, execute_type: ExecuteType = ExecuteType.EXECUTE_ALL_UNITS):
         if order is None or order.trade_unit == 0: return
         # if execute_type == ExecuteType.EXECUTE_ALL_UNITS:
@@ -125,62 +113,6 @@ class BaseFutureCoutinuous(BaseProduct):
         execution_record[Util.TRADE_MARGIN_CAPITAL] = margin_requirement
         execution_record[Util.TRADE_MARKET_VALUE] = 0.0  # 建仓时点头寸市值为0
         return execution_record
-
-    # """ 高频数据下按照当日成交量加权均价开仓，结束后时间点移动到本交易日的最后一个bar。 """
-    # def execute_order_by_VWAP(self, order: Order, slippage=0,
-    #                           execute_type: ExecuteType = ExecuteType.EXECUTE_ALL_UNITS):
-    #     if self.frequency in Util.LOW_FREQUENT:
-    #         return
-    #     else:
-    #         total_trade_value = 0.0
-    #         total_volume_value = 0.0
-    #         while self.has_next_minute():
-    #             total_trade_value += self.mktprice_close() * self.trading_volume()
-    #             total_volume_value += self.trading_volume()
-    #             self.next()
-    #         total_trade_value += self.mktprice_close() * self.trading_volume()
-    #         total_volume_value += self.trading_volume()
-    #         volume_weighted_price = total_trade_value / total_volume_value
-    #         order.trade_price = volume_weighted_price
-    #         execution_record = self.execute_order(order, slippage, execute_type)
-    #         return execution_record
-
-    # def shift_contract_by_VWAP(self, id_c1: str, id_c2: str, hold_unit: int, open_unit: int,
-    #                            long_short: LongShort, slippage, execute_type):
-    #     if long_short == LongShort.LONG:
-    #         close_order_long_short = LongShort.SHORT
-    #     else:
-    #         close_order_long_short = LongShort.LONG
-    #     close_order = Order(dt_trade=self.eval_date, id_instrument=id_c1, trade_unit=hold_unit,
-    #                         trade_price=None, time_signal=self.eval_datetime, long_short=close_order_long_short)
-    #     # TODO: OPEN ORDER UNIT SHOULD BE RECALCULATED BY DELTA.
-    #     open_order = Order(dt_trade=self.eval_date, id_instrument=id_c2, trade_unit=open_unit,
-    #                        trade_price=None, time_signal=self.eval_datetime, long_short=long_short)
-    #     if self.frequency in Util.LOW_FREQUENT:
-    #         return
-    #     else:
-    #         df_c1_today = self.df_all_futures_daily[(self.df_all_futures_daily[Util.DT_DATE] == self.eval_date) & (
-    #             self.df_all_futures_daily[Util.ID_INSTRUMENT] == id_c1)]
-    #         total_trade_value_c1 = df_c1_today[Util.AMT_TRADING_VALUE].values[0]
-    #         total_volume_c1 = df_c1_today[Util.AMT_TRADING_VOLUME].values[0]
-    #         # volume_weighted_price_c1 = total_trade_value_c1 / (total_volume_c1 * self.multiplier())
-    #         price_c1 = (df_c1_today[Util.AMT_CLOSE].values[0]+df_c1_today[Util.AMT_OPEN].values[0])/2.0
-    #         total_trade_value_c2 = 0.0
-    #         total_volume_c2 = 0.0
-    #         while not self.is_last_minute():
-    #             total_trade_value_c2 += self.mktprice_close() * self.trading_volume() * self.multiplier()
-    #             total_volume_c2 += self.trading_volume()
-    #             self.next()
-    #         total_trade_value_c2 += self.mktprice_close() * self.trading_volume() * self.multiplier()
-    #         total_volume_c2 += self.trading_volume()
-    #         volume_weighted_price_c2 = total_trade_value_c2 / (total_volume_c2 * self.multiplier())
-    #         # close_order.trade_price = volume_weighted_price_c1
-    #         close_order.trade_price = price_c1
-    #         open_order.trade_price = volume_weighted_price_c2
-    #         close_execution_record = self.execute_order(close_order, slippage, execute_type)
-    #         open_execution_record = self.execute_order(open_order, slippage, execute_type)
-    #         return close_execution_record, open_execution_record
-
 
     def shift_contract_month(self,account,slippage_rate,cd_price=CdTradePrice.VOLUME_WEIGHTED):
         # 移仓换月: 成交量加权均价

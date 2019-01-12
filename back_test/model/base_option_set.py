@@ -57,7 +57,7 @@ class BaseOptionSet(AbstractBaseProductSet):
 
     def init(self) -> None:
         self._generate_required_columns_if_missing()  # 补充行权价等关键信息（high frequency data就可能没有）
-        self.pre_process()
+        self._pre_process()
         self.next()
 
     def _generate_required_columns_if_missing(self) -> None:
@@ -106,8 +106,7 @@ class BaseOptionSet(AbstractBaseProductSet):
             Util.ID_INSTRUMENT)[[Util.ID_INSTRUMENT, Util.NBR_MULTIPLIER]]
         return df_id_multiplier
 
-    def pre_process(self) -> None:
-
+    def _pre_process(self) -> None:
         if self.frequency in Util.LOW_FREQUENT:
             self.date_list = sorted(self.df_data[Util.DT_DATE].unique())
             self.nbr_index = len(self.date_list)
@@ -116,7 +115,6 @@ class BaseOptionSet(AbstractBaseProductSet):
             # TODO:
             # 高频数据预处理：根据日频数据的id_instrument与dt_datetime，
             # 对高频数据（df_data）进行补充，缺失数据用前值代替，成交量填0.
-
             self.df_data = self.df_data[mask].reset_index(drop=True)
             self.date_list = sorted(self.df_data[Util.DT_DATE].unique())
             self.datetime_list = sorted(self.df_data[Util.DT_DATETIME].unique())
@@ -168,12 +166,12 @@ class BaseOptionSet(AbstractBaseProductSet):
                 continue
             option.next()
             if option.is_valid_option(self.eval_date):
-                self.add_option(option)
+                self._add_option(option)
                 if option.maturitydt() not in eligible_maturities:
                     eligible_maturities.append(option.maturitydt())
         for option in self.option_dict.pop(self.eval_date, []):
             if option.is_valid_option(self.eval_date):
-                self.add_option(option)
+                self._add_option(option)
                 if option.maturitydt() not in eligible_maturities:
                     eligible_maturities.append(option.maturitydt())
         self.eligible_maturities = sorted(eligible_maturities)
@@ -226,7 +224,7 @@ class BaseOptionSet(AbstractBaseProductSet):
         return 'BaseOptionSet(evalDate:{0}, totalSize: {1})' \
             .format(self.eval_date, self.size)
 
-    def add_option(self, option: BaseOption) -> None:
+    def _add_option(self, option: BaseOption) -> None:
         self.eligible_options.append(option)
 
     def has_next(self) -> bool:
@@ -726,7 +724,7 @@ class BaseOptionSet(AbstractBaseProductSet):
     def select_maturity_date(self, nbr_maturity, min_holding: int = 1):
         maturities = self.get_maturities_list()
         idx_start = 0
-        if (maturities[idx_start] - self.eval_date).days < min_holding:
+        if (maturities[idx_start] - self.eval_date).days <= min_holding:
             idx_start += 1
         idx_maturity = idx_start + nbr_maturity
         if idx_maturity > len(maturities) - 1:

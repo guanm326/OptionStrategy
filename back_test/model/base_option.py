@@ -38,13 +38,8 @@ class BaseOption(BaseProduct):
         return 'BaseOption(id_instrument: {0},eval_date: {1},frequency: {2})' \
             .format(self.id_instrument(), self.eval_date, self.frequency)
 
-    def pre_process(self):
-        # self.df_data[Util.AMT_OPTION_PRICE] = self.df_data.apply(OptionFilter.fun_option_price, axis=1)
-        # For Dividend Adjusts
+    def _pre_process(self):
         self.df_data[Util.AMT_NEAREST_STRIKE] = self.df_data.apply(OptionFilter.nearest_strike_level, axis=1)
-        # if self.name_code() == Util.STR_50ETF:
-        #     self.df_data[Util.AMT_STRIKE_BEFORE_ADJ] = self.df_data.apply(Option50ETF.fun_strike_before_adj, axis=1)
-        #     self.df_data[Util.AMT_APPLICABLE_STRIKE] = self.df_data.apply(Option50ETF.fun_applicable_strike, axis=1)
 
     def _generate_required_columns_if_missing(self) -> None:
         required_column_list = Util.OPTION_COLUMN_LIST
@@ -80,12 +75,12 @@ class BaseOption(BaseProduct):
         if self.df_data.loc[0, Util.CD_OPTION_TYPE] is None or pd.isnull(self.df_data.loc[0, Util.CD_OPTION_TYPE]):
             self.df_data[Util.CD_OPTION_TYPE] = self.df_data.apply(OptionFilter.fun_option_type_split, axis=1)
         # MULTIPLIER -> int: 50etf期权的multiplier跟id_instrument有关，需补充该列实际值。（商品期权multiplier是固定的）
-        if self._name_code == Util.STR_50ETF:
-            if self.df_data.loc[0, Util.NBR_MULTIPLIER] is None or np.isnan(self.df_data.loc[0, Util.NBR_MULTIPLIER]):
-                self.df_data = self.df_data.drop(Util.NBR_MULTIPLIER, axis=1).join(
-                    self.get_id_multiplier_table().set_index(Util.ID_INSTRUMENT),
-                    how='left', on=Util.ID_INSTRUMENT
-                )
+        # if self._name_code == Util.STR_50ETF:
+        #     if self.df_data.loc[0, Util.NBR_MULTIPLIER] is None or np.isnan(self.df_data.loc[0, Util.NBR_MULTIPLIER]):
+        #         self.df_data = self.df_data.drop(Util.NBR_MULTIPLIER, axis=1).join(
+        #             self.get_id_multiplier_table().set_index(Util.ID_INSTRUMENT),
+        #             how='left', on=Util.ID_INSTRUMENT
+        #         )
         # ID_UNDERLYING : 通过name code 与 contract month补充
         if self.df_data.loc[0, Util.ID_UNDERLYING] is None or pd.isnull(self.df_data.loc[0, Util.ID_UNDERLYING]):
             if self._name_code == Util.STR_50ETF:

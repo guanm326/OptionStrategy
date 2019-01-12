@@ -26,7 +26,7 @@ class AbstractBaseProduct(ABC):
     pre_process: pre process data to filter out invalid data or doing other required preprocess job.
     """
     @abstractmethod
-    def pre_process(self) -> None:
+    def _pre_process(self) -> None:
         pass
 
     """
@@ -62,7 +62,7 @@ class AbstractBaseProduct(ABC):
 
 
     @abstractmethod
-    def validate_data(self):
+    def _validate_data(self):
         pass
 
 
