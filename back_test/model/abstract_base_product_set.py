@@ -25,7 +25,7 @@ class AbstractBaseProductSet(ABC):
     pre_process: pre process data to populate option set
     """
     @abstractmethod
-    def pre_process(self) -> None:
+    def _pre_process(self) -> None:
         pass
 
     """

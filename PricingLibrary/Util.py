@@ -1,7 +1,7 @@
 import datetime
 import math
 
-from back_test.deprecated.BktUtil import BktUtil
+# from back_test.deprecated.BktUtil import BktUtil
 
 
 class PricingUtil:
@@ -23,28 +23,28 @@ class PricingUtil:
         discount = math.exp(-rf * PricingUtil.get_ttm(dt_eval, dt_maturity))
         return discount
 
-    @staticmethod
-    def get_maturity_metrics(self, dt_date, spot, option):
-        strike = option.strike
-        if option.option_type == BktUtil().type_put:
-            if strike > spot: # ITM
-                delta = -1.0
-            elif strike < spot: # OTM
-                delta = 0.0
-            else:
-                delta = 0.5
-            option_price = max(strike - spot, 0)
-        else:
-            if strike < spot: # ITM
-                delta = 1.0
-            elif strike > spot: # OTM
-                delta = 0.0
-            else:
-                delta = 0.5
-            option_price = max(spot - strike, 0)
-        delta = delta
-        option_price = option_price
-        return delta, option_price
+    # @staticmethod
+    # def get_maturity_metrics(self, dt_date, spot, option):
+    #     strike = option.strike
+    #     if option.option_type == BktUtil().type_put:
+    #         if strike > spot: # ITM
+    #             delta = -1.0
+    #         elif strike < spot: # OTM
+    #             delta = 0.0
+    #         else:
+    #             delta = 0.5
+    #         option_price = max(strike - spot, 0)
+    #     else:
+    #         if strike < spot: # ITM
+    #             delta = 1.0
+    #         elif strike > spot: # OTM
+    #             delta = 0.0
+    #         else:
+    #             delta = 0.5
+    #         option_price = max(spot - strike, 0)
+    #     delta = delta
+    #     option_price = option_price
+    #     return delta, option_price
 
 
 class Calendar(object):

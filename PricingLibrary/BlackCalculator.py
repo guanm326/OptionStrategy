@@ -9,8 +9,7 @@ from back_test.model.constant import OptionType,PricingUtil
 class BlackCalculator(object):
 
     def __init__(self,
-                 dt_eval: datetime.date,
-                 dt_maturity: datetime.date,
+                 ttm:float,
                  strike: float,
                  type: OptionType,
                  spot: float,
@@ -20,14 +19,16 @@ class BlackCalculator(object):
             self.iscall = True
         else:
             self.iscall = False
-        discount = PricingUtil.get_discount(dt_eval, dt_maturity, rf)
-        self.dt_eval = dt_eval
-        self.dt_maturity = dt_maturity
+        discount = math.exp(-rf * ttm)
+        self.ttm = ttm
+        # self.dt_eval = dt_eval
+        # self.dt_maturity = dt_maturity
         self.strike = strike
         self.forward = spot / discount
         self.discount = discount
         self.spot = spot
-        stdDev = PricingUtil.get_std(dt_eval, dt_maturity, vol)
+        stdDev = vol * math.sqrt(ttm)
+        # stdDev = PricingUtil.get_std(dt_eval, dt_maturity, vol)
         self.stdDev = stdDev
         if stdDev > 0.0:
             if self.strike == 0.0:
@@ -92,7 +93,7 @@ class BlackCalculator(object):
     def Delta(self):
         if self.spot <= 0.0:
             return
-        elif self.dt_eval == self.dt_maturity:
+        elif self.ttm==0.0:
             if self.iscall:
                 if self.strike < self.spot:
                     delta = 1.0
@@ -121,7 +122,7 @@ class BlackCalculator(object):
         spot = self.spot
         if spot <= 0.0:
             return
-        if self.dt_eval == self.dt_maturity:
+        if self.ttm == 0.0:
             return 0.0
         DforwardDs = self.forward / spot
         temp = self.stdDev * spot
@@ -132,21 +133,40 @@ class BlackCalculator(object):
         temp2 = D2alphaDs2 * self.forward + 2.0 * DalphaDs * DforwardDs + D2betaDs2 * self.x \
                 + 2.0 * DbetaDs * self.dX_dS
         gamma = self.discount * temp2
+        # gamma1 = self.dAlpha_dD1/self.spot/self.stdDev
         return gamma
 
-    # 全Delta: dOption/dS = dOption/dS + dOption/dSigma * dSigma/dK
-    # 根据SVI模型校准得到的隐含波动率的参数表达式，计算隐含波动率对行权价的一阶倒数（dSigma_dK）
-    # def delta_total(self, dSigma_dK):
-    #     delta = self.Delta()
-    #     return delta + delta * dSigma_dK
 
+###########Sythetic Option 2019-1-7#############
+# dt_eval = datetime.date.today()
+# mdt = datetime.date.today() + datetime.timedelta(days=50)
+# k = 4376.44
+# vol = 0.2536
+# spot = 4288.3234
+# call = BlackCalculator(datetime.date.today(),mdt,k,OptionType.CALL,spot,vol)
+# print(call.Delta())
+# print(call.Gamma())
+# gamma = call.Gamma()
+# rho = 0.01
+# tao = PricingUtil.get_ttm(dt_eval, mdt)
+# H = (1.5 * math.exp(-0.03*tao) * (1.0/1000.0) * spot * (gamma ** 2) / rho) ** (1 / 3)
+# print(H)
 
-# mdt = datetime.date.today() + datetime.timedelta(days=30)
-# mdt2 = datetime.date.today() + datetime.timedelta(days=30*3)
-# p = BlackCalculator(datetime.date.today(),mdt,2.5,OptionType.PUT,2.5,0.25)
-# p2 = BlackCalculator(datetime.date.today(),mdt2,2.5,OptionType.PUT,2.5,0.25)
-# c = BlackCalculator(datetime.date.today(),mdt,1920,OptionType.CALL,1837,0.13)
+##########Sythetic Option 2019-1-9#############
+# dt_eval = datetime.date.today()
+# mdt = datetime.date.today() + datetime.timedelta(days=50)
+# tao = 40.0/252.0
+# k = 4376.44
+# # vol = 0.251319
+# vol = 0.253768
+# spot = 4288.7717
+# call = BlackCalculator(tao,k,OptionType.CALL,spot,vol)
+# print('d1 : ',call.D1)
+# print('Delta : ',call.Delta())
+# print('Gamma : ',call.Gamma())
+# gamma = call.Gamma()
+# rho = 0.01
+# tao = PricingUtil.get_ttm(dt_eval, mdt)
+# H = (1.5 * math.exp(-0.03*tao) * (1.0/1000.0) * spot * (gamma ** 2) / rho) ** (1 / 3)
+# print('H : ',H)
 
-# print(p.NPV()*100/2.5)
-# print(p2.NPV()*100/2.5)
-# print(c.NPV())

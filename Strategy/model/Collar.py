@@ -143,13 +143,14 @@ while optionset.has_next():
         maturity2 = optionset.select_maturity_date(nbr_maturity=0, min_holding=min_holding)
         call = select_target_moneyness_option(c.OptionType.CALL,optionset,moneyness_call,maturity1)
         put = select_target_moneyness_option(c.OptionType.PUT,optionset,moneyness_put,maturity2)
+        unit = np.floor(account.portfolio_total_value / index.mktprice_close() / put.multiplier())
         if call is not None:
-            unit_call = np.floor(option_shares / call.multiplier())
-            order_call = account.create_trade_order(call, c.LongShort.SHORT, unit_call, cd_trade_price=cd_price)
+            # unit_call = np.floor(option_shares / call.multiplier())
+            order_call = account.create_trade_order(call, c.LongShort.SHORT, unit, cd_trade_price=cd_price)
             record_call = call.execute_order(order_call, slippage=slippage)
             account.add_record(record_call, call)
-        unit_put = np.floor(option_shares / put.multiplier())
-        order_put = account.create_trade_order(put, c.LongShort.LONG, unit_put, cd_trade_price=cd_price)
+        # unit_put = np.floor(option_shares / put.multiplier())
+        order_put = account.create_trade_order(put, c.LongShort.LONG, unit, cd_trade_price=cd_price)
         record_put = put.execute_order(order_put, slippage=slippage)
         account.add_record(record_put, put)
         empty_position = False

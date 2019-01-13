@@ -4,10 +4,10 @@ import numpy as np
 import math
 from typing import Union
 from back_test.model.constant import FrequentType, Util, OptionFilter, OptionType, \
-    Option50ETF, ExecuteType, LongShort, OptionExerciseType, PricingUtil,CdPriceType
+    Option50ETF, ExecuteType, LongShort, OptionExerciseType, PricingUtil, CdPriceType
 from back_test.model.base_product import BaseProduct
-from PricingLibrary.BlackCalculator import BlackCalculator
-from PricingLibrary.BlackFormular import BlackFormula
+# from PricingLibrary.BlackCalculator import BlackCalculator
+# from PricingLibrary.BlackFormular import BlackFormula
 from PricingLibrary.EngineQuantlib import QlBlackFormula, QlBinomial
 from back_test.model.trade import Order
 
@@ -18,9 +18,9 @@ class BaseOption(BaseProduct):
     def __init__(self, df_data: pd.DataFrame, df_daily_data: pd.DataFrame = None,
                  frequency: FrequentType = FrequentType.DAILY,
                  flag_calculate_iv: bool = True, rf: float = 0.03):
-        super().__init__(df_data, df_daily_data, rf, frequency)
+        super().__init__(df_data, df_daily_data, frequency)
         self.flag_calculate_iv = flag_calculate_iv
-        # self.black_calculater: BlackCalculator = None
+        self.rf = rf
         self.implied_vol: float = None
         self.fee_rate = Util.DICT_OPTION_TRANSACTION_FEE_RATE[self.name_code()]
         self.fee_per_unit = Util.DICT_OPTION_TRANSACTION_FEE[self.name_code()]
@@ -38,13 +38,8 @@ class BaseOption(BaseProduct):
         return 'BaseOption(id_instrument: {0},eval_date: {1},frequency: {2})' \
             .format(self.id_instrument(), self.eval_date, self.frequency)
 
-    def pre_process(self):
-        # self.df_data[Util.AMT_OPTION_PRICE] = self.df_data.apply(OptionFilter.fun_option_price, axis=1)
-        # For Dividend Adjusts
+    def _pre_process(self):
         self.df_data[Util.AMT_NEAREST_STRIKE] = self.df_data.apply(OptionFilter.nearest_strike_level, axis=1)
-        # if self.name_code() == Util.STR_50ETF:
-        #     self.df_data[Util.AMT_STRIKE_BEFORE_ADJ] = self.df_data.apply(Option50ETF.fun_strike_before_adj, axis=1)
-        #     self.df_data[Util.AMT_APPLICABLE_STRIKE] = self.df_data.apply(Option50ETF.fun_applicable_strike, axis=1)
 
     def _generate_required_columns_if_missing(self) -> None:
         required_column_list = Util.OPTION_COLUMN_LIST
@@ -80,12 +75,12 @@ class BaseOption(BaseProduct):
         if self.df_data.loc[0, Util.CD_OPTION_TYPE] is None or pd.isnull(self.df_data.loc[0, Util.CD_OPTION_TYPE]):
             self.df_data[Util.CD_OPTION_TYPE] = self.df_data.apply(OptionFilter.fun_option_type_split, axis=1)
         # MULTIPLIER -> int: 50etf期权的multiplier跟id_instrument有关，需补充该列实际值。（商品期权multiplier是固定的）
-        if self._name_code == Util.STR_50ETF:
-            if self.df_data.loc[0, Util.NBR_MULTIPLIER] is None or np.isnan(self.df_data.loc[0, Util.NBR_MULTIPLIER]):
-                self.df_data = self.df_data.drop(Util.NBR_MULTIPLIER, axis=1).join(
-                    self.get_id_multiplier_table().set_index(Util.ID_INSTRUMENT),
-                    how='left', on=Util.ID_INSTRUMENT
-                )
+        # if self._name_code == Util.STR_50ETF:
+        #     if self.df_data.loc[0, Util.NBR_MULTIPLIER] is None or np.isnan(self.df_data.loc[0, Util.NBR_MULTIPLIER]):
+        #         self.df_data = self.df_data.drop(Util.NBR_MULTIPLIER, axis=1).join(
+        #             self.get_id_multiplier_table().set_index(Util.ID_INSTRUMENT),
+        #             how='left', on=Util.ID_INSTRUMENT
+        #         )
         # ID_UNDERLYING : 通过name code 与 contract month补充
         if self.df_data.loc[0, Util.ID_UNDERLYING] is None or pd.isnull(self.df_data.loc[0, Util.ID_UNDERLYING]):
             if self._name_code == Util.STR_50ETF:
@@ -93,7 +88,6 @@ class BaseOption(BaseProduct):
             else:
                 self.df_data.loc[:, Util.ID_UNDERLYING] = self._name_code + self.df_data.loc[:,
                                                                             Util.NAME_CONTRACT_MONTH]
-
 
     def _set_pricing_engine(self):
         if self.pricing_engine is None:
@@ -242,7 +236,7 @@ class BaseOption(BaseProduct):
         else:
             return Util.DICT_CONTRACT_MULTIPLIER[self._name_code]
 
-    def get_underlying_price(self,cd_price:CdPriceType) -> Union[float, None]:
+    def get_underlying_price(self, cd_price: CdPriceType) -> Union[float, None]:
         if cd_price == CdPriceType.OPEN:
             return self.underlying_open_price()
         elif cd_price == CdPriceType.CLOSE:
@@ -263,7 +257,6 @@ class BaseOption(BaseProduct):
         else:
             implied_vol = self.implied_vol_given() / 100.0
         self.implied_vol = implied_vol
-
 
     def get_implied_vol(self) -> Union[float, None]:
         if self.implied_vol is None: self.update_implied_vol()
@@ -316,15 +309,16 @@ class BaseOption(BaseProduct):
         # TODO
         return
 
-    """ 用于计算杠杆率 ：option，买方具有current value为当前的权利金，期权卖方为保证金交易，current value为零 """
 
-    def get_current_value(self, long_short):
-        if long_short == LongShort.LONG:
-            return self.mktprice_close()
-        elif long_short == LongShort.SHORT:
-            return 0.0
-        else:
-            return
+    # comment refactor_1901: 期权current value即当前权利金市值多头为正空头为负
+    # def get_current_value(self, long_short, last_price):
+    #     return self.mktprice_close()*long_short.value
+        # if long_short == LongShort.LONG:
+        #     return self.mktprice_close()
+        # elif long_short == LongShort.SHORT:
+        #     return 0.0
+        # else:
+        #     return
 
     def is_margin_trade(self, long_short):
         if long_short == LongShort.LONG:
@@ -337,13 +331,12 @@ class BaseOption(BaseProduct):
     def is_mtm(self):
         return False
 
-
     def get_fund_required(self, long_short: LongShort) -> float:
         if long_short == LongShort.LONG:
-            return self.mktprice_close()*self.multiplier()
+            return self.mktprice_close() * self.multiplier()
         else:
-            # return self.get_initial_margin(long_short)-self.mktprice_close()*self.multiplier()
-            return self.get_initial_margin(long_short)
+            return self.get_initial_margin(long_short)-self.mktprice_close()*self.multiplier()
+            # return self.get_initial_margin(long_short)
 
     """ init_margin(初始保证金):用于开仓一天，且只有期权卖方收取 """
 
@@ -392,46 +385,47 @@ class BaseOption(BaseProduct):
                                   self.strike()) * self.multiplier()
         return maintain_margin
 
-    def is_valid_option(self,eval_date) -> bool:
+    def is_valid_option(self, eval_date) -> bool:
         if self.eval_date != eval_date:
-            print('option eval date is '+str(self.eval_date)+', but optionset date is '+str(eval_date)+' for id = '+ self.id_instrument())
+            print('option eval date is ' + str(self.eval_date) + ', but optionset date is ' + str(
+                eval_date) + ' for id = ' + self.id_instrument())
             return False
         if self.name_code() in Util.NAME_CODE_159:
             return int(self.id_underlying()[-2:]) in Util.MAIN_CONTRACT_159
         return True
 
-    def execute_order(self, order: Order, slippage=0,slippage_rate=0.0, execute_type: ExecuteType = ExecuteType.EXECUTE_ALL_UNITS) -> pd.Series:
-        if order is None or order.trade_unit==0: return
-        # if execute_type == ExecuteType.EXECUTE_ALL_UNITS:
-        order.trade_all_unit(slippage=slippage,slippage_rate=slippage_rate)
-        # elif execute_type == ExecuteType.EXECUTE_WITH_MAX_VOLUME:
-        #     order.trade_with_current_volume(int(self.trading_volume()), slippage)
-        # else:
-        #     return
+    def execute_order(self, order: Order, slippage=0, slippage_rate=0.0,
+                      execute_type: ExecuteType = ExecuteType.EXECUTE_ALL_UNITS) -> pd.Series:
+        if order is None or order.trade_unit == 0: return
+        order.trade_all_unit(slippage=slippage, slippage_rate=slippage_rate)
         execution_record: pd.Series = order.execution_res
-        if order.long_short == LongShort.LONG:
-            # 无保证金交易的情况下，trade_market_value有待从现金账户中全部扣除。
-            execution_record[Util.TRADE_MARGIN_CAPITAL] = 0.0
-            execution_record[Util.TRADE_MARKET_VALUE] = execution_record[Util.TRADE_UNIT] * \
-                                                        execution_record[Util.TRADE_PRICE] * self.multiplier()
-        else:
-            execution_record[Util.TRADE_MARGIN_CAPITAL] = self.get_initial_margin(order.long_short) * \
-                                                          execution_record[Util.TRADE_UNIT]
-            execution_record[Util.TRADE_MARKET_VALUE] = 0.0
         if self.fee_per_unit is None:
-            # 百分比手续费
             transaction_fee = execution_record[Util.TRADE_PRICE] * self.fee_rate * execution_record[
-                Util.TRADE_UNIT] * self.multiplier()
+                Util.TRADE_UNIT] * self.multiplier()  # 百分比手续费
         else:
-            # 每手手续费
-            transaction_fee = self.fee_per_unit * execution_record[Util.TRADE_UNIT]
+            transaction_fee = self.fee_per_unit * execution_record[Util.TRADE_UNIT]  # 每手手续费
         execution_record[Util.TRANSACTION_COST] += transaction_fee
         transaction_fee_add_to_price = transaction_fee / (execution_record[Util.TRADE_UNIT] *
                                                           self.multiplier())
         execution_record[Util.TRADE_PRICE] += execution_record[Util.TRADE_LONG_SHORT].value \
                                               * transaction_fee_add_to_price
+        # comment refactor_1901, 此前market value没有计手续费，更正。
+        # 买入期权计marketvalue为权利金支出，卖出期权收取权利金计负marketvalue。
+        execution_record[Util.TRADE_MARGIN_CAPITAL] = self.get_initial_margin(order.long_short) * \
+                                                      execution_record[Util.TRADE_UNIT]  # get_initial_margin多头为零
+        execution_record[Util.TRADE_MARKET_VALUE] = order.long_short.value * execution_record[Util.TRADE_UNIT] * \
+                                                    execution_record[Util.TRADE_PRICE] * self.multiplier()
+        # if order.long_short == LongShort.LONG:
+        #     execution_record[Util.TRADE_MARGIN_CAPITAL] = 0.0
+        #     execution_record[Util.TRADE_MARKET_VALUE] = execution_record[Util.TRADE_UNIT] * \
+        #                                                 execution_record[Util.TRADE_PRICE] * self.multiplier()
+        # else:
+        #     execution_record[Util.TRADE_MARGIN_CAPITAL] = self.get_initial_margin(order.long_short) * \
+        #                                                   execution_record[Util.TRADE_UNIT]
+        #     execution_record[Util.TRADE_MARKET_VALUE] = 0.0
+
+        # TODO comment refactor_1901, 期权book value目前计的是总权利金规模,待更正
         position_size = order.long_short.value * execution_record[Util.TRADE_PRICE] * \
                         execution_record[Util.TRADE_UNIT] * self.multiplier()
-        execution_record[
-            Util.TRADE_BOOK_VALUE] = position_size  # 头寸规模（含多空符号），例如，空一手豆粕（3000点，乘数10）得到头寸规模为-30000，而建仓时点头寸市值为0。
+        execution_record[Util.TRADE_BOOK_VALUE] = position_size # TODO : CHANGE TO NOTIONAL AMOUNT?
         return execution_record

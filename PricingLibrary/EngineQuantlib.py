@@ -327,12 +327,15 @@ class QlBlackFormula(AbstractOptionPricingEngine):
         return m
 
 
-# mdt = datetime.date.today() + datetime.timedelta(days=30)
-# p = QlBlackFormula(datetime.date.today(),mdt,constant.OptionType.PUT,
-#                    spot=2.5,strike=2.5)
-# implied_vol=p.estimate_vol(price=0.1)
-# p.reset_vol(implied_vol)
-# print(implied_vol)
-# print(p.NPV())
-# print(p.Delta(implied_vol))
-# print(p.Gamma(implied_vol))
+# mdt = datetime.date(2019,1,23)
+# k = 2.3
+# vol = 0.2171
+# spot = 2.3
+# option = QlBlackFormula(dt_eval=datetime.date.today(),dt_maturity=mdt,option_type=constant.OptionType.PUT,
+#                       spot=spot,strike=k,vol=vol)
+# # iv = option.estimate_vol(0.0404)
+# iv = vol
+# # print('iv ',iv)
+# print(option.NPV())
+# print('delta ',option.Delta(iv))
+# print('gamma ',option.Gamma(iv))

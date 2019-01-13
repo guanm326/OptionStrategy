@@ -236,7 +236,8 @@ def get_50option_minute_with_underlying(start_date, end_date):
 
 
 def get_comoption_mktdata(start_date, end_date, name_code):
-    Future_mkt = dbt.FutureMkt
+    # Future_mkt = dbt.FutureMkt
+    table_mktdata = admin.table_futures_mktdata_gc()
     Option_mkt = admin.table_options_mktdata()
     options = dbt.Options
     query_mkt = admin.session_gc(). \
@@ -255,13 +256,13 @@ def get_comoption_mktdata(start_date, end_date, name_code):
               options.dt_maturity, options.nbr_multiplier) \
         .filter(and_(options.dt_listed <= end_date, options.dt_maturity >= start_date))
 
-    query_srf = admin.session_mktdata(). \
-        query(Future_mkt.dt_date,
-              Future_mkt.id_instrument.label(c.Util.ID_UNDERLYING),
-              Future_mkt.amt_settlement.label(c.Util.AMT_UNDERLYING_CLOSE),
-              Future_mkt.amt_open.label(c.Util.AMT_UNDERLYING_OPEN_PRICE)) \
-        .filter(Future_mkt.dt_date >= start_date).filter(Future_mkt.dt_date <= end_date) \
-        .filter(Future_mkt.name_code == name_code).filter(Future_mkt.flag_night != 1)
+    query_srf = admin.session_gc(). \
+        query(table_mktdata.c.dt_date,
+              table_mktdata.c.id_instrument.label(c.Util.ID_UNDERLYING),
+              table_mktdata.c.amt_settlement.label(c.Util.AMT_UNDERLYING_CLOSE),
+              table_mktdata.c.amt_open.label(c.Util.AMT_UNDERLYING_OPEN_PRICE)) \
+        .filter(table_mktdata.c.dt_date >= start_date).filter(table_mktdata.c.dt_date <= end_date) \
+        .filter(table_mktdata.c.name_code == name_code)
 
     df_srf = pd.read_sql(query_srf.statement, query_srf.session.bind)
     df_mkt = pd.read_sql(query_mkt.statement, query_mkt.session.bind)
@@ -293,6 +294,27 @@ def get_future_mktdata(start_date, end_date, name_code):
         df = df_mkt.join(df_c.set_index('id_instrument'), how='left', on='id_instrument')
     return df
 
+def get_gc_future_mktdata(start_date, end_date, name_code):
+    Futures = dbt.Futures
+    table_mktdata = admin.table_futures_mktdata_gc()
+    query_mkt = admin.session_gc().query(table_mktdata.c.dt_date, table_mktdata.c.id_instrument, table_mktdata.c.name_code,
+                                              table_mktdata.c.amt_close, table_mktdata.c.amt_trading_volume,table_mktdata.c.amt_trading_value,
+                                              table_mktdata.c.amt_settlement, table_mktdata.c.amt_last_close,
+                                              table_mktdata.c.amt_last_settlement, table_mktdata.c.amt_open,
+                                              table_mktdata.c.amt_high, table_mktdata.c.amt_low) \
+        .filter(table_mktdata.c.dt_date >= start_date) \
+        .filter(table_mktdata.c.dt_date <= end_date) \
+        .filter(table_mktdata.c.name_code == name_code)
+    query_c = admin.session_mktdata().query(Futures.dt_maturity, Futures.id_instrument) \
+        .filter(Futures.name_code == name_code)
+    df_mkt = pd.read_sql(query_mkt.statement, query_mkt.session.bind)
+    df_c = pd.read_sql(query_c.statement, query_c.session.bind)
+    if df_c.empty:
+        df = df_mkt
+    else:
+        df = df_mkt.join(df_c.set_index('id_instrument'), how='left', on='id_instrument')
+    return df
+
 def get_gc_future_c1_daily(start_date, end_date, name_code):
     table_cf = admin.table_futures_mktdata_gc()
     query = admin.session_gc().query(table_cf.c.dt_date, table_cf.c.id_instrument,
@@ -306,28 +328,52 @@ def get_gc_future_c1_daily(start_date, end_date, name_code):
     df = c.FutureUtil.get_futures_daily_c1(df)
     return df
 
-# TODO: deprecated, use 'get_cf_minute'
-def get_dzqh_cf_minute(start_date, end_date, name_code):
-    table_cf = admin.table_cf_minute()
-    query = admin.session_gc().query(table_cf.c.dt_datetime, table_cf.c.id_instrument, table_cf.c.dt_date,
-                                     table_cf.c.amt_open, table_cf.c.amt_close, table_cf.c.amt_trading_volume). \
-        filter(
-        (table_cf.c.dt_date >= start_date) & (table_cf.c.dt_date <= end_date) & (table_cf.c.name_code == name_code))
-    df = pd.read_sql(query.statement, query.session.bind)
-    df = df[df['id_instrument'].str.contains("_")]
-    return df
+""" 基于商品期权到期日，构建标的期货c1时间序列 """
+
+
+def get_future_c1_by_option_daily(start_date, end_date, name_code, min_holding):
+    table_option_contracts = admin.table_option_contracts()
+    query = admin.session_mktdata().query(table_option_contracts.c.id_underlying, table_option_contracts.c.dt_maturity)
+    df_option_maturity = pd.read_sql(query.statement, query.session.bind).drop_duplicates(c.Util.DT_MATURITY)
+    for id_underlying in c.OptionFilter.dict_maturities.keys():
+        if id_underlying not in df_option_maturity[c.Util.ID_UNDERLYING]:
+            df_option_maturity = df_option_maturity.append(
+                {c.Util.ID_UNDERLYING: id_underlying, c.Util.DT_MATURITY: c.OptionFilter.dict_maturities[id_underlying]}
+                , ignore_index=True)
+    df_option_maturity['is_core'] = df_option_maturity[c.Util.ID_UNDERLYING].apply(
+        lambda x: True if (x[-2:] in c.Util.MAIN_CONTRACT_159) and (x.split('_')[0] == name_code) else False)
+    df_option_maturity = df_option_maturity[df_option_maturity['is_core']]
+    df_option_maturity[c.Util.DT_MATURITY] = df_option_maturity[c.Util.DT_MATURITY].apply(
+        lambda x: x - datetime.timedelta(days=min_holding))
+    df_future = get_gc_future_mktdata(start_date, end_date, name_code)
+    df_future['id_core'] = df_future[c.Util.DT_DATE].apply(lambda x: fun_get_c1_by_option(x, df_option_maturity))
+    df_future = df_future[df_future[c.Util.ID_INSTRUMENT] == df_future['id_core']].reset_index(drop=True)
+    return df_future
+
+
+
+# # TODO: deprecated, use 'get_cf_minute'
+# def get_dzqh_cf_minute(start_date, end_date, name_code):
+#     table_cf = admin.table_cf_minute()
+#     query = admin.session_gc().query(table_cf.c.dt_datetime, table_cf.c.id_instrument, table_cf.c.dt_date,
+#                                      table_cf.c.amt_open, table_cf.c.amt_close, table_cf.c.amt_trading_volume). \
+#         filter(
+#         (table_cf.c.dt_date >= start_date) & (table_cf.c.dt_date <= end_date) & (table_cf.c.name_code == name_code))
+#     df = pd.read_sql(query.statement, query.session.bind)
+#     df = df[df['id_instrument'].str.contains("_")]
+#     return df
 
 # TODO: deprecated, use 'get_cf_c1_minute'
-def get_dzqh_cf_c1_minute(start_date, end_date, name_code):
-    table_cf = admin.table_cf_minute()
-    query = admin.session_gc().query(table_cf.c.dt_datetime, table_cf.c.id_instrument, table_cf.c.dt_date,
-                                     table_cf.c.amt_open, table_cf.c.amt_close, table_cf.c.amt_trading_volume). \
-        filter(
-        (table_cf.c.dt_date >= start_date) & (table_cf.c.dt_date <= end_date) & (table_cf.c.name_code == name_code))
-    df = pd.read_sql(query.statement, query.session.bind)
-    df = df[df['id_instrument'].str.contains("_")]
-    df = c.FutureUtil.get_futures_minute_c1(df)
-    return df
+# def get_dzqh_cf_c1_minute(start_date, end_date, name_code):
+#     table_cf = admin.table_cf_minute()
+#     query = admin.session_gc().query(table_cf.c.dt_datetime, table_cf.c.id_instrument, table_cf.c.dt_date,
+#                                      table_cf.c.amt_open, table_cf.c.amt_close, table_cf.c.amt_trading_volume). \
+#         filter(
+#         (table_cf.c.dt_date >= start_date) & (table_cf.c.dt_date <= end_date) & (table_cf.c.name_code == name_code))
+#     df = pd.read_sql(query.statement, query.session.bind)
+#     df = df[df['id_instrument'].str.contains("_")]
+#     df = c.FutureUtil.get_futures_minute_c1(df)
+#     return df
 
 
 # def get_dzqh_cf_daily(start_date, end_date, name_code):
@@ -431,28 +477,6 @@ def get_cf_c1_minute(start_date, end_date, name_code):
     df = c.FutureUtil.get_futures_minute_c1(df)
     return df
 
-
-""" 基于商品期权到期日，构建标的期货c1时间序列 """
-
-
-def get_future_c1_by_option_daily(start_date, end_date, name_code, min_holding):
-    table_option_contracts = admin.table_option_contracts()
-    query = admin.session_mktdata().query(table_option_contracts.c.id_underlying, table_option_contracts.c.dt_maturity)
-    df_option_maturity = pd.read_sql(query.statement, query.session.bind).drop_duplicates(c.Util.DT_MATURITY)
-    for id_underlying in c.OptionFilter.dict_maturities.keys():
-        if id_underlying not in df_option_maturity[c.Util.ID_UNDERLYING]:
-            df_option_maturity = df_option_maturity.append(
-                {c.Util.ID_UNDERLYING: id_underlying, c.Util.DT_MATURITY: c.OptionFilter.dict_maturities[id_underlying]}
-                , ignore_index=True)
-    df_option_maturity['is_core'] = df_option_maturity[c.Util.ID_UNDERLYING].apply(
-        lambda x: True if (x[-2:] in c.Util.MAIN_CONTRACT_159) and (x.split('_')[0] == name_code) else False)
-    df_option_maturity = df_option_maturity[df_option_maturity['is_core']]
-    df_option_maturity[c.Util.DT_MATURITY] = df_option_maturity[c.Util.DT_MATURITY].apply(
-        lambda x: x - datetime.timedelta(days=min_holding))
-    df_future = get_future_mktdata(start_date, end_date, name_code)
-    df_future['id_core'] = df_future[c.Util.DT_DATE].apply(lambda x: fun_get_c1_by_option(x, df_option_maturity))
-    df_future = df_future[df_future[c.Util.ID_INSTRUMENT] == df_future['id_core']].reset_index(drop=True)
-    return df_future
 
 
 def fun_get_c1_by_option(dt_date, df_option_maturity):

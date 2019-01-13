@@ -12,6 +12,7 @@ w.start()
 
 
 date = datetime.date.today()
+# date = datetime.date(2019,1,9)
 
 dt_date = date.strftime("%Y-%m-%d")
 print(dt_date)
@@ -179,73 +180,7 @@ if res.rowcount == 0:
 else:
     print('wind sr option -- already exists')
 
-# dce option data (type = 1)
-# dce option data --- day
-# res = options_mktdata_daily.select((options_mktdata_daily.c.dt_date == dt_date)
-#                                    & (options_mktdata_daily.c.cd_exchange == 'dce')
-#                                    & (options_mktdata_daily.c.flag_night == 0)).execute()
-# if res.rowcount == 0:
-#     ds = dce.spider_mktdata_day(date, date, 1)
-#     for dt in ds.keys():
-#         data = ds[dt]
-#         if len(data) == 0: continue
-#         db_data = dc.table_options().dce_day(dt, data)
-#         if len(db_data) == 0: continue
-#         try:
-#             conn.execute(options_mktdata_daily.insert(), db_data)
-#             print('dce option data 0 -- inserted into data base succefully')
-#         except Exception as e:
-#             print(dt)
-#             print(e)
-#             continue
-# else:
-#     print('dce option 0 -- already exists')
-# dce option data --- night
-# res = options_mktdata_daily.select((options_mktdata_daily.c.dt_date == dt_date)
-#                                    & (options_mktdata_daily.c.cd_exchange == 'dce')
-#                                    & (options_mktdata_daily.c.flag_night == 1)).execute()
-# if res.rowcount == 0:
-#     ds = dce.spider_mktdata_night(date, date, 1)
-#     for dt in ds.keys():
-#         data = ds[dt]
-#         if len(data) == 0: continue
-#         db_data = dc.table_options().dce_night(dt, data)
-#         if len(db_data) == 0: continue
-#         try:
-#             conn.execute(options_mktdata_daily.insert(), db_data)
-#             print('dce option data 1 -- inserted into data base succefully')
-#         except Exception as e:
-#             print(dt)
-#             print(e)
-#             continue
-# else:
-#     print('dce option 1 -- already exists')
 
-# czce option data
-# res = options_mktdata_daily.select((options_mktdata_daily.c.dt_date == dt_date)
-#                                    & (options_mktdata_daily.c.cd_exchange == 'czce')).execute()
-# if res.rowcount == 0:
-#     ds = czce.spider_option(date, date)
-#     for dt in ds.keys():
-#         data = ds[dt]
-#         if len(data) == 0: continue
-#         db_data = dc.table_options().czce_daily(dt, data)
-#         if len(db_data) == 0: continue
-#         try:
-#             conn.execute(options_mktdata_daily.insert(), db_data)
-#             print('czce option data -- inserted into data base succefully')
-#         except Exception as e:
-#             print(dt)
-#             print(e)
-#             continue
-# else:
-#     print('czce option -- already exists')
-
-
-
-
-
-# equity index futures
 df = dc.table_future_contracts().get_future_contract_ids(dt_date)
 for (idx_oc, row) in df.iterrows():
     # print(row)
@@ -259,11 +194,7 @@ for (idx_oc, row) in df.iterrows():
         print(e)
 
 # dce futures data
-# dce futures data (type = 0), day
-# res = futures_mktdata_daily.select((futures_mktdata_daily.c.dt_date == dt_date)
-#                                    & (futures_mktdata_daily.c.cd_exchange == 'dce')
-#                                    & (futures_mktdata_daily.c.flag_night == 0)).execute()
-# if res.rowcount == 0:
+
 ds = dce.spider_mktdata_day(date, date, 0)
 for dt in ds.keys():
     data = ds[dt]

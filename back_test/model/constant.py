@@ -767,7 +767,6 @@ class Calendar(object):
 # c.init()
 # print(c.firstBusinessDayNextMonth(datetime.date(2017,1,1)))
 
-
 class PricingUtil:
     @staticmethod
     def payoff(spot: float, strike: float, option_type: OptionType):
@@ -779,6 +778,7 @@ class PricingUtil:
         N365 = 365 * 1440.0
         ttm = N / N365
         return ttm
+
 
     @staticmethod
     def get_std(dt_eval, dt_maturity, annualized_vol):
@@ -919,6 +919,9 @@ class Util:
     STR_SR = 'sr'
     STR_ALL = 'all'
     STR_CU = 'cu'
+    STR_CF = 'cf'
+    STR_C = 'c'
+    STR_RU = 'ru'
     NAN_VALUE = -999.0
 
     LOW_FREQUENT = [FrequentType.DAILY, FrequentType.WEEKLY, FrequentType.MONTHLY, FrequentType.YEARLY]
@@ -929,8 +932,8 @@ class Util:
     OPTION_COLUMN_LIST = PRODUCT_COLUMN_LIST + \
                          [NAME_CONTRACT_MONTH, AMT_STRIKE, AMT_APPLICABLE_STRIKE, DT_MATURITY,
                           CD_OPTION_TYPE, AMT_OPTION_PRICE, ID_UNDERLYING, AMT_UNDERLYING_CLOSE,
-                          AMT_UNDERLYING_OPEN_PRICE, PCT_IMPLIED_VOL, NBR_MULTIPLIER, AMT_LAST_SETTLEMENT,
-                          AMT_SETTLEMENT]
+                          AMT_UNDERLYING_OPEN_PRICE, PCT_IMPLIED_VOL, NBR_MULTIPLIER]
+    FUTURE_COLUMN_LIST = PRODUCT_COLUMN_LIST + [NAME_CONTRACT_MONTH, DT_MATURITY]
     NAME_CODE_159 = ['sr', 'm', 'ru']
     MAIN_CONTRACT_159 = [1, 5, 9, '01', '05', '09']
     NAME_CODE_1to12 = ['cu']
@@ -963,6 +966,7 @@ class Util:
     PORTFOLIO_NPV = 'npv'
     PORTFOLIO_UNREALIZED_PNL = 'unrealized_pnl'
     PORTFOLIO_LEVERAGE = 'portfolio_leverage'
+    PORTFOLIO_FUND_UTILIZATION = 'portfolio_fund_utilization'
     PORTFOLIO_SHORT_POSITION_SCALE = 'portfolio_short_position_scale'
     PORTFOLIO_LONG_POSITION_SCALE = 'portfolio_long_position_scale'
     MARGIN_UNREALIZED_PNL = 'margin_unrealized_pnl'
@@ -977,14 +981,10 @@ class Util:
                               LAST_PRICE, TRADE_MARGIN_CAPITAL,
                               TRADE_BOOK_VALUE, AVERAGE_POSITION_COST,
                               TRADE_REALIZED_PNL, NBR_MULTIPLIER,
-                              POSITION_CURRENT_VALUE, PORTFOLIO_UNREALIZED_PNL
-                              ]  # ID_INSTRUMENR是df的index
-    ACCOUNT_COLUMNS = [DT_DATE, CASH, PORTFOLIO_MARGIN_CAPITAL, PORTFOLIO_TRADES_VALUE,
-                       PORTFOLIO_VALUE, PORTFOLIO_NPV, PORTFOLIO_UNREALIZED_PNL,
-                       PORTFOLIO_LEVERAGE, TRADE_REALIZED_PNL,
-                       PORTFOLIO_SHORT_POSITION_SCALE, PORTFOLIO_LONG_POSITION_SCALE,
-                       MARGIN_UNREALIZED_PNL, NONMARGIN_UNREALIZED_PNL, PORTFOLIO_DELTA,
-                       DAILY_EXCECUTED_AMOUNT, TURNOVER
+                              TRANSACTION_COST
+                              ]  # ID_INSTRUMENR是index
+    ACCOUNT_COLUMNS = [DT_DATE, PORTFOLIO_NPV, PORTFOLIO_VALUE, CASH, PORTFOLIO_MARGIN_CAPITAL, PORTFOLIO_TRADES_VALUE,
+                       PORTFOLIO_FUND_UTILIZATION, PORTFOLIO_DELTA,DAILY_EXCECUTED_AMOUNT
                        ]
     DICT_FUTURE_MARGIN_RATE = {  # 合约价值的百分比
         'm': 0.05,

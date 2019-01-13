@@ -26,7 +26,7 @@ class AbstractBaseProduct(ABC):
     pre_process: pre process data to filter out invalid data or doing other required preprocess job.
     """
     @abstractmethod
-    def pre_process(self) -> None:
+    def _pre_process(self) -> None:
         pass
 
     """
@@ -62,7 +62,7 @@ class AbstractBaseProduct(ABC):
 
 
     @abstractmethod
-    def validate_data(self):
+    def _validate_data(self):
         pass
 
 
@@ -72,10 +72,10 @@ class AbstractBaseProduct(ABC):
         pass
 
 
-    @abstractmethod
-    def get_current_value(self, long_short:LongShort) -> float:
-        # 保证金交易当前价值为零/基础证券交易不包含保证金current value为当前价格
-        pass
+    # @abstractmethod
+    # def get_current_value(self, long_short:LongShort) -> float:
+    #     # 保证金交易当前价值为零/基础证券交易不包含保证金current value为当前价格
+    #     pass
 
     @abstractmethod
     def is_margin_trade(self, long_short:LongShort) -> bool:

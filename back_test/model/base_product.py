@@ -14,7 +14,7 @@ class BaseProduct(AbstractBaseProduct):
     """
 
     def __init__(self, df_data: pd.DataFrame, df_daily_data: pd.DataFrame = None,
-                 rf: float = 0.03, frequency: FrequentType = FrequentType.DAILY):
+                 frequency: FrequentType = FrequentType.DAILY):
         super().__init__()
         self.frequency: FrequentType = frequency
         self.df_data: pd.DataFrame = df_data
@@ -28,11 +28,11 @@ class BaseProduct(AbstractBaseProduct):
         self.eval_datetime: datetime.datetime = None
         self.current_state: pd.Series = None
         self.current_daily_state: pd.Series = None
-        self.rf = rf
 
     def init(self) -> None:
-        self.validate_data()
-        self.pre_process()
+        self._validate_data()
+        self._generate_required_columns_if_missing()
+        self._pre_process()
         self.next()
 
     def next(self) -> None:
@@ -72,7 +72,7 @@ class BaseProduct(AbstractBaseProduct):
                                                                       self.eval_date.day,
                                                                       0, 0, 0)
 
-    def validate_data(self) -> None:
+    def _validate_data(self) -> None:
         # Basic validation appliable for all instruments
         if self.frequency not in Util.LOW_FREQUENT:
             # High Frequency Data:
@@ -83,18 +83,14 @@ class BaseProduct(AbstractBaseProduct):
             mask = self.df_data.apply(Util.filter_invalid_data, axis=1)
             self.df_data = self.df_data[mask].reset_index(drop=True)
             self.nbr_index: int = self.df_data.shape[0]
-        else:
-            self.eval_date: datetime.date = self.df_data.loc[0][Util.DT_DATE]
-            self.eval_datetime: datetime.datetime = datetime.datetime(self.eval_date.year,
-                                                                      self.eval_date.month,
-                                                                      self.eval_date.day,
-                                                                      0, 0, 0)
-        # Product specific validation to be override
-        self._generate_required_columns_if_missing()
-        # Product specific pre_process to be override
-        self.pre_process()
+        # else:
+        #     self.eval_date: datetime.date = self.df_data.loc[0][Util.DT_DATE]
+        #     self.eval_datetime: datetime.datetime = datetime.datetime(self.eval_date.year,
+        #                                                               self.eval_date.month,
+        #                                                               self.eval_date.day,
+        #                                                               0, 0, 0)
 
-    def pre_process(self) -> None:
+    def _pre_process(self) -> None:
         return
 
     def _generate_required_columns_if_missing(self) -> None:
@@ -105,8 +101,6 @@ class BaseProduct(AbstractBaseProduct):
                 self.df_data[column] = None
         if self.df_daily_data is None or self.df_daily_data.empty:
             return
-            # for column in required_column_list:
-            #     self.df_daily_data[column] = None
         else:
             columns2 = self.df_daily_data.columns
             for column in required_column_list:
@@ -240,10 +234,9 @@ class BaseProduct(AbstractBaseProduct):
         # 执行交易指令
         pass
 
-    @abstractmethod
-    def get_current_value(self, long_short: LongShort) -> float:
-        # 保证金交易当前价值为零/基础证券交易不包含保证金current value为当前价格
-        pass
+    # @abstractmethod
+    # def get_current_value(self, long_short: LongShort,last_price:float) -> float:
+    #     pass
 
     @abstractmethod
     def is_margin_trade(self, long_short: LongShort) -> bool:
