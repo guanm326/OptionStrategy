@@ -302,8 +302,8 @@ def implied_vol_vw(last_week, end_date, df_metrics, df_res, name_code):
 
 """"""
 
-end_date = datetime.date.today()
-# end_date = datetime.date(2019, 1, 11)
+# end_date = datetime.date.today()
+end_date = datetime.date(2019, 1, 11)
 start_date = datetime.date(2017, 1, 1)
 min_holding = 10
 

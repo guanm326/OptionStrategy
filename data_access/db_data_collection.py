@@ -783,6 +783,70 @@ class DataCollection():
                 db_data.append(db_row)
             return db_data
 
+        def wind_future_daily(self,datestr, contracts):
+            # datestr = dt.strftime("%Y-%m-%d")
+            try:
+                res = w.wss(contracts, "pre_close,open,high,low,close,volume,amt,oi,pre_settle,settle,windcode",
+                            "tradeDate=" + datestr + ";priceAdj=U;cycle=D")
+                d = res.Data
+                f = res.Fields
+                df = pd.DataFrame(data=np.transpose(d), columns=f, )
+                df1 = df.dropna(subset=['CLOSE'])
+                df1['id_instrument'] = df1['WINDCODE'].apply(lambda x: (x[-len(x):-8] + '_' + x[-8:-4]).lower())
+                df1['name_code'] = df1['WINDCODE'].apply(lambda x: x[-len(x):-8].lower())
+                df1['cd_exchange'] = df1['WINDCODE'].apply(lambda x: x[-3:].lower())
+                df1.loc[:, 'datasource'] = 'wind'
+                df1.loc[:, 'timestamp'] = datetime.datetime.today()
+                df1.loc[:, 'dt_date'] = datestr
+                df1 = df1.rename(columns={'PRE_CLOSE': 'amt_last_close',
+                                          'OPEN': 'amt_open',
+                                          'HIGH': 'amt_high',
+                                          'LOW': 'amt_low',
+                                          'CLOSE': 'amt_close',
+                                          'VOLUME': 'amt_trading_volume',
+                                          'AMT': 'amt_trading_value',
+                                          'OI': 'amt_holding_volume',
+                                          'PRE_SETTLE': 'amt_last_settlement',
+                                          'SETTLE': 'amt_settlement',
+                                          'WINDCODE': 'code_instrument'
+                                          })
+                return df1
+            except Exception as e:
+                print(e)
+                return pd.DataFrame()
+
+        def wind_future_daily_czc(self,datestr, contracts):
+            # datestr = dt.strftime("%Y-%m-%d")
+            try:
+                res = w.wss(contracts, "pre_close,open,high,low,close,volume,amt,oi,pre_settle,settle,windcode",
+                            "tradeDate=" + datestr + ";priceAdj=U;cycle=D")
+                d = res.Data
+                f = res.Fields
+                df = pd.DataFrame(data=np.transpose(d), columns=f, )
+                df1 = df.dropna(subset=['CLOSE'])
+                df1['id_instrument'] = df1['WINDCODE'].apply(lambda x: (x[-len(x):-7] + '_1' + x[-7:-4]).lower())
+                df1['name_code'] = df1['WINDCODE'].apply(lambda x: x[-len(x):-7].lower())
+                df1['cd_exchange'] = df1['WINDCODE'].apply(lambda x: x[-3:].lower())
+                df1.loc[:, 'datasource'] = 'wind'
+                df1.loc[:, 'timestamp'] = datetime.datetime.today()
+                df1.loc[:, 'dt_date'] = datestr
+                df1 = df1.rename(columns={'PRE_CLOSE': 'amt_last_close',
+                                          'OPEN': 'amt_open',
+                                          'HIGH': 'amt_high',
+                                          'LOW': 'amt_low',
+                                          'CLOSE': 'amt_close',
+                                          'VOLUME': 'amt_trading_volume',
+                                          'AMT': 'amt_trading_value',
+                                          'OI': 'amt_holding_volume',
+                                          'PRE_SETTLE': 'amt_last_settlement',
+                                          'SETTLE': 'amt_settlement',
+                                          'WINDCODE': 'code_instrument'
+                                          })
+                return df1
+            except Exception as e:
+                print(e)
+                return pd.DataFrame()
+
     class table_stocks():
 
         def wind_A_shares_total(self,datestr):

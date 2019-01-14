@@ -4,7 +4,7 @@ import datetime
 from back_test.model.constant import FrequentType, Util,LongShort,ExecuteType
 from back_test.model.base_product import BaseProduct
 from back_test.model.trade import Order
-
+import numpy as np
 
 class BaseFuture(BaseProduct):
     """
@@ -30,7 +30,10 @@ class BaseFuture(BaseProduct):
     """ getters """
 
     def contract_month(self) -> Union[str, None]:
-        return self.current_state[Util.NAME_CONTRACT_MONTH]
+        ret = self.current_state[Util.NAME_CONTRACT_MONTH]
+        if ret is None or ret == Util.NAN_VALUE or np.isnan(ret):
+            ret = int(self._id_instrument.split('_')[1])
+        return ret
 
     def get_fund_required(self, long_short: LongShort) -> float:
         return self.get_initial_margin(long_short)
