@@ -11,8 +11,8 @@ from Utilities import admin_write_util as admin
 w.start()
 
 
-date = datetime.date.today()
-# date = datetime.date(2019,1,10)
+# date = datetime.date.today()
+date = datetime.date(2019,1,9)
 
 dt_date = date.strftime("%Y-%m-%d")
 print(dt_date)
