@@ -14,7 +14,7 @@ w.start()
 
 
 date = datetime.date.today()
-# date = datetime.date(2019,1,10)
+# date = datetime.date(2019,1,14)
 
 dt_date = date.strftime("%Y-%m-%d")
 print(dt_date)
@@ -24,7 +24,7 @@ conn_intraday = admin.conn_intraday()
 conn_gc = admin.conn_gc()
 
 options_mktdata_daily = admin.table_options_mktdata()
-futures_mktdata = admin.table_futures_mktdata() # 中金所金融期货仍放在mktdata
+# futures_mktdata = admin.table_futures_mktdata() # 中金所金融期货仍放在mktdata
 futures_mktdata_gc = admin.table_futures_mktdata_gc() # 商品期货放在golden_copy
 option_contracts = admin.table_option_contracts()
 future_contracts = admin.table_future_contracts() # 只包含中金所金融期货
@@ -50,16 +50,16 @@ for db_data in db_datas:
         print(db_data)
         continue
 
-#### 2. Get trading futures market data(IF/IH/IC).
-df = dc.table_future_contracts().get_future_contract_ids(dt_date)
-for (idx, row) in df.iterrows():
-    db_data = dc.table_futures().wind_index_future_daily(dt_date, row['id_instrument'], row['windcode'])
-    try:
-        conn.execute(futures_mktdata.insert(), db_data)
-        print(row)
-        print('equity index futures -- inserted into data base succefully')
-    except Exception as e:
-        print(e)
+# #### 2. Get trading futures market data(IF/IH/IC).
+# df = dc.table_future_contracts().get_future_contract_ids(dt_date)
+# for (idx, row) in df.iterrows():
+#     db_data = dc.table_futures().wind_index_future_daily(dt_date, row['id_instrument'], row['windcode'])
+#     try:
+#         conn.execute(futures_mktdata.insert(), db_data)
+#         print(row)
+#         print('equity index futures -- inserted into data base succefully')
+#     except Exception as e:
+#         print(e)
 
 #TODO: INSERT DF_CONTRACTS
 #### 3. Get trading futures market data(Commodity Futures).

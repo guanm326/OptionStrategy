@@ -338,7 +338,7 @@ for (idx, name_code) in enumerate(name_codes):
 
 name_codes = [c.Util.STR_CF, c.Util.STR_C, c.Util.STR_RU, c.Util.STR_M, c.Util.STR_CU,c.Util.STR_SR]
 
-dt_start = datetime.date(2005, 1, 1)
+dt_start = datetime.date(2000, 1, 1)
 for (idx1, name_code) in enumerate(name_codes):
     print(name_code)
     df_res = pd.DataFrame()
