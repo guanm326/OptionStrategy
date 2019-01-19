@@ -8,7 +8,7 @@ import matplotlib.cbook as cbook
 class PlotUtil:
     def __init__(self):
 
-        plt.rcParams['font.sans-serif'] = ['STKaiti']
+        # plt.rcParams['font.sans-serif'] = ['STKaiti']
         plt.rcParams.update({'font.size': 11})
         self.c1 = "#CC0000"
         self.c2 = "#8C8C8C"
