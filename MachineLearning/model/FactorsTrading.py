@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 
-class Factors:
+class Factors191:
 
     @staticmethod
     def alpha_2(data_array,i=0):

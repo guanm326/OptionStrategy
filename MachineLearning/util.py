@@ -1,3 +1,8 @@
+import numpy as np
+import math
+import pandas as pd
+
+
 class Util:
     """database column names"""
     # basic
@@ -138,7 +143,7 @@ class Util:
                               TRANSACTION_COST
                               ]  # ID_INSTRUMENR是index
     ACCOUNT_COLUMNS = [DT_DATE, PORTFOLIO_NPV, PORTFOLIO_VALUE, CASH, PORTFOLIO_MARGIN_CAPITAL, PORTFOLIO_TRADES_VALUE,
-                       PORTFOLIO_FUND_UTILIZATION, PORTFOLIO_DELTA,DAILY_EXCECUTED_AMOUNT
+                       PORTFOLIO_FUND_UTILIZATION, PORTFOLIO_DELTA, DAILY_EXCECUTED_AMOUNT
                        ]
     DICT_FUTURE_MARGIN_RATE = {  # 合约价值的百分比
         'm': 0.05,
@@ -207,3 +212,46 @@ class Util:
         'ic': 0.2,
         'index': 0
     }
+
+
+class HistoricalVolatility:
+
+    @staticmethod
+    def hist_vol_daily(closes, n=20):
+        series = np.log(closes).diff()
+        res_series = series.rolling(window=n).std()
+        return res_series
+
+    @staticmethod
+    def hist_vol(closes, n=20):
+        series = np.log(closes).diff()
+        res_series = series.rolling(window=n).std() * math.sqrt(252)
+        return res_series
+
+    @staticmethod
+    def parkinson_number(df, n=20):
+        squred_log_h_l = df.apply(HistoricalVolatility.fun_squred_log_high_low, axis=1)
+        sum_squred_log_h_l = squred_log_h_l.rolling(window=n).sum()
+        res_series = sum_squred_log_h_l.apply(
+            lambda x: math.sqrt(252 * x / (n * 4 * math.log(2))))
+        return res_series
+
+    @staticmethod
+    def garman_klass(df, n=20):
+        tmp = df.apply(HistoricalVolatility.fun_garman_klass, axis=1)
+        sum_tmp = tmp.rolling(window=n).sum()
+        res_resies = sum_tmp.apply(lambda x: math.sqrt(x * 252 / n))
+        return res_resies
+
+    @staticmethod
+    def fun_squred_log_high_low(df: pd.Series) -> float:
+        return (math.log(df[Util.AMT_HIGH] / df[Util.AMT_LOW])) ** 2
+
+    @staticmethod
+    def fun_squred_log_close_open(df: pd.Series) -> float:
+        return (math.log(df[Util.AMT_CLOSE] / df[Util.AMT_OPEN])) ** 2
+
+    @staticmethod
+    def fun_garman_klass(df: pd.Series) -> float:
+        return 0.5 * HistoricalVolatility.fun_squred_log_high_low(df) - (
+                    2 * math.log(2) - 1) * HistoricalVolatility.fun_squred_log_close_open(df)
