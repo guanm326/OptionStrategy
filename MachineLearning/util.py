@@ -254,4 +254,29 @@ class HistoricalVolatility:
     @staticmethod
     def fun_garman_klass(df: pd.Series) -> float:
         return 0.5 * HistoricalVolatility.fun_squred_log_high_low(df) - (
-                    2 * math.log(2) - 1) * HistoricalVolatility.fun_squred_log_close_open(df)
+                2 * math.log(2) - 1) * HistoricalVolatility.fun_squred_log_close_open(df)
+
+
+class FutureUtil:
+    @staticmethod
+    def get_futures_daily_c1(df):
+        df = df.sort_values(by=[Util.DT_DATE, Util.AMT_TRADING_VOLUME], ascending=False)
+        df_rs = df.drop_duplicates(subset=[Util.DT_DATE]).sort_values(by=Util.DT_DATE, ascending=True).reset_index(
+            drop=True)
+        return df_rs
+
+    @staticmethod
+    def get_futures_minute_c1(df):
+        tmp = df.groupby([Util.DT_DATE, Util.ID_INSTRUMENT]).sum()[Util.AMT_TRADING_VOLUME].to_frame()
+        tmp = tmp.reset_index(level=[Util.DT_DATE, Util.ID_INSTRUMENT]).sort_values(by=Util.AMT_TRADING_VOLUME,
+                                                                                    ascending=False)
+        tmp = tmp.drop_duplicates(subset=[Util.DT_DATE]).sort_values(by=Util.DT_DATE, ascending=True)
+        df0 = tmp[[Util.DT_DATE, Util.ID_INSTRUMENT]].rename(columns={Util.ID_INSTRUMENT: 'id_core'})
+        df2 = pd.merge(df, df0, on=Util.DT_DATE, how='left')
+        df2 = df2[df2[Util.ID_INSTRUMENT] == df2['id_core']].reset_index(drop=True)
+        return df2
+
+    # TODO
+    @staticmethod
+    def get_future_c1_by_option_mdt_minute(df, option_maturities):
+        return
