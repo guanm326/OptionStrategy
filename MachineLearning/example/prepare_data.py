@@ -94,6 +94,7 @@ for index, row in df_daily.iterrows():
     v = df_daily.iloc[index - 6:index][Util.AMT_TRADING_VOLUME]
     r, _ = pearsonr(t, v)
     alpha4[index] = -1 * r
-df_daily['alpha_量价背离'] = pd.Series(alpha4)
+df_daily['alpha_量幅背离'] = pd.Series(alpha4)
 df_data = df_daily.dropna().reset_index(drop=True)
 print(df_data)
+df_data.to_csv('data.csv', index=False)
