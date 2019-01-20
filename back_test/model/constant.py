@@ -1215,12 +1215,6 @@ class HistoricalVolatility:
         res_series = series/series1
         return res_series
 
-    # @staticmethod
-    # def hist_yield_daily(closes,n=1):
-    #     series = np.log(closes).diff()
-    #     res_series = series.rolling(window=n).mean()
-    #     return res_series
-
     @staticmethod
     def hist_vol_daily(closes,n=20):
         series = np.log(closes).diff()

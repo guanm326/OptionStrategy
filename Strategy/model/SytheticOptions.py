@@ -13,6 +13,9 @@ import pandas as pd
 import numpy as np
 import math
 
+"""
+通过复制看涨期权的原理进行动态仓位调整
+"""
 
 class SytheticOption(object):
     def __init__(self, df_index=None, df_future_c1=None, df_future_all=None):
@@ -98,16 +101,7 @@ class SytheticOption(object):
         black = BlackCalculator(self.ttm, self.target_option.strike,
                                 self.target_option.option_type, spot, vol, self.rf)
         gamma = black.Gamma()
-        # black_formula = QlBlackFormula(dt_eval=date, dt_maturity=self.target_option.dt_maturity, option_type=self.target_option.option_type,
-        #                                spot=spot, strike=self.target_option.strike, vol=vol, rf=self.rf)
-        # gamma = black_formula.Gamma(vol)
-        # black_formula1 = QlBlackFormula(dt_eval=date, dt_maturity=self.target_option.dt_maturity,
-        #                                option_type=self.target_option.option_type,
-        #                                spot=spot*1.01, strike=self.target_option.strike, vol=vol, rf=self.rf)
-        # black_formula2 = QlBlackFormula(dt_eval=date, dt_maturity=self.target_option.dt_maturity,
-        #                                 option_type=self.target_option.option_type,
-        #                                 spot=spot * 0.99, strike=self.target_option.strike, vol=vol, rf=self.rf)
-        # gamma_effective = (black_formula1.Delta(vol)-black_formula2.Delta(vol))/(spot*0.02)
+
         return gamma
 
     # Equivalent Delta for Synthetic Option
