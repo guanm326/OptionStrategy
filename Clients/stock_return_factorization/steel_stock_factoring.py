@@ -21,23 +21,23 @@ data['SMB'] = data['r_index500'] - data['r_index50']
 # data['r_ih'] = hv.log_yield(data['IH.CFE'])
 # data['r_ic'] = hv.log_yield(data['IC.CFE'])
 # data['SMB'] = data['r_ic'] - data['r_ih']
-# data['RB_PRICE'] = hv.arithmetic_yield(data['RB.SHF'])
-# data['RB_PROFIT'] = hv.arithmetic_yield(data['steel_profit']) # 基于期货价格计算
-data['RB_PRICE'] = hv.arithmetic_yield(data['RB'])
-data['RB_PROFIT'] = hv.arithmetic_yield(data['RB_PROFIT'])  # 基于现货价格计算
+data['RB_PRICE'] = hv.arithmetic_yield(data['RB.SHF'])
+data['RB_PROFIT'] = hv.arithmetic_yield(data['steel_profit']) # 基于期货价格计算
+# data['RB_PRICE'] = hv.arithmetic_yield(data['RB'])
+# data['RB_PROFIT'] = hv.arithmetic_yield(data['RB_PROFIT'])  # 基于现货价格计算
 
-data_reg = data[['date', 'y_index', 'BETA', 'SMB', 'RB_PROFIT', 'RB_PRICE']].dropna().reset_index(drop=True)
-ols = sm.OLS(data_reg['y_index'], data_reg[['BETA', 'SMB', 'RB_PRICE','RB_PROFIT']]).fit()
+data_reg = data[['date', 'y_600019', 'BETA', 'SMB', 'RB_PROFIT', 'RB_PRICE']].dropna().reset_index(drop=True)
+ols = sm.OLS(data_reg['y_600019'], data_reg[['BETA', 'SMB', 'RB_PRICE','RB_PROFIT']]).fit()
 rsd = ols.resid
 data_reg['rsd'] = rsd
 cum_rsd = (1+rsd).cumprod()
-cum_steel_index = (1+data_reg['y_index']).cumprod()
+cum_steel_index = (1+data_reg['y_600019']).cumprod()
 cum_beta = (1+data_reg['BETA']).cumprod()
 cum_smb = (1+data_reg['SMB']).cumprod()
 cum_rb = (1+data_reg['RB_PRICE']).cumprod()
 cum_rb_profit = (1+data_reg['RB_PROFIT']).cumprod()
 data_reg['cum_rsd'] = cum_rsd
-data_reg['cum_steel_index'] = cum_steel_index
+data_reg['cum_y_600019'] = cum_steel_index
 data_reg['cum_beta'] = cum_beta
 data_reg['cum_smb'] = cum_smb
 data_reg['cum_rb'] = cum_rb

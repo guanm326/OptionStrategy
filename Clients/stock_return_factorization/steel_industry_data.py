@@ -37,3 +37,4 @@ steel_index2 = df_closes.mul(df_ev_weights, axis=0).dropna(how='all').sum(axis=1
 df_steel_index['steel_index_byev'] = steel_index2
 df = df_steel_index.join(df_mkt, how='left')
 df.to_csv('data/steel_mktdata.csv')
+df_sales_weights.to_csv('data/df_sales_weights.csv')

@@ -13,8 +13,8 @@ import numpy as np
 w.start()
 
 
-date = datetime.date.today()
-# date = datetime.date(2019,1,14)
+# date = datetime.date.today()
+date = datetime.date(2019,1,18)
 
 dt_date = date.strftime("%Y-%m-%d")
 print(dt_date)

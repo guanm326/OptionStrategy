@@ -97,7 +97,8 @@ end_date = datetime.date(2015, 9, 16)
 # data_contracts = w.wset("futurecc","startdate=2010-01-01;enddate=2019-01-08;wind_code=RU.SHF")
 # data_contracts = w.wset("futurecc","startdate=2000-01-01;enddate=2015-12-31;wind_code=C.DCE")
 # data_contracts = w.wset("futurecc","startdate=2010-01-01;enddate=2019-01-8;wind_code=M.DCE")
-data_contracts = w.wset("futurecc","startdate=2000-01-01;enddate=2015-12-31;wind_code=CF.CZC")
+# data_contracts = w.wset("futurecc","startdate=2000-01-01;enddate=2015-12-31;wind_code=CF.CZC")
+data_contracts = w.wset("futurecc","startdate=2000-01-01;enddate=2015-12-31;wind_code=IF.CFE")
 # data_contracts = w.wset("futurecc","startdate=2010-01-01;enddate=2019-01-8;wind_code=SR.CZC")
 df_contracts = pd.DataFrame(data=np.transpose(data_contracts.Data), columns=data_contracts.Fields)
 date_range = w.tdays(beg_date, end_date, "").Data[0]
@@ -109,7 +110,7 @@ for dt in date_range:
         c_str += c +","
     c_str = c_str[0:len(c_str)-2]
     # c_str += '\"'
-    df1 = wind_future_daily_czc(dt,c_str)
+    df1 = wind_future_daily(dt,c_str)
     try:
         df1.to_sql('futures_mktdata', con=admin.engine_gc, if_exists='append', index=False)
         print(dt, ' finished.')
