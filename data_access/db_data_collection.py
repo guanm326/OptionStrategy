@@ -738,7 +738,7 @@ class DataCollection():
             name_code = id_instrument[0:2]
             tickdata = w.wsd(windcode,
                              "pre_close,open,high,low,close,volume,amt,oi,pre_settle,settle",
-                             datestr, datestr, "Fill=Previous")
+                             datestr, datestr, "")
             if tickdata.ErrorCode != 0:
                 print('wind get data error ', datestr, ',errorcode : ', tickdata.ErrorCode)
                 return []
@@ -887,9 +887,9 @@ class DataCollection():
             db_data = []
             datasource = 'wind'
             # tickdata = w.wsd(windcode, "pre_close,open,high,low,close,volume,amt,trade_status,sec_name,windcode,exch_eng",
-            #                  begdate, enddate, "Fill=Previous")
+            #                  begdate, enddate, "")
             tickdata = w.wsd(windcode, "pre_close,close,sec_name,windcode,exch_eng",
-                             begdate, enddate, "Fill=Previous")
+                             begdate, enddate, "")
             if tickdata.ErrorCode != 0:
                 print('wind get data error ', begdate, enddate, ',errorcode : ', tickdata.ErrorCode)
                 return []
@@ -1241,7 +1241,7 @@ class DataCollection():
             db_data = []
             datasource = 'wind'
             data = w.wsd(windcode, "open,high,low,close,volume,amt",
-                         date, date, "Fill=Previous")
+                         date, date, "")
             df = pd.DataFrame()
             for i, f in enumerate(data.Fields):
                 df[f] = data.Data[i]
@@ -1279,7 +1279,7 @@ class DataCollection():
             db_data = []
             datasource = 'wind'
             data = w.wsd(windcode, "open,high,low,close,volume,amt",
-                         begdate, enddate, "Fill=Previous")
+                         begdate, enddate, "")
             df = pd.DataFrame()
             for i, f in enumerate(data.Fields):
                 df[f] = data.Data[i]

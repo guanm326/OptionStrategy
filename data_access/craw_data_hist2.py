@@ -17,11 +17,6 @@ wind data
 
 w.start()
 
-conn = admin.conn_mktdata()
-conn_intraday = admin.conn_intraday()
-
-futures_mktdata_daily = admin.table_futures_mktdata()
-
 
 def wind_future_daily(dt,contracts):
     datestr = dt.strftime("%Y-%m-%d")

@@ -6,12 +6,14 @@ import numpy as np
 import pandas as pd
 import sys
 import math
+from statsmodels.graphics.tsaplots import plot_acf
+import matplotlib.pyplot as plt
+from WindPy import w
 
-
-class Garch(object):
+class Arch(object):
 
     def __init__(self, df_data, df_iv=None):
-        df_data.loc[:, 'r'] = HistoricalVolatility.arithmetic_yield(df_data[Util.AMT_CLOSE])
+        df_data.loc[:, 'r'] = HistoricalVolatility.log_yield(df_data[Util.AMT_CLOSE])
         df_data.loc[:, 'hv_20'] = HistoricalVolatility.hist_vol(df_data[Util.AMT_CLOSE], n=20)
         df_data = df_data.dropna()
         if df_iv is not None:
@@ -22,16 +24,28 @@ class Garch(object):
         self.df_data = df_data.set_index(Util.DT_DATE)
         self.returns = self.df_data['r']*100
 
-    def basic_forcasting(self):
-        am = arch_model(self.returns, vol='Garch', p=1, o=0, q=1, dist='Normal')
-        res = am.fit(update_freq=10)
-        # f = np.sqrt(res.params['omega'] + res.params['alpha[1]'] * res.resid**2 + res.conditional_volatility**2 * res.params['beta[1]'])
+    def autocorrelation(self):
+        plot_acf(self.returns)
+        plt.show()
+
+    def arch(self):
+        model = arch_model(self.returns, mean='Zero', vol='ARCH', p=5)
+        model_fit = model.fit(disp='off')
+        print(model_fit.summary())
+        forecasts = model_fit.forecast(horizon=5)
+        print(forecasts.variance.iloc[-3:] ** 0.5 * math.sqrt(252) / 100)
+        print(self.df_data.iloc[-3:])
+
+    def garch(self):
+        am = arch_model(self.returns, vol='garch', p=1, q=1, dist='t')
+        res = am.fit(disp='off')
         print(res.summary())
         forecasts = res.forecast(horizon=5)
         print(forecasts.variance.iloc[-3:] ** 0.5 * math.sqrt(252)/100)
+        print(self.df_data.iloc[-3:])
 
     def recursive_forecast_generation(self):
-        am = arch_model(self.returns, vol='Garch', p=1, o=0, q=1, dist='Normal')
+        am = arch_model(self.returns, vol='Garch', p=1, q=1, dist='t')
         end_loc = 100  # 基于一百个数据预测
         max_loc = len(self.returns.index) - 1
         forecasts = {}
@@ -48,8 +62,17 @@ class Garch(object):
         print(pd.DataFrame(forecasts).T)
 
 
-df_c1 = get_index_mktdata(datetime.date(2018, 1, 1), datetime.date(2018, 12, 31), Util.STR_INDEX_50ETF)
-df_iv = get_iv_by_moneyness(datetime.date(2018, 1, 1), datetime.date(2018, 12, 31),Util.STR_50ETF,nbr_moneyness=0)
-garch = Garch(df_c1[[Util.DT_DATE, Util.AMT_CLOSE]],df_iv[[Util.DT_DATE,Util.PCT_IMPLIED_VOL]])
-garch.basic_forcasting()
-# garch.recursive_forecast_generation()
+df_c1 = get_index_mktdata(datetime.date(2018, 1, 1), datetime.date(2018, 12, 31), Util.STR_INDEX_300SH)[[Util.DT_DATE, Util.AMT_CLOSE]]
+# df_c1.to_csv('../data/db_000300.csv')
+# df_iv = get_iv_by_moneyness(datetime.date(2013, 1, 1), datetime.date(2018, 12, 31),Util.STR_50ETF,nbr_moneyness=0)[[Util.DT_DATE,Util.PCT_IMPLIED_VOL]]
+
+# w.start()
+# data = w.wsd("000300.SH", "close", "2018-01-01", "2018-12-31", "")
+# df_c1 = pd.DataFrame(data.Data, columns=data.Times, index=data.Codes).transpose()
+# df_c1 = df_c1.rename(columns={'000300.SH':Util.AMT_CLOSE})
+# df_c1[Util.DT_DATE] = df_c1.index
+# df_c1 = df_c1.reset_index(drop=True)
+# df_c1.to_csv('../data/wind_000300.csv')
+arch = Arch(df_c1)
+# arch.arch()
+arch.garch()
