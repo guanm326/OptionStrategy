@@ -8,9 +8,9 @@ from Utilities.PlotUtil import PlotUtil
 from back_test.model.constant import HistoricalVolatility as hv
 
 pu = PlotUtil()
-data_1 = pd.read_excel('data/steel_mktdata.xlsx', dtype={'date': datetime.date})
-data_2 = pd.read_excel('data/steel_industry_data.xlsx', dtype={'date': datetime.date})
-# data = pd.concat([data_1,data_2],axis=1,join='inner',keys='date')
+# data_1 = pd.read_excel('data/steel_mktdata.xlsx', dtype={'date': datetime.date})
+data_1 = pd.read_excel('data/steel_mktdata.xlsx')
+data_2 = pd.read_excel('data/steel_industry_data.xlsx',sheetname='data')
 data = data_1.join(data_2.set_index('date'), on='date', how='left')
 data['y_600019'] = hv.arithmetic_yield(data['600019.SH'])
 data['y_index'] = hv.arithmetic_yield(data['steel_index_bysales'])
@@ -18,13 +18,8 @@ data['BETA'] = hv.arithmetic_yield(data['000300.SH'])
 data['r_index50'] = hv.arithmetic_yield(data['000016.SH'])
 data['r_index500'] = hv.arithmetic_yield(data['000905.SH'])
 data['SMB'] = data['r_index500'] - data['r_index50']
-# data['r_ih'] = hv.log_yield(data['IH.CFE'])
-# data['r_ic'] = hv.log_yield(data['IC.CFE'])
-# data['SMB'] = data['r_ic'] - data['r_ih']
 data['RB_PRICE'] = hv.arithmetic_yield(data['RB.SHF'])
 data['RB_PROFIT'] = hv.arithmetic_yield(data['steel_profit']) # 基于期货价格计算
-# data['RB_PRICE'] = hv.arithmetic_yield(data['RB'])
-# data['RB_PROFIT'] = hv.arithmetic_yield(data['RB_PROFIT'])  # 基于现货价格计算
 
 data_reg = data[['date', 'y_600019', 'BETA', 'SMB', 'RB_PROFIT', 'RB_PRICE']].dropna().reset_index(drop=True)
 ols = sm.OLS(data_reg['y_600019'], data_reg[['BETA', 'SMB', 'RB_PRICE','RB_PROFIT']]).fit()

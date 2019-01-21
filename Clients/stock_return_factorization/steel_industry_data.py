@@ -13,6 +13,7 @@ df_mkt.loc[:, 'steel_profit'] = df_mkt.loc[:, 'RB.SHF'] - 0.45 * df_mkt.loc[:, '
 data = w.wsd(
     "600019.SH,000708.SZ,000709.SZ,000717.SZ,000761.SZ,000778.SZ,000825.SZ,000898.SZ,000932.SZ,000959.SZ,002075.SZ,002110.SZ,002318.SZ,002443.SZ,002478.SZ,002756.SZ,200761.SZ,600010.SH,600022.SH,600117.SH,600126.SH,600231.SH,600282.SH,600307.SH,600399.SH,600507.SH,600569.SH,600581.SH,600782.SH,600808.SH,601003.SH,601005.SH,603878.SH",
     "wgsd_sales_oper", start_date, end_date, "unit=1;rptType=1;currencyType=;Fill=Previous")
+# 字段结果相同 : "oper_rev"（营业收入）, oper_rev, tot_oper_rev"
 df_sales = pd.DataFrame(data.Data, columns=data.Times, index=data.Codes).transpose()
 # 总市值
 data0 = w.wsd(

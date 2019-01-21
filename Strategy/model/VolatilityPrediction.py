@@ -63,16 +63,6 @@ class Arch(object):
 
 
 df_c1 = get_index_mktdata(datetime.date(2018, 1, 1), datetime.date(2018, 12, 31), Util.STR_INDEX_300SH)[[Util.DT_DATE, Util.AMT_CLOSE]]
-# df_c1.to_csv('../data/db_000300.csv')
-# df_iv = get_iv_by_moneyness(datetime.date(2013, 1, 1), datetime.date(2018, 12, 31),Util.STR_50ETF,nbr_moneyness=0)[[Util.DT_DATE,Util.PCT_IMPLIED_VOL]]
-
-# w.start()
-# data = w.wsd("000300.SH", "close", "2018-01-01", "2018-12-31", "")
-# df_c1 = pd.DataFrame(data.Data, columns=data.Times, index=data.Codes).transpose()
-# df_c1 = df_c1.rename(columns={'000300.SH':Util.AMT_CLOSE})
-# df_c1[Util.DT_DATE] = df_c1.index
-# df_c1 = df_c1.reset_index(drop=True)
-# df_c1.to_csv('../data/wind_000300.csv')
 arch = Arch(df_c1)
-# arch.arch()
-arch.garch()
+
+arch.recursive_forecast_generation()
