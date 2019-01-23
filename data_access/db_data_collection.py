@@ -1399,7 +1399,6 @@ class DataCollection():
             data = w.wsi(windcode, "close,volume,amt", datestr + " 09:00:00", datestr + " 15:01:00", "Fill=Previous")
             datetimes = data.Times
             errorcode = data.ErrorCode
-            print(errorcode)
             try:
                 prices = data.Data[0]
                 volumes = data.Data[1]

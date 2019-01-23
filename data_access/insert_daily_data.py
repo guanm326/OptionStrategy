@@ -10,8 +10,8 @@ import numpy as np
 w.start()
 
 
-date = datetime.date.today()
-# date = datetime.date(2019,1,18)
+# date = datetime.date.today()
+date = datetime.date(2019,1,23)
 
 dt_date = date.strftime("%Y-%m-%d")
 print(dt_date)
@@ -220,6 +220,7 @@ for (idx_oc, row) in df.iterrows():
     db_data = dc.table_option_intraday().wind_data_50etf_option_intraday(dt_date, row)
     try:
         conn_intraday.execute(option_mktdata_intraday.insert(), db_data)
-        print('option_mktdata_intraday -- inserted into data base succefully')
+
     except Exception as e:
         print(e)
+print('option_mktdata_intraday finished')

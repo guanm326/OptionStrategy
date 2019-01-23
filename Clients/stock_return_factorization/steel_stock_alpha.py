@@ -20,7 +20,7 @@ def top_index(cols,data):
 
 
 data_1 = pd.read_excel('data/steel_mktdata_AdjF.xlsx')
-data_2 = pd.read_excel('data/steel_industry_data.xlsx', sheetname='data')
+data_2 = pd.read_excel('data/steel_industry_data.xlsx')
 data_3 = pd.read_excel('data/sw_steel_closes_AdjF.xlsx')
 data = data_1.join(data_2.set_index('date'), on='date', how='left')
 data = data.join(data_3.set_index('date'), on='date', how='left')
@@ -44,18 +44,16 @@ data['BETA_F'] = hv.arithmetic_yield(data['IF.CFE'])
 data['BETA_S'] = hv.arithmetic_yield(data['000300.SH'])
 data['SMB_F'] = hv.arithmetic_yield(data['IC.CFE']) - hv.arithmetic_yield(data['IH.CFE'])
 data['SMB_S'] = hv.arithmetic_yield(data['000905.SH']) - hv.arithmetic_yield(data['000016.SH'])
-data['RB_F'] = hv.arithmetic_yield(data['RB.SHF'])
-data['RB_S'] = hv.arithmetic_yield(data['RB'])
+# data['RB_F'] = hv.arithmetic_yield(data['RB.SHF'])
+# data['RB_S'] = hv.arithmetic_yield(data['RB'])
 data['HC_F'] = hv.arithmetic_yield(data['HC.SHF'])
-data['HC_S'] = hv.arithmetic_yield(data['HC'])
-data['I_F'] = hv.arithmetic_yield(data['I.DCE'])
-data['J_F'] = hv.arithmetic_yield(data['J.DCE'])
-data['LC_S'] = hv.arithmetic_yield(data['LC'])
-data['GC_S'] = hv.arithmetic_yield(data['GC'])
-data['RB_PROFIT_F'] = hv.arithmetic_yield(data['steel_profit'])  # 期货
+# data['HC_S'] = hv.arithmetic_yield(data['HC'])
+# data['I_F'] = hv.arithmetic_yield(data['I.DCE'])
+# data['J_F'] = hv.arithmetic_yield(data['J.DCE'])
+# data['LC_S'] = hv.arithmetic_yield(data['LC'])
+# data['GC_S'] = hv.arithmetic_yield(data['GC'])
+# data['RB_PROFIT_F'] = hv.arithmetic_yield(data['steel_profit'])  # 期货
 data = data.set_index('date')
-
-
 
 pu = PlotUtil()
 
@@ -72,3 +70,5 @@ print(reg.rsquared)
 print(reg.rsquared_adj)
 rsd = reg.resid
 cum_rsd= (1+rsd).cumprod()
+pu.plot_line_chart(list(data_reg.index),[cum_rsd])
+plt.show()
