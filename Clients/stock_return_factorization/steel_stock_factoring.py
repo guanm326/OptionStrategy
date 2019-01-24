@@ -28,18 +28,15 @@ col_names = list(data_3.columns)
 col_names.remove('date')
 col_names.append('steel_index_bysales')
 col_names.append('801041.SI')
-top_five = ['000932.SZ','002110.SZ','600507.SH','601003.SH','000717.SZ']
-top_ten = ['000932.SZ','002110.SZ','600507.SH','601003.SH','000717.SZ',
-           '600282.SH','600808.SH','000825.SZ','600569.SH','000959.SZ']
+top_five = ['600507.SH','002110.SZ','601003.SH','000932.SZ','600782.SH']
+
 
 index_top5 = top_index(top_five,data)
 data['index_top5'] = index_top5
 
-index_top10 = top_index(top_ten,data)
-data['index_top10'] = index_top10
-
-reg_start = datetime.date(2014, 3, 24)
-data = data[data['date'] >= reg_start].reset_index(drop=True)
+reg_start = datetime.date(2005, 1, 1)
+reg_end = datetime.date.today()
+data = data[(data['date'] >= reg_start)&(data['date'] <= reg_end)].reset_index(drop=True)
 data['BETA_F'] = hv.arithmetic_yield(data['IF.CFE'])
 data['BETA_S'] = hv.arithmetic_yield(data['000300.SH'])
 data['SMB_F'] = hv.arithmetic_yield(data['IC.CFE']) - hv.arithmetic_yield(data['IH.CFE'])
@@ -60,10 +57,11 @@ data = data.set_index('date')
 pu = PlotUtil()
 
 data_reg = data.copy()
-data_reg['y'] = hv.arithmetic_yield(data_reg['index_top5'])
+data_reg['y'] = hv.arithmetic_yield(data_reg['steel_index_bysales'])
+# data_reg['y'] = hv.arithmetic_yield(data_reg['801041.SI'])
 
-data_reg = data_reg[['y', 'BETA_S', 'SMB_S', 'HC_F']].dropna()
-x_s = data_reg[['BETA_S', 'SMB_S', 'HC_F']]
+data_reg = data_reg[['y', 'BETA_S', 'SMB_S', 'HC_S']].dropna()
+x_s = data_reg[['BETA_S', 'SMB_S', 'HC_S']]
 y = data_reg['y']
 reg = Statistics.linear_regression(x_s, y)
 print(reg.params)
@@ -75,13 +73,16 @@ cum_rsd= (1+rsd).cumprod()
 dates = list(data_reg.index)
 
 df_cum_yield = pd.DataFrame(index=data.index)
-for col in top_five:
-    r = hv.arithmetic_yield(data[col])
-    df_cum_yield[col] = (1 + r).cumprod()
-df_cum_yield['BETA'] = (1+data['BETA_S']).cumprod()
-df_cum_yield['cum_rsd_index_t5'] = cum_rsd
-df_cum_yield.to_csv('data/top5_yield.csv')
-pu.plot_line_chart(dates,[cum_rsd],['cum_rsd_top5_index'])
+# for col in top_five:
+#     r = hv.arithmetic_yield(data[col])
+#     df_cum_yield[col] = (1 + r).cumprod()
+# df_cum_yield['BETA'] = (1+data['BETA_S']).cumprod()
+# df_cum_yield['cum_rsd_801041'] = (1+rsd).cumprod()
+df_cum_yield['cum_rsd_index_bysales'] = (1+rsd).cumprod()
+df_cum_yield['cum_rsd_beta'] = (1+data['BETA_S']).cumprod()
+df_cum_yield['cum_rsd_smb'] = (1+data['SMB_S']).cumprod()
+df_cum_yield.to_csv('data/df_cum_yield.csv')
+pu.plot_line_chart(dates,[cum_rsd],['cum_rsd'])
 
 
 def steel_stock_factoring():
@@ -101,8 +102,8 @@ def steel_stock_factoring():
         rsd_s = reg_s.resid
         df_res1['cum_rsd_s_'+id_stock] = (1 + rsd_s).cumprod()
 
-        data_reg_f = data_reg[['y','BETA_S', 'SMB_S', 'HC_F']].dropna()
-        x_f = data_reg_f[['BETA_S', 'SMB_S', 'HC_F']]
+        data_reg_f = data_reg[['y','BETA_F', 'SMB_F', 'HC_F']].dropna()
+        x_f = data_reg_f[['BETA_F', 'SMB_F', 'HC_F']]
         y = data_reg_f['y']
         reg_f = Statistics.linear_regression(x_f, y)
         rsd_f = reg_f.resid
@@ -134,5 +135,5 @@ def steel_stock_factoring():
     df_params_s.to_csv('data/df_regress_s.csv')
     df_params_f.to_csv('data/df_regress_f.csv')
 
-steel_stock_factoring()
+# steel_stock_factoring()
 plt.show()
