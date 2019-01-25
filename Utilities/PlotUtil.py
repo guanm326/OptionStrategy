@@ -3,6 +3,42 @@ import datetime
 import numpy as np
 import matplotlib.dates as mdates
 import matplotlib.cbook as cbook
+import pandas as pd
+from typing import Dict, List, Union
+
+class DateConstant:
+    """
+    First day of each month, count as day of year
+    """
+    Jan = 1
+    Feb = 32
+    Mar = 60
+    Apr = 91
+    May = 121
+    Jun = 152
+    Jul = 182
+    Aug = 213
+    Sep = 244
+    Oct = 274
+    Nov = 305
+    Dec = 335
+
+
+# class Figure:
+#     def plot(self):
+#         data1 = np.random.normal(1, 0.2, 365)
+#         data2 = np.random.normal(3, 0.1, 365)
+#         date = np.arange(1, 366)
+#         plt.plot(date, data1)
+#         plt.plot(date, data2)
+#         ax = plt.gca()
+#         ax.set_xlim(1, 366)
+#         ax.set_xticks([DateConstant.Jan, DateConstant.Feb, DateConstant.Mar, DateConstant.Apr,
+#                        DateConstant.May, DateConstant.Jun, DateConstant.Jul, DateConstant.Aug,
+#                        DateConstant.Sep, DateConstant.Oct, DateConstant.Nov, DateConstant.Dec])
+#         ax.set_xticklabels(['01/01', '02/01', '03/01', '04/01', '05/01', '06/01',
+#                             '07/01', '08/01', '09/01', '10/01', '11/01', '12/01'], rotation=45)
+#         plt.show()
 
 
 class PlotUtil:
@@ -118,14 +154,26 @@ class PlotUtil:
         self.set_frame([ax])
         return f
 
-
-
-
-
-
-
-
-
+    # 将df的数据按年分割画图
+    def plot_yearly_line_chart(self,df:pd.DataFrame,col_y,col_date):
+        f, ax = plt.subplots()
+        df['y'] = df[col_date].apply(lambda x:x.strftime("%Y"))
+        df['day_of_year'] = df[col_date].apply(lambda x:x.timetuple().tm_yday)
+        years = sorted(df['y'].unique(),reverse=True)
+        count = 0
+        for y in years:
+            df_y = df[df['y']==y].copy()
+            self.plot_line(ax,count,list(df_y['day_of_year']),list(df_y[col_y]),col_y+' : ' + y)
+            count += 1
+        ax.legend(frameon=False,loc='upper center',ncol=int(count/2))
+        ax.set_xlim(1, 366)
+        ax.set_xticks([DateConstant.Jan, DateConstant.Feb, DateConstant.Mar, DateConstant.Apr,
+                       DateConstant.May, DateConstant.Jun, DateConstant.Jul, DateConstant.Aug,
+                       DateConstant.Sep, DateConstant.Oct, DateConstant.Nov, DateConstant.Dec])
+        ax.set_xticklabels(['01/01', '02/01', '03/01', '04/01', '05/01', '06/01',
+                            '07/01', '08/01', '09/01', '10/01', '11/01', '12/01'], rotation=90)
+        self.set_frame([ax])
+        return f
 
 
 

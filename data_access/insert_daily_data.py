@@ -11,7 +11,7 @@ w.start()
 
 
 # date = datetime.date.today()
-date = datetime.date(2019,1,23)
+date = datetime.date(2019,1,25)
 
 dt_date = date.strftime("%Y-%m-%d")
 print(dt_date)

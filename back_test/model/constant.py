@@ -7,7 +7,7 @@ import datetime
 import typing
 from sklearn.linear_model import LassoCV, RidgeCV
 import statsmodels.api as sm
-
+import QuantLib as ql
 
 class FrequentType(Enum):
     DAILY = 1
@@ -1078,9 +1078,6 @@ class Util:
             else:
                 continue
 
-import QuantLib as ql
-
-
 class QuantlibUtil:
     @staticmethod
     def to_dt_dates(ql_dates):
@@ -1221,7 +1218,6 @@ class Statistics:
         reg = sm.OLS(y, x[select]).fit()
 
         return select, reg
-
 
 class HistoricalVolatility:
 

@@ -10,7 +10,7 @@ from Utilities import admin_write_util as admin
 w.start()
 
 # date = datetime.date.today()
-date = datetime.date(2019,1,23)
+date = datetime.date(2019,1,25)
 dt_date = date.strftime("%Y-%m-%d")
 conn = admin.conn_mktdata()
 futures_mktdata_daily = admin.table_futures_mktdata()
