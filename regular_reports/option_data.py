@@ -265,9 +265,7 @@ start_date = datetime.date(2017, 1, 1)
 min_holding = 10
 
 writer = ExcelWriter('../data/option_data_python.xlsx')
-# name_codes = [c.Util.STR_50ETF, c.Util.STR_CU, c.Util.STR_M,c.Util.STR_SR]
-name_codes = [c.Util.STR_SR]
-# name_codes = [ c.Util.STR_M]
+name_codes = [c.Util.STR_50ETF, c.Util.STR_CU, c.Util.STR_M,c.Util.STR_SR]
 for (idx, name_code) in enumerate(name_codes):
     print(name_code)
     df_res = pd.DataFrame()

@@ -83,16 +83,12 @@ for (idx, row) in df.iterrows():
 
 #TODO: INSERT COMMODITY FUTURE CONTRACTS
 #### 3. Get trading futures market data(Commodity Futures).
-product_codes = ['RU.SHF', 'CU.SHF', 'C.DCE', 'M.DCE', 'CF.CZC', 'SR.CZC']
+# product_codes = ['RU.SHF', 'CU.SHF', 'C.DCE', 'M.DCE', 'CF.CZC', 'SR.CZC']
+product_codes = ['SR.CZC']
 
 for product_code in product_codes:
-    data_contracts = w.wset("futurecc","startdate="+dt_date+";enddate="+dt_date+";wind_code="+product_code)
-    df_contracts = pd.DataFrame(data=np.transpose(data_contracts.Data), columns=data_contracts.Fields)
-    c_str = ""
-    for c in df_contracts['wind_code'].values:
-        c_str += c +","
-    c_str = c_str[0:len(c_str)-2]
-    df1 = dc.table_futures().wind_future_daily(dt_date,c_str,product_code)
+
+    df1 = dc.table_futures().wind_future_daily(dt_date,product_code)
     try:
         df1.to_sql('futures_mktdata', con=admin.engine_gc, if_exists='append', index=False)
         print('futures_mktdata : '+product_code+' -- inserted into data base succefully')
@@ -177,50 +173,50 @@ except Exception as e:
     print(e)
 
 
-######################################## INTRADAY DATA ##############################################
-windcode = "510050.SH"
-id_instrument = 'index_50etf'
-db_data = dc.table_index_intraday().wind_data_equity_index(windcode, dt_date, id_instrument)
-try:
-    conn_intraday.execute(equity_index_intraday.insert(), db_data)
-    print('equity_index_intraday-50etf -- inserted into data base succefully')
-except Exception as e:
-    print(e)
-
-windcode = "000016.SH"
-id_instrument = 'index_50sh'
-db_data = dc.table_index_intraday().wind_data_equity_index(windcode, dt_date, id_instrument)
-try:
-    conn_intraday.execute(equity_index_intraday.insert(), db_data)
-    print('equity_index_intraday-50sh -- inserted into data base succefully')
-except Exception as e:
-    print(e)
-
-windcode = "000300.SH"
-id_instrument = 'index_300sh'
-db_data = dc.table_index_intraday().wind_data_equity_index(windcode, dt_date, id_instrument)
-try:
-    conn_intraday.execute(equity_index_intraday.insert(), db_data)
-    print('equity_index_intraday-300sh -- inserted into data base succefully')
-except Exception as e:
-    print(e)
-
-windcode = "000905.SH"
-id_instrument = 'index_500sh'
-db_data = dc.table_index_intraday().wind_data_equity_index(windcode, dt_date, id_instrument)
-try:
-    conn_intraday.execute(equity_index_intraday.insert(), db_data)
-    print('equity_index_intraday-500sh -- inserted into data base succefully')
-except Exception as e:
-    print(e)
-
-# SH50 ETF OPTION
-df = dc.table_options().get_option_contracts(dt_date)
-for (idx_oc, row) in df.iterrows():
-    db_data = dc.table_option_intraday().wind_data_50etf_option_intraday(dt_date, row)
-    try:
-        conn_intraday.execute(option_mktdata_intraday.insert(), db_data)
-
-    except Exception as e:
-        print(e)
-print('option_mktdata_intraday finished')
+# ######################################## INTRADAY DATA ##############################################
+# windcode = "510050.SH"
+# id_instrument = 'index_50etf'
+# db_data = dc.table_index_intraday().wind_data_equity_index(windcode, dt_date, id_instrument)
+# try:
+#     conn_intraday.execute(equity_index_intraday.insert(), db_data)
+#     print('equity_index_intraday-50etf -- inserted into data base succefully')
+# except Exception as e:
+#     print(e)
+#
+# windcode = "000016.SH"
+# id_instrument = 'index_50sh'
+# db_data = dc.table_index_intraday().wind_data_equity_index(windcode, dt_date, id_instrument)
+# try:
+#     conn_intraday.execute(equity_index_intraday.insert(), db_data)
+#     print('equity_index_intraday-50sh -- inserted into data base succefully')
+# except Exception as e:
+#     print(e)
+#
+# windcode = "000300.SH"
+# id_instrument = 'index_300sh'
+# db_data = dc.table_index_intraday().wind_data_equity_index(windcode, dt_date, id_instrument)
+# try:
+#     conn_intraday.execute(equity_index_intraday.insert(), db_data)
+#     print('equity_index_intraday-300sh -- inserted into data base succefully')
+# except Exception as e:
+#     print(e)
+#
+# windcode = "000905.SH"
+# id_instrument = 'index_500sh'
+# db_data = dc.table_index_intraday().wind_data_equity_index(windcode, dt_date, id_instrument)
+# try:
+#     conn_intraday.execute(equity_index_intraday.insert(), db_data)
+#     print('equity_index_intraday-500sh -- inserted into data base succefully')
+# except Exception as e:
+#     print(e)
+#
+# # SH50 ETF OPTION
+# df = dc.table_options().get_option_contracts(dt_date)
+# for (idx_oc, row) in df.iterrows():
+#     db_data = dc.table_option_intraday().wind_data_50etf_option_intraday(dt_date, row)
+#     try:
+#         conn_intraday.execute(option_mktdata_intraday.insert(), db_data)
+#
+#     except Exception as e:
+#         print(e)
+# print('option_mktdata_intraday finished')

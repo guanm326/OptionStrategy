@@ -464,14 +464,17 @@ class DataCollection():
             return db_data
 
         def wind_data_sr_option(self, start_dates_tr,end_date_str,wind_contract='all'):
-
+            option_contracts = admin_read.table_option_contracts()
             db_data = []
             # id_underlying = wind_contract[0:2].lower() + '_1' + wind_contract[2:5]
             name_code = 'sr'
             datasource = 'wind'
             cd_exchange = 'czce'
             flag_night = -1
-
+            # df_contracts = option_contracts.select(option_contracts.c.dt_maturity >= end_date_str).execute()
+            query_c = admin_read.session_mktdata().query(admin_read.table_option_contracts()) \
+                .filter(admin_read.table_option_contracts().c.dt_maturity >= end_date_str)
+            df_contracts = pd.read_sql(query_c.statement, query_c.session.bind)
             data = w.wset("optionfuturesdailyquotation",
                    "exchange=CZCE;productcode=SR;contract="+wind_contract+";startdate="+start_dates_tr+";enddate="+end_date_str)
             print(data.ErrorCode)
@@ -482,10 +485,8 @@ class DataCollection():
             for (i2, df_mktdata) in df_mktdatas.iterrows():
                 dt_date = df_mktdata['date'].date()
                 option_code = df_mktdata['option_code']
-                # TODO
-                id_instrument = option_code[0:2].lower()+'_1'+option_code[2:5]+'_'+option_code[5].lower() +'_'+option_code[-4:]
-                id_underlying = option_code[0:2].lower()+'_1'+option_code[2:5]
-                windcode = option_code+'.CZC'
+                windcode = option_code + '.CZC'
+                name_contract_month = df_contracts[df_contracts['windcode']==windcode]['name_contract_month'].values[0]
                 amt_strike = option_code[-4:]
                 if option_code[5].lower()=='c':
                     cd_option_type = 'call'
@@ -493,7 +494,8 @@ class DataCollection():
                     cd_option_type = 'put'
                 else:
                     cd_option_type = None
-
+                id_instrument = name_code + '_' + name_contract_month + '_' + cd_option_type[0] + '_' + str(int(amt_strike))
+                id_underlying = name_code + '_' + name_contract_month
                 amt_last_settlement = df_mktdata['pre_settle']
                 amt_open = df_mktdata['open']
                 amt_high = df_mktdata['highest']
@@ -501,10 +503,6 @@ class DataCollection():
                 amt_close = df_mktdata['close']
                 amt_settlement = df_mktdata['settle']
                 amt_delta = df_mktdata['delta']
-                # amt_gamma = df_mktdata['gamma']
-                # amt_vega = df_mktdata['vega']
-                # amt_theta = df_mktdata['theta']
-                # amt_rho = df_mktdata['rho']
                 amt_trading_volume = df_mktdata['volume']
                 amt_trading_value = df_mktdata['amount']
                 amt_holding_volume = df_mktdata['position']
@@ -789,7 +787,9 @@ class DataCollection():
             if len(WINDCODE) == len(product_code) + 4:
                 res = (WINDCODE[-len(WINDCODE):-8] + '_' + WINDCODE[-8:-4]).lower()
             else:
-                res = (WINDCODE[-len(WINDCODE):-7] + '_1' + WINDCODE[-7:-4]).lower()
+                delivery_month = df['delivery_month']
+                name_contract_month = datetime.datetime.strptime(delivery_month, "%Y%m").date().strftime("%y%m")
+                res = (WINDCODE[-len(WINDCODE):-7] + '_' + name_contract_month).lower()
             return res
 
         def fun_name_code(self,df):
@@ -801,22 +801,30 @@ class DataCollection():
                 res = (WINDCODE[-len(WINDCODE):-7]).lower()
             return res
 
-        def wind_future_daily(self, datestr, contracts, product_code):
+        def wind_future_daily(self, datestr, product_code):
             try:
+                data_contracts = w.wset("futurecc",
+                                        "startdate=" + datestr + ";enddate=" + datestr + ";wind_code=" + product_code)
+                df_contracts = pd.DataFrame(data=np.transpose(data_contracts.Data), columns=data_contracts.Fields)
+                contracts = ""
+                for c in df_contracts['wind_code'].values:
+                    contracts += c + ","
+                # c_str = c_str[0:len(c_str)-2]
                 res = w.wss(contracts, "pre_close,open,high,low,close,volume,amt,oi,pre_settle,settle,windcode",
                             "tradeDate=" + datestr + ";priceAdj=U;cycle=D")
                 d = res.Data
                 f = res.Fields
-                df = pd.DataFrame(data=np.transpose(d), columns=f, )
+                df = pd.DataFrame(data=np.transpose(d), columns=f)
                 df1 = df.dropna(subset=['CLOSE'])
                 df1['product_code'] = product_code
+                df1 = df1.join(df_contracts[['delivery_month','wind_code']].set_index('wind_code'),on='WINDCODE')
                 df1['id_instrument'] = df1.apply(self.fun_id_instrument, axis=1)
                 df1['name_code'] = df1.apply(self.fun_name_code, axis=1)
                 df1['cd_exchange'] = df1['WINDCODE'].apply(lambda x: x[-3:].lower())
                 df1.loc[:, 'datasource'] = 'wind'
                 df1.loc[:, 'timestamp'] = datetime.datetime.today()
                 df1.loc[:, 'dt_date'] = datestr
-                df1 = df1.drop('product_code', 1)
+                df1 = df1.drop(['product_code','delivery_month'], 1)
                 df1 = df1.rename(columns={'PRE_CLOSE': 'amt_last_close',
                                           'OPEN': 'amt_open',
                                           'HIGH': 'amt_high',
@@ -833,69 +841,6 @@ class DataCollection():
             except Exception as e:
                 print(e)
                 return pd.DataFrame()
-
-        # def wind_future_daily(self,datestr, contracts):
-        #     try:
-        #         res = w.wss(contracts, "pre_close,open,high,low,close,volume,amt,oi,pre_settle,settle,windcode",
-        #                     "tradeDate=" + datestr + ";priceAdj=U;cycle=D")
-        #         d = res.Data
-        #         f = res.Fields
-        #         df = pd.DataFrame(data=np.transpose(d), columns=f, )
-        #         df1 = df.dropna(subset=['CLOSE'])
-        #         df1['id_instrument'] = df1['WINDCODE'].apply(lambda x: (x[-len(x):-8] + '_' + x[-8:-4]).lower())
-        #         df1['name_code'] = df1['WINDCODE'].apply(lambda x: x[-len(x):-8].lower())
-        #         df1['cd_exchange'] = df1['WINDCODE'].apply(lambda x: x[-3:].lower())
-        #         df1.loc[:, 'datasource'] = 'wind'
-        #         df1.loc[:, 'timestamp'] = datetime.datetime.today()
-        #         df1.loc[:, 'dt_date'] = datestr
-        #         df1 = df1.rename(columns={'PRE_CLOSE': 'amt_last_close',
-        #                                   'OPEN': 'amt_open',
-        #                                   'HIGH': 'amt_high',
-        #                                   'LOW': 'amt_low',
-        #                                   'CLOSE': 'amt_close',
-        #                                   'VOLUME': 'amt_trading_volume',
-        #                                   'AMT': 'amt_trading_value',
-        #                                   'OI': 'amt_holding_volume',
-        #                                   'PRE_SETTLE': 'amt_last_settlement',
-        #                                   'SETTLE': 'amt_settlement',
-        #                                   'WINDCODE': 'code_instrument'
-        #                                   })
-        #         return df1
-        #     except Exception as e:
-        #         print(e)
-        #         return pd.DataFrame()
-        #
-        # # def wind_future_daily_czc(self,datestr, contracts):
-        # #     # datestr = dt.strftime("%Y-%m-%d")
-        # #     try:
-        # #         res = w.wss(contracts, "pre_close,open,high,low,close,volume,amt,oi,pre_settle,settle,windcode",
-        # #                     "tradeDate=" + datestr + ";priceAdj=U;cycle=D")
-        # #         d = res.Data
-        # #         f = res.Fields
-        # #         df = pd.DataFrame(data=np.transpose(d), columns=f, )
-        # #         df1 = df.dropna(subset=['CLOSE'])
-        # #         df1['id_instrument'] = df1['WINDCODE'].apply(lambda x: (x[-len(x):-7] + '_1' + x[-7:-4]).lower())
-        # #         df1['name_code'] = df1['WINDCODE'].apply(lambda x: x[-len(x):-7].lower())
-        # #         df1['cd_exchange'] = df1['WINDCODE'].apply(lambda x: x[-3:].lower())
-        # #         df1.loc[:, 'datasource'] = 'wind'
-        # #         df1.loc[:, 'timestamp'] = datetime.datetime.today()
-        # #         df1.loc[:, 'dt_date'] = datestr
-        # #         df1 = df1.rename(columns={'PRE_CLOSE': 'amt_last_close',
-        # #                                   'OPEN': 'amt_open',
-        # #                                   'HIGH': 'amt_high',
-        # #                                   'LOW': 'amt_low',
-        # #                                   'CLOSE': 'amt_close',
-        # #                                   'VOLUME': 'amt_trading_volume',
-        # #                                   'AMT': 'amt_trading_value',
-        # #                                   'OI': 'amt_holding_volume',
-        # #                                   'PRE_SETTLE': 'amt_last_settlement',
-        # #                                   'SETTLE': 'amt_settlement',
-        # #                                   'WINDCODE': 'code_instrument'
-        # #                                   })
-        # #         return df1
-        # #     except Exception as e:
-        # #         print(e)
-        # #         return pd.DataFrame()
 
     class table_stocks():
 
