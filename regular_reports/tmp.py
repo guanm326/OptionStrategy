@@ -5,7 +5,7 @@ from back_test.model.constant import Util,HistoricalVolatility
 import matplotlib.pyplot as plt
 
 
-name_code = Util.STR_C
+name_code = Util.STR_RU
 df = get_data.get_gc_future_c1_daily(datetime.date(2010,1,1),datetime.date.today(),name_code)
 df[name_code+'_hv30D'] = HistoricalVolatility.hist_vol(df[Util.AMT_CLOSE],n=30)
 

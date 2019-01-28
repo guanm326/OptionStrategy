@@ -125,7 +125,7 @@ def get_50option_mktdata(start_date, end_date):
                                                  options.amt_strike, options.name_contract_month,
                                                  options.dt_maturity, options.nbr_multiplier) \
         .filter(and_(options.dt_listed <= end_date, options.dt_maturity >= start_date))
-    query_etf = admin.session_mktdata().query(Index_mkt.dt_date, Index_mkt.amt_close, Index_mkt.amt_open,
+    query_etf = admin.session_gc().query(Index_mkt.dt_date, Index_mkt.amt_close, Index_mkt.amt_open,
                                               Index_mkt.id_instrument.label(util.ID_UNDERLYING)) \
         .filter(Index_mkt.dt_date >= start_date).filter(Index_mkt.dt_date <= end_date) \
         .filter(Index_mkt.id_instrument == 'index_50etf')

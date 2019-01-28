@@ -121,7 +121,7 @@ def pcr_etf_option(dt_start, dt_end, name_code, df_res):
         .group_by(optionMkt.c.cd_option_type, optionMkt.c.dt_date, optionMkt.c.id_underlying)
     df_pcr = pd.read_sql(query_pcr.statement, query_pcr.session.bind)
 
-    query_etf = admin.session_mktdata().query(Index_mkt.c.dt_date, Index_mkt.c.amt_close, Index_mkt.c.amt_open,
+    query_etf = admin.session_gc().query(Index_mkt.c.dt_date, Index_mkt.c.amt_close, Index_mkt.c.amt_open,
                                               Index_mkt.c.id_instrument.label(c.Util.ID_UNDERLYING)) \
         .filter(Index_mkt.c.dt_date >= dt_start).filter(Index_mkt.c.dt_date <= dt_end) \
         .filter(Index_mkt.c.id_instrument == 'index_50etf')
