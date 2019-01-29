@@ -62,6 +62,9 @@ class LstmRnn:
             data_y.append(y)
         return np.array(data_x), np.array(data_y)
 
+    """
+    load data from csv file and pre precessed for process latter
+    """
     def load(self, path='data.csv'):
         df_data = pd.read_csv(path)
         df = df_data[
@@ -112,6 +115,7 @@ class LstmRnn:
 
     """
     Build a toy rnn with four layers of GRU, LSTM, LSTM, LSTM network
+    Best performance loss: 2.7992e-04 - mean_squared_error: 2.7992e-04 - val_loss: 5.9941e-04 - val_mean_squared_error: 5.9941e-04
     """
 
     def build_four_lay_lstm_rnn(self):
@@ -131,6 +135,28 @@ class LstmRnn:
             print("#####DataPreview#####")
             print(self.model.summary())
 
+    """
+    Build a toy rnn with four layers of GRU, LSTM, LSTM, LSTM network
+    Best performance loss: 2.7992e-04 - mean_squared_error: 2.7992e-04 - val_loss: 5.9941e-04 - val_mean_squared_error: 5.9941e-04
+    """
+    def build_five_lay_lstm_rnn(self):
+        self.model = Sequential()
+        self.model.add(GRU(2048, input_shape=(self.train_lenth, 15), dropout=self.droprate,
+                           recurrent_dropout=self.droprate, activation=self.activation, return_sequences=True))
+        self.model.add(LSTM(1024, activation=self.activation, dropout=self.droprate, recurrent_dropout=self.droprate,
+                            return_sequences=True))
+        self.model.add(LSTM(512, activation=self.activation, dropout=self.droprate, recurrent_dropout=self.droprate,
+                            return_sequences=True))
+        self.model.add(LSTM(256, activation=self.activation, dropout=self.droprate, recurrent_dropout=self.droprate,
+                            return_sequences=True))
+        self.model.add(LSTM(128, activation=self.activation, dropout=self.droprate, recurrent_dropout=self.droprate))
+        self.model.add(Dense(64, activation=self.activation))
+        self.model.add(Dropout(self.droprate))
+        self.model.add(Dense(self.predict_lenth))
+        self.model.compile(loss='mean_squared_error', optimizer=Adam(lr=0.001), metrics=['mean_squared_error'])
+        if self.verbose:
+            print("#####DataPreview#####")
+            print(self.model.summary())
     """
     Train the model
     """
