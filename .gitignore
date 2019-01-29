@@ -4,4 +4,5 @@
 *.png
 *.xlsx
 *.xls
-MachineLearning/example/model_weight.hdf5
+*.hdf5
+*.dat

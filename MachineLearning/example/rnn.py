@@ -45,7 +45,7 @@ df_data = pd.read_csv('data.csv')
 df = df_data[
     ["amt_open", "amt_close", "amt_high", "amt_low", "amt_trading_volume", "amt_trading_value",
      "alpha2", "alpha3", "alpha_量价背离", "alpha_开盘缺口", "alpha_异常交易量", "alpha_量幅背离", "vol"]]
-train_length = 5
+train_length = 10
 predict_length = 1
 sample_rate = 0.6
 df_normalize = normalize(df)
@@ -60,19 +60,19 @@ Setup learning rate reduce and model checkpoint
 checkFile = 'model_weight.hdf5'
 dropout_rate = 0.
 activation = 'relu'
-lr_reduce = ReduceLROnPlateau(monitor="val_loss", factor=0.1, min_delta=0.00001, min_lr=10e-20, patience=3,
+lr_reduce = ReduceLROnPlateau(monitor="val_loss", factor=0.1, min_lr=10e-10, patience=3,
                               verbose=1)
 checkpoint = ModelCheckpoint(checkFile, monitor='val_loss', verbose=1, save_best_only=True, mode='max')
 model = Sequential()
-model.add(GRU(256, input_shape=(train_length, 13), dropout=dropout_rate, recurrent_dropout=dropout_rate,
-              activation=activation,
-              return_sequences=True))
-model.add(LSTM(256, activation=activation, dropout=dropout_rate, recurrent_dropout=dropout_rate))
+model.add(GRU(512, input_shape=(train_length, 13), dropout=dropout_rate, recurrent_dropout=dropout_rate,
+              activation=activation, return_sequences=True))
+model.add(LSTM(256, activation=activation, dropout=dropout_rate, recurrent_dropout=dropout_rate, return_sequences=True))
+model.add(LSTM(128, activation=activation, dropout=dropout_rate, recurrent_dropout=dropout_rate))
 model.add(Dense(64, activation=activation))
 model.add(Dropout(dropout_rate))
 model.add(Dense(predict_length))
 model.compile(loss='mean_squared_error', optimizer=Adam(lr=0.001), metrics=['mean_squared_error'])
-history = model.fit(trainX, trainY, epochs=10, batch_size=64, callbacks=[lr_reduce],
+history = model.fit(trainX, trainY, epochs=100, batch_size=64, callbacks=[lr_reduce],
                     validation_data=(dataX, dataY))
 model.save(checkFile)
 predict_train = model.predict(trainX)
