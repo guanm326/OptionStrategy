@@ -56,45 +56,8 @@ def trade_volume(dt_date, dt_last_week, df_option_metrics, name_code, core_instr
         '91 put iv': df_put['pct_implied_vol'].tolist()
     })
     return df_results
-    #
-    # ldgs = ['持仓量（看涨）', '持仓量（看跌）', '成交量（看涨）', '成交量（看跌）']
-    #
-    # f3, ax3 = plt.subplots()
-    # p1 = ax3.bar(strikes, holding_call, width=wt, color=pu.colors[0])
-    # p2 = ax3.bar(strikes1, holding_put, width=wt, color=pu.colors[1])
-    # p3, = ax3.plot(strikes, trading_call, color=pu.colors[2], linestyle=pu.lines[2], linewidth=2)
-    # p4, = ax3.plot(strikes, trading_put, color=pu.colors[3], linestyle=pu.lines[3], linewidth=2)
-    #
-    # ax3.legend([p1, p2, p3, p4], ldgs, bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
-    #            ncol=4, mode="expand", borderaxespad=0., frameon=False)
-    # ax3.spines['top'].set_visible(False)
-    # ax3.spines['right'].set_visible(False)
-    # ax3.yaxis.set_ticks_position('left')
-    # ax3.xaxis.set_ticks_position('bottom')
-    # f3.set_size_inches((12, 8))
-    #
-    # f3.savefig('../data/' + name_code + '_holdings.png', dpi=300,
-    #            format='png', bbox_inches='tight')
-    #
-    # f4, ax4 = plt.subplots()
-    # p1 = ax4.bar(strikes, call_deltas, width=wt, color=pu.colors[0])
-    # p2 = ax4.bar(strikes1, put_deltas, width=wt, color=pu.colors[1])
-    # # p3, = ax3.plot(strikes, trading_call, color=pu.colors[2], linestyle=pu.lines[2], linewidth=2)
-    # # p4, = ax3.plot(strikes, trading_put, color=pu.colors[3], linestyle=pu.lines[3], linewidth=2)
-    #
-    # ax4.legend([p1, p2], ['看涨期权持仓量变化', '看跌期权持仓量变化'], borderaxespad=0., frameon=False)
-    # ax4.spines['top'].set_visible(False)
-    # ax4.spines['right'].set_visible(False)
-    # ax4.yaxis.set_ticks_position('left')
-    # ax4.xaxis.set_ticks_position('bottom')
-    # f4.set_size_inches((12, 8))
-    #
-    # f4.savefig('../data/' + name_code + '_holding_delta.png', dpi=300,
-    #            format='png', bbox_inches='tight')
-
 
 """成交持仓认沽认购比P/C"""
-
 
 def pcr_commodity_option(dt_start, dt_end, name_code, df_res, min_holding):
     optionMkt = admin.table_options_mktdata()
@@ -110,10 +73,6 @@ def pcr_commodity_option(dt_start, dt_end, name_code, df_res, min_holding):
         .group_by(optionMkt.c.cd_option_type, optionMkt.c.dt_date, optionMkt.c.id_underlying)
     df_pcr = pd.read_sql(query_pcr.statement, query_pcr.session.bind)
     df_srf = get_data.get_future_c1_by_option_daily(start_date, end_date, name_code, min_holding)
-    # 按期权合约持仓量最大选取主力合约
-    # df = df_pcr[df_pcr.groupby(['dt_date', 'cd_option_type'])['total_holding_volume'].transform(max) == df_pcr[
-    #     'total_holding_volume']]
-    # 持仓与成交量计算用所有合约加总
     df = df_pcr.groupby(['dt_date', 'cd_option_type'])[
         'total_holding_volume', 'total_trading_volume'].sum().reset_index()
     df_call = df[df['cd_option_type'] == 'call'].reset_index()
@@ -162,7 +121,7 @@ def pcr_etf_option(dt_start, dt_end, name_code, df_res):
         .group_by(optionMkt.c.cd_option_type, optionMkt.c.dt_date, optionMkt.c.id_underlying)
     df_pcr = pd.read_sql(query_pcr.statement, query_pcr.session.bind)
 
-    query_etf = admin.session_mktdata().query(Index_mkt.c.dt_date, Index_mkt.c.amt_close, Index_mkt.c.amt_open,
+    query_etf = admin.session_gc().query(Index_mkt.c.dt_date, Index_mkt.c.amt_close, Index_mkt.c.amt_open,
                                               Index_mkt.c.id_instrument.label(c.Util.ID_UNDERLYING)) \
         .filter(Index_mkt.c.dt_date >= dt_start).filter(Index_mkt.c.dt_date <= dt_end) \
         .filter(Index_mkt.c.id_instrument == 'index_50etf')
@@ -265,8 +224,6 @@ def implied_vol(last_week, end_date, df_metrics, df_res, name_code):
     optionset.init()
     list_res_iv = []
     while optionset.current_index < optionset.nbr_index:
-        # if optionset.eval_date ==datetime.date(2018,12,19):
-        #     print('')
         dt_maturity = optionset.select_maturity_date(nbr_maturity=0, min_holding=min_holding)
         try:
             iv = optionset.get_atm_iv_by_htbr(dt_maturity)
@@ -302,14 +259,13 @@ def implied_vol_vw(last_week, end_date, df_metrics, df_res, name_code):
 
 """"""
 
-end_date = datetime.date.today()
-# end_date = datetime.date(2019, 1, 11)
+# end_date = datetime.date.today()
+end_date = datetime.date(2019, 1, 25)
 start_date = datetime.date(2017, 1, 1)
 min_holding = 10
 
 writer = ExcelWriter('../data/option_data_python.xlsx')
-name_codes = [c.Util.STR_50ETF, c.Util.STR_CU, c.Util.STR_M, c.Util.STR_SR]
-# name_codes = [ c.Util.STR_M]
+name_codes = [c.Util.STR_50ETF, c.Util.STR_CU, c.Util.STR_M,c.Util.STR_SR]
 for (idx, name_code) in enumerate(name_codes):
     print(name_code)
     df_res = pd.DataFrame()
@@ -338,7 +294,7 @@ for (idx, name_code) in enumerate(name_codes):
 
 name_codes = [c.Util.STR_CF, c.Util.STR_C, c.Util.STR_RU, c.Util.STR_M, c.Util.STR_CU,c.Util.STR_SR]
 
-dt_start = datetime.date(2010, 1, 1)
+dt_start = datetime.date(2000, 1, 1)
 for (idx1, name_code) in enumerate(name_codes):
     print(name_code)
     df_res = pd.DataFrame()

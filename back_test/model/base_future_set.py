@@ -6,6 +6,8 @@ from back_test.model.abstract_base_product_set import AbstractBaseProductSet
 from back_test.model.base_future import BaseFuture
 from back_test.model.base_option import BaseOption
 from back_test.model.constant import FrequentType, Util
+from back_test.model.base_account import BaseAccount
+import back_test.model.constant as c
 
 
 class BaseFutureSet(AbstractBaseProductSet):
@@ -183,6 +185,8 @@ class BaseFutureSet(AbstractBaseProductSet):
                 return True
             else:
                 return False
+    def name_code(self):
+        return self._name_code
 
     def get_basefuture_by_id(self,id):
         for future in self.eligible_futures:
@@ -225,3 +229,31 @@ class BaseFutureSet(AbstractBaseProductSet):
             volume0 = volume
         return res
 
+    def select_c_1(self):
+        return self.select_higher_volume(self.eligible_futures)
+
+    def select_future_by_contract_month(self,contract_month):
+        for f in self.eligible_futures:
+            if int(f.contract_month()) == int(contract_month):
+                return f
+        return None
+
+    def shift_contract_by_maturity(self,c_1:BaseFuture,account:BaseAccount):
+        if not c_1.has_next():
+            trade_unit = account.trade_book.loc[c_1.id_instrument(), Util.TRADE_UNIT]
+            direction = account.trade_book.loc[c_1.id_instrument(), Util.TRADE_LONG_SHORT]
+            if direction == c.LongShort.LONG:
+                close_direction = c.LongShort.SHORT
+            else:
+                close_direction = c.LongShort.LONG
+            order = account.create_trade_order(c_1, close_direction, trade_unit)
+            record = c_1.execute_order(order)
+            account.add_record(record, c_1)
+            # open same position by current most active contract
+            c_1_new = self.select_c_1()
+            order = account.create_trade_order(c_1_new, direction, trade_unit)
+            record = c_1_new.execute_order(order)
+            account.add_record(record, c_1_new)
+            return True
+        else:
+            return False

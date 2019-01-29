@@ -69,7 +69,7 @@ def table_futures_institution_positions():
     return Table('futures_institution_positions', metadata, autoload=True)
 
 def table_indexes_mktdata():
-    return Table('indexes_mktdata', metadata, autoload=True)
+    return Table('indexes_mktdata', metadata_gc, autoload=True)
 
 def table_option_contracts():
     return Table('option_contracts', metadata, autoload=True)

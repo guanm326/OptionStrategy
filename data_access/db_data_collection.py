@@ -238,7 +238,7 @@ class DataCollection():
         def wind_cu_option(self,datestr):
             data=w.wss(
                 "CU1901C46000.SHF,CU1901C47000.SHF,CU1901C48000.SHF,CU1901C49000.SHF,CU1901C50000.SHF,CU1901C51000.SHF,CU1901C52000.SHF,CU1901C53000.SHF,CU1901C54000.SHF,CU1901P46000.SHF,CU1901P47000.SHF,CU1901P48000.SHF,CU1901P49000.SHF,CU1901P50000.SHF,CU1901P51000.SHF,CU1901P52000.SHF,CU1901P53000.SHF,CU1901P54000.SHF,"
-                "CU1902C44000.SHF,CU1902C45000.SHF,CU1902C46000.SHF,CU1902C47000.SHF,CU1902C48000.SHF,CU1902C49000.SHF,CU1902C50000.SHF,CU1902C51000.SHF,CU1902C52000.SHF,CU1902C53000.SHF,CU1902C54000.SHF,CU1902P44000.SHF,CU1902P45000.SHF,CU1902P46000.SHF,CU1902P47000.SHF,CU1902P48000.SHF,CU1902P49000.SHF,CU1902P50000.SHF,CU1902P51000.SHF,CU1902P52000.SHF,CU1902P53000.SHF,CU1902P54000.SHF,CU1903C44000.SHF,CU1903C45000.SHF,CU1903C46000.SHF,CU1903C47000.SHF,CU1903C48000.SHF,CU1903C49000.SHF,CU1903C50000.SHF,CU1903C51000.SHF,CU1903C52000.SHF,CU1903C53000.SHF,CU1903C54000.SHF,CU1903P44000.SHF,CU1903P45000.SHF,CU1903P46000.SHF,CU1903P47000.SHF,CU1903P48000.SHF,CU1903P49000.SHF,CU1903P50000.SHF,CU1903P51000.SHF,CU1903P52000.SHF,CU1903P53000.SHF,CU1903P54000.SHF,CU1904C44000.SHF,CU1904C45000.SHF,CU1904C46000.SHF,CU1904C47000.SHF,CU1904C48000.SHF,CU1904C49000.SHF,CU1904C50000.SHF,CU1904C51000.SHF,CU1904C52000.SHF,CU1904C53000.SHF,CU1904C54000.SHF,CU1904P44000.SHF,CU1904P45000.SHF,CU1904P46000.SHF,CU1904P47000.SHF,CU1904P48000.SHF,CU1904P49000.SHF,CU1904P50000.SHF,CU1904P51000.SHF,CU1904P52000.SHF,CU1904P53000.SHF,CU1904P54000.SHF,CU1905C44000.SHF,CU1905C45000.SHF,CU1905C46000.SHF,CU1905C47000.SHF,CU1905C48000.SHF,CU1905C49000.SHF,CU1905C50000.SHF,CU1905C51000.SHF,CU1905C52000.SHF,CU1905C53000.SHF,CU1905C54000.SHF,CU1905P44000.SHF,CU1905P45000.SHF,CU1905P46000.SHF,CU1905P47000.SHF,CU1905P48000.SHF,CU1905P49000.SHF,CU1905P50000.SHF,CU1905P51000.SHF,CU1905P52000.SHF,CU1905P53000.SHF,CU1905P54000.SHF,CU1906C44000.SHF,CU1906C45000.SHF,CU1906C46000.SHF,CU1906C47000.SHF,CU1906C48000.SHF,CU1906C49000.SHF,CU1906C50000.SHF,CU1906C51000.SHF,CU1906C52000.SHF,CU1906C53000.SHF,CU1906C54000.SHF,CU1906P44000.SHF,CU1906P45000.SHF,CU1906P46000.SHF,CU1906P47000.SHF,CU1906P48000.SHF,CU1906P49000.SHF,CU1906P50000.SHF,CU1906P51000.SHF,CU1906P52000.SHF,CU1906P53000.SHF,CU1906P54000.SHF,CU1907C44000.SHF,CU1907C45000.SHF,CU1907C46000.SHF,CU1907C47000.SHF,CU1907C48000.SHF,CU1907C49000.SHF,CU1907C50000.SHF,CU1907C51000.SHF,CU1907C52000.SHF,CU1907C53000.SHF,CU1907C54000.SHF,CU1907P44000.SHF,CU1907P45000.SHF,CU1907P46000.SHF,CU1907P47000.SHF,CU1907P48000.SHF,CU1907P49000.SHF,CU1907P50000.SHF,CU1907P51000.SHF,CU1907P52000.SHF,CU1907P53000.SHF,CU1907P54000.SHF,CU1908C44000.SHF,CU1908C45000.SHF,CU1908C46000.SHF,CU1908C47000.SHF,CU1908C48000.SHF,CU1908C49000.SHF,CU1908C50000.SHF,CU1908C51000.SHF,CU1908C52000.SHF,CU1908C53000.SHF,CU1908C54000.SHF,CU1908P44000.SHF,CU1908P45000.SHF,CU1908P46000.SHF,CU1908P47000.SHF,CU1908P48000.SHF,CU1908P49000.SHF,CU1908P50000.SHF,CU1908P51000.SHF,CU1908P52000.SHF,CU1908P53000.SHF,CU1908P54000.SHF,CU1909C44000.SHF,CU1909C45000.SHF,CU1909C46000.SHF,CU1909C47000.SHF,CU1909C48000.SHF,CU1909C49000.SHF,CU1909C50000.SHF,CU1909C51000.SHF,CU1909C52000.SHF,CU1909C53000.SHF,CU1909C54000.SHF,CU1909P44000.SHF,CU1909P45000.SHF,CU1909P46000.SHF,CU1909P47000.SHF,CU1909P48000.SHF,CU1909P49000.SHF,CU1909P50000.SHF,CU1909P51000.SHF,CU1909P52000.SHF,CU1909P53000.SHF,CU1909P54000.SHF,CU1910C44000.SHF,CU1910C45000.SHF,CU1910C46000.SHF,CU1910C47000.SHF,CU1910C48000.SHF,CU1910C49000.SHF,CU1910C50000.SHF,CU1910C51000.SHF,CU1910C52000.SHF,CU1910C53000.SHF,CU1910C54000.SHF,CU1910C55000.SHF,CU1910C56000.SHF,CU1910P44000.SHF,CU1910P45000.SHF,CU1910P46000.SHF,CU1910P47000.SHF,CU1910P48000.SHF,CU1910P49000.SHF,CU1910P50000.SHF,CU1910P51000.SHF,CU1910P52000.SHF,CU1910P53000.SHF,CU1910P54000.SHF,CU1910P55000.SHF,CU1910P56000.SHF,CU1911C44000.SHF,CU1911C45000.SHF,CU1911C46000.SHF,CU1911C47000.SHF,CU1911C48000.SHF,CU1911C49000.SHF,CU1911C50000.SHF,CU1911C51000.SHF,CU1911C52000.SHF,CU1911C53000.SHF,CU1911C54000.SHF,CU1911C55000.SHF,CU1911P44000.SHF,CU1911P45000.SHF,CU1911P46000.SHF,CU1911P47000.SHF,CU1911P48000.SHF,CU1911P49000.SHF,CU1911P50000.SHF,CU1911P51000.SHF,CU1911P52000.SHF,CU1911P53000.SHF,CU1911P54000.SHF,CU1911P55000.SHF,CU1912C44000.SHF,CU1912C45000.SHF,CU1912C46000.SHF,CU1912C47000.SHF,CU1912C48000.SHF,CU1912C49000.SHF,CU1912C50000.SHF,CU1912C51000.SHF,CU1912C52000.SHF,CU1912C53000.SHF,CU1912C54000.SHF,CU1912C55000.SHF,CU1912P44000.SHF,CU1912P45000.SHF,CU1912P46000.SHF,CU1912P47000.SHF,CU1912P48000.SHF,CU1912P49000.SHF,CU1912P50000.SHF,CU1912P51000.SHF,CU1912P52000.SHF,CU1912P53000.SHF,CU1912P54000.SHF,CU1912P55000.SHF"
+                "CU1902C44000.SHF,CU1902C45000.SHF,CU1902C46000.SHF,CU1902C47000.SHF,CU1902C48000.SHF,CU1902C49000.SHF,CU1902C50000.SHF,CU1902C51000.SHF,CU1902C52000.SHF,CU1902C53000.SHF,CU1902C54000.SHF,CU1902P44000.SHF,CU1902P45000.SHF,CU1902P46000.SHF,CU1902P47000.SHF,CU1902P48000.SHF,CU1902P49000.SHF,CU1902P50000.SHF,CU1902P51000.SHF,CU1902P52000.SHF,CU1902P53000.SHF,CU1902P54000.SHF,CU1903C44000.SHF,CU1903C45000.SHF,CU1903C46000.SHF,CU1903C47000.SHF,CU1903C48000.SHF,CU1903C49000.SHF,CU1903C50000.SHF,CU1903C51000.SHF,CU1903C52000.SHF,CU1903C53000.SHF,CU1903C54000.SHF,CU1903P44000.SHF,CU1903P45000.SHF,CU1903P46000.SHF,CU1903P47000.SHF,CU1903P48000.SHF,CU1903P49000.SHF,CU1903P50000.SHF,CU1903P51000.SHF,CU1903P52000.SHF,CU1903P53000.SHF,CU1903P54000.SHF,CU1904C44000.SHF,CU1904C45000.SHF,CU1904C46000.SHF,CU1904C47000.SHF,CU1904C48000.SHF,CU1904C49000.SHF,CU1904C50000.SHF,CU1904C51000.SHF,CU1904C52000.SHF,CU1904C53000.SHF,CU1904C54000.SHF,CU1904P44000.SHF,CU1904P45000.SHF,CU1904P46000.SHF,CU1904P47000.SHF,CU1904P48000.SHF,CU1904P49000.SHF,CU1904P50000.SHF,CU1904P51000.SHF,CU1904P52000.SHF,CU1904P53000.SHF,CU1904P54000.SHF,CU1905C44000.SHF,CU1905C45000.SHF,CU1905C46000.SHF,CU1905C47000.SHF,CU1905C48000.SHF,CU1905C49000.SHF,CU1905C50000.SHF,CU1905C51000.SHF,CU1905C52000.SHF,CU1905C53000.SHF,CU1905C54000.SHF,CU1905P44000.SHF,CU1905P45000.SHF,CU1905P46000.SHF,CU1905P47000.SHF,CU1905P48000.SHF,CU1905P49000.SHF,CU1905P50000.SHF,CU1905P51000.SHF,CU1905P52000.SHF,CU1905P53000.SHF,CU1905P54000.SHF,CU1906C44000.SHF,CU1906C45000.SHF,CU1906C46000.SHF,CU1906C47000.SHF,CU1906C48000.SHF,CU1906C49000.SHF,CU1906C50000.SHF,CU1906C51000.SHF,CU1906C52000.SHF,CU1906C53000.SHF,CU1906C54000.SHF,CU1906P44000.SHF,CU1906P45000.SHF,CU1906P46000.SHF,CU1906P47000.SHF,CU1906P48000.SHF,CU1906P49000.SHF,CU1906P50000.SHF,CU1906P51000.SHF,CU1906P52000.SHF,CU1906P53000.SHF,CU1906P54000.SHF,CU1907C44000.SHF,CU1907C45000.SHF,CU1907C46000.SHF,CU1907C47000.SHF,CU1907C48000.SHF,CU1907C49000.SHF,CU1907C50000.SHF,CU1907C51000.SHF,CU1907C52000.SHF,CU1907C53000.SHF,CU1907C54000.SHF,CU1907P44000.SHF,CU1907P45000.SHF,CU1907P46000.SHF,CU1907P47000.SHF,CU1907P48000.SHF,CU1907P49000.SHF,CU1907P50000.SHF,CU1907P51000.SHF,CU1907P52000.SHF,CU1907P53000.SHF,CU1907P54000.SHF,CU1908C44000.SHF,CU1908C45000.SHF,CU1908C46000.SHF,CU1908C47000.SHF,CU1908C48000.SHF,CU1908C49000.SHF,CU1908C50000.SHF,CU1908C51000.SHF,CU1908C52000.SHF,CU1908C53000.SHF,CU1908C54000.SHF,CU1908P44000.SHF,CU1908P45000.SHF,CU1908P46000.SHF,CU1908P47000.SHF,CU1908P48000.SHF,CU1908P49000.SHF,CU1908P50000.SHF,CU1908P51000.SHF,CU1908P52000.SHF,CU1908P53000.SHF,CU1908P54000.SHF,CU1909C44000.SHF,CU1909C45000.SHF,CU1909C46000.SHF,CU1909C47000.SHF,CU1909C48000.SHF,CU1909C49000.SHF,CU1909C50000.SHF,CU1909C51000.SHF,CU1909C52000.SHF,CU1909C53000.SHF,CU1909C54000.SHF,CU1909P44000.SHF,CU1909P45000.SHF,CU1909P46000.SHF,CU1909P47000.SHF,CU1909P48000.SHF,CU1909P49000.SHF,CU1909P50000.SHF,CU1909P51000.SHF,CU1909P52000.SHF,CU1909P53000.SHF,CU1909P54000.SHF,CU1910C44000.SHF,CU1910C45000.SHF,CU1910C46000.SHF,CU1910C47000.SHF,CU1910C48000.SHF,CU1910C49000.SHF,CU1910C50000.SHF,CU1910C51000.SHF,CU1910C52000.SHF,CU1910C53000.SHF,CU1910C54000.SHF,CU1910C55000.SHF,CU1910C56000.SHF,CU1910P44000.SHF,CU1910P45000.SHF,CU1910P46000.SHF,CU1910P47000.SHF,CU1910P48000.SHF,CU1910P49000.SHF,CU1910P50000.SHF,CU1910P51000.SHF,CU1910P52000.SHF,CU1910P53000.SHF,CU1910P54000.SHF,CU1910P55000.SHF,CU1910P56000.SHF,CU1911C44000.SHF,CU1911C45000.SHF,CU1911C46000.SHF,CU1911C47000.SHF,CU1911C48000.SHF,CU1911C49000.SHF,CU1911C50000.SHF,CU1911C51000.SHF,CU1911C52000.SHF,CU1911C53000.SHF,CU1911C54000.SHF,CU1911C55000.SHF,CU1911P44000.SHF,CU1911P45000.SHF,CU1911P46000.SHF,CU1911P47000.SHF,CU1911P48000.SHF,CU1911P49000.SHF,CU1911P50000.SHF,CU1911P51000.SHF,CU1911P52000.SHF,CU1911P53000.SHF,CU1911P54000.SHF,CU1911P55000.SHF,CU1912C44000.SHF,CU1912C45000.SHF,CU1912C46000.SHF,CU1912C47000.SHF,CU1912C48000.SHF,CU1912C49000.SHF,CU1912C50000.SHF,CU1912C51000.SHF,CU1912C52000.SHF,CU1912C53000.SHF,CU1912C54000.SHF,CU1912C55000.SHF,CU1912P44000.SHF,CU1912P45000.SHF,CU1912P46000.SHF,CU1912P47000.SHF,CU1912P48000.SHF,CU1912P49000.SHF,CU1912P50000.SHF,CU1912P51000.SHF,CU1912P52000.SHF,CU1912P53000.SHF,CU1912P54000.SHF,CU1912P55000.SHF,CU2001C42000.SHF,CU2001C43000.SHF,CU2001C44000.SHF,CU2001C45000.SHF,CU2001C46000.SHF,CU2001C47000.SHF,CU2001C48000.SHF,CU2001C49000.SHF,CU2001C50000.SHF,CU2001C51000.SHF,CU2001C52000.SHF,CU2001P42000.SHF,CU2001P43000.SHF,CU2001P44000.SHF,CU2001P45000.SHF,CU2001P46000.SHF,CU2001P47000.SHF,CU2001P48000.SHF,CU2001P49000.SHF,CU2001P50000.SHF,CU2001P51000.SHF,CU2001P52000.SHF"
                 ,"pre_close,open,high,low,close,volume,amt,oi,oi_chg,pre_settle,settle","tradeDate="+datestr+";priceAdj=U;cycle=D")
             # w.wset("optionchain", "date=2018-09-21;us_code=CU.SHF;option_var=全部;call_put=全部")
             df = pd.DataFrame(data=np.transpose(data.Data), columns=data.Fields)
@@ -464,14 +464,17 @@ class DataCollection():
             return db_data
 
         def wind_data_sr_option(self, start_dates_tr,end_date_str,wind_contract='all'):
-
+            option_contracts = admin_read.table_option_contracts()
             db_data = []
             # id_underlying = wind_contract[0:2].lower() + '_1' + wind_contract[2:5]
             name_code = 'sr'
             datasource = 'wind'
             cd_exchange = 'czce'
             flag_night = -1
-
+            # df_contracts = option_contracts.select(option_contracts.c.dt_maturity >= end_date_str).execute()
+            query_c = admin_read.session_mktdata().query(admin_read.table_option_contracts()) \
+                .filter(admin_read.table_option_contracts().c.dt_maturity >= end_date_str)
+            df_contracts = pd.read_sql(query_c.statement, query_c.session.bind)
             data = w.wset("optionfuturesdailyquotation",
                    "exchange=CZCE;productcode=SR;contract="+wind_contract+";startdate="+start_dates_tr+";enddate="+end_date_str)
             print(data.ErrorCode)
@@ -482,10 +485,8 @@ class DataCollection():
             for (i2, df_mktdata) in df_mktdatas.iterrows():
                 dt_date = df_mktdata['date'].date()
                 option_code = df_mktdata['option_code']
-                # TODO
-                id_instrument = option_code[0:2].lower()+'_1'+option_code[2:5]+'_'+option_code[5].lower() +'_'+option_code[-4:]
-                id_underlying = option_code[0:2].lower()+'_1'+option_code[2:5]
-                windcode = option_code+'.CZC'
+                windcode = option_code + '.CZC'
+                name_contract_month = df_contracts[df_contracts['windcode']==windcode]['name_contract_month'].values[0]
                 amt_strike = option_code[-4:]
                 if option_code[5].lower()=='c':
                     cd_option_type = 'call'
@@ -493,7 +494,8 @@ class DataCollection():
                     cd_option_type = 'put'
                 else:
                     cd_option_type = None
-
+                id_instrument = name_code + '_' + name_contract_month + '_' + cd_option_type[0] + '_' + str(int(amt_strike))
+                id_underlying = name_code + '_' + name_contract_month
                 amt_last_settlement = df_mktdata['pre_settle']
                 amt_open = df_mktdata['open']
                 amt_high = df_mktdata['highest']
@@ -501,10 +503,6 @@ class DataCollection():
                 amt_close = df_mktdata['close']
                 amt_settlement = df_mktdata['settle']
                 amt_delta = df_mktdata['delta']
-                # amt_gamma = df_mktdata['gamma']
-                # amt_vega = df_mktdata['vega']
-                # amt_theta = df_mktdata['theta']
-                # amt_rho = df_mktdata['rho']
                 amt_trading_volume = df_mktdata['volume']
                 amt_trading_value = df_mktdata['amount']
                 amt_holding_volume = df_mktdata['position']
@@ -738,7 +736,7 @@ class DataCollection():
             name_code = id_instrument[0:2]
             tickdata = w.wsd(windcode,
                              "pre_close,open,high,low,close,volume,amt,oi,pre_settle,settle",
-                             datestr, datestr, "Fill=Previous")
+                             datestr, datestr, "")
             if tickdata.ErrorCode != 0:
                 print('wind get data error ', datestr, ',errorcode : ', tickdata.ErrorCode)
                 return []
@@ -783,6 +781,67 @@ class DataCollection():
                 db_data.append(db_row)
             return db_data
 
+        def fun_id_instrument(self,df):
+            WINDCODE = df['WINDCODE']
+            product_code = df['product_code']
+            if len(WINDCODE) == len(product_code) + 4:
+                res = (WINDCODE[-len(WINDCODE):-8] + '_' + WINDCODE[-8:-4]).lower()
+            else:
+                delivery_month = df['delivery_month']
+                name_contract_month = datetime.datetime.strptime(delivery_month, "%Y%m").date().strftime("%y%m")
+                res = (WINDCODE[-len(WINDCODE):-7] + '_' + name_contract_month).lower()
+            return res
+
+        def fun_name_code(self,df):
+            WINDCODE = df['WINDCODE']
+            product_code = df['product_code']
+            if len(WINDCODE) == len(product_code) + 4:
+                res = (WINDCODE[-len(WINDCODE):-8]).lower()
+            else:
+                res = (WINDCODE[-len(WINDCODE):-7]).lower()
+            return res
+
+        def wind_future_daily(self, datestr, product_code):
+            try:
+                data_contracts = w.wset("futurecc",
+                                        "startdate=" + datestr + ";enddate=" + datestr + ";wind_code=" + product_code)
+                df_contracts = pd.DataFrame(data=np.transpose(data_contracts.Data), columns=data_contracts.Fields)
+                contracts = ""
+                for c in df_contracts['wind_code'].values:
+                    contracts += c + ","
+                # c_str = c_str[0:len(c_str)-2]
+                res = w.wss(contracts, "pre_close,open,high,low,close,volume,amt,oi,pre_settle,settle,windcode",
+                            "tradeDate=" + datestr + ";priceAdj=U;cycle=D")
+                d = res.Data
+                f = res.Fields
+                df = pd.DataFrame(data=np.transpose(d), columns=f)
+                df1 = df.dropna(subset=['CLOSE'])
+                df1['product_code'] = product_code
+                df1 = df1.join(df_contracts[['delivery_month','wind_code']].set_index('wind_code'),on='WINDCODE')
+                df1['id_instrument'] = df1.apply(self.fun_id_instrument, axis=1)
+                df1['name_code'] = df1.apply(self.fun_name_code, axis=1)
+                df1['cd_exchange'] = df1['WINDCODE'].apply(lambda x: x[-3:].lower())
+                df1.loc[:, 'datasource'] = 'wind'
+                df1.loc[:, 'timestamp'] = datetime.datetime.today()
+                df1.loc[:, 'dt_date'] = datestr
+                df1 = df1.drop(['product_code','delivery_month'], 1)
+                df1 = df1.rename(columns={'PRE_CLOSE': 'amt_last_close',
+                                          'OPEN': 'amt_open',
+                                          'HIGH': 'amt_high',
+                                          'LOW': 'amt_low',
+                                          'CLOSE': 'amt_close',
+                                          'VOLUME': 'amt_trading_volume',
+                                          'AMT': 'amt_trading_value',
+                                          'OI': 'amt_holding_volume',
+                                          'PRE_SETTLE': 'amt_last_settlement',
+                                          'SETTLE': 'amt_settlement',
+                                          'WINDCODE': 'code_instrument'
+                                          })
+                return df1
+            except Exception as e:
+                print(e)
+                return pd.DataFrame()
+
     class table_stocks():
 
         def wind_A_shares_total(self,datestr):
@@ -823,9 +882,9 @@ class DataCollection():
             db_data = []
             datasource = 'wind'
             # tickdata = w.wsd(windcode, "pre_close,open,high,low,close,volume,amt,trade_status,sec_name,windcode,exch_eng",
-            #                  begdate, enddate, "Fill=Previous")
+            #                  begdate, enddate, "")
             tickdata = w.wsd(windcode, "pre_close,close,sec_name,windcode,exch_eng",
-                             begdate, enddate, "Fill=Previous")
+                             begdate, enddate, "")
             if tickdata.ErrorCode != 0:
                 print('wind get data error ', begdate, enddate, ',errorcode : ', tickdata.ErrorCode)
                 return []
@@ -1177,7 +1236,7 @@ class DataCollection():
             db_data = []
             datasource = 'wind'
             data = w.wsd(windcode, "open,high,low,close,volume,amt",
-                         date, date, "Fill=Previous")
+                         date, date, "")
             df = pd.DataFrame()
             for i, f in enumerate(data.Fields):
                 df[f] = data.Data[i]
@@ -1215,7 +1274,7 @@ class DataCollection():
             db_data = []
             datasource = 'wind'
             data = w.wsd(windcode, "open,high,low,close,volume,amt",
-                         begdate, enddate, "Fill=Previous")
+                         begdate, enddate, "")
             df = pd.DataFrame()
             for i, f in enumerate(data.Fields):
                 df[f] = data.Data[i]
@@ -1285,7 +1344,6 @@ class DataCollection():
             data = w.wsi(windcode, "close,volume,amt", datestr + " 09:00:00", datestr + " 15:01:00", "Fill=Previous")
             datetimes = data.Times
             errorcode = data.ErrorCode
-            print(errorcode)
             try:
                 prices = data.Data[0]
                 volumes = data.Data[1]

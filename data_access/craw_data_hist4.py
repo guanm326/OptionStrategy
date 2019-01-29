@@ -11,8 +11,7 @@ import pandas as pd
 import numpy as np
 
 """
-SH300 TR
-wind data
+batch insert option daily data
 """
 
 w.start()
@@ -24,16 +23,14 @@ options_mktdata_daily = admin.table_options_mktdata()
 dc = DataCollection()
 
 today = datetime.date.today()
-beg_date = datetime.date(2018, 4, 19)
-# beg_date = datetime.date(2018, 9, 1)
-# end_date = datetime.date.today()
-end_date = datetime.date(2018, 5, 20)
+beg_date = datetime.date(2019, 1, 1)
+end_date = datetime.date.today()
 
 date_range = w.tdays(beg_date, end_date, "").Data[0]
 date_range = sorted(date_range, reverse=True)
 for dt in date_range:
-    # db_data = dc.table_options().wind_cu_option(dt.strftime("%Y-%m-%d"))
-    db_data = dc.table_options().wind_data_50etf_option(dt.strftime("%Y-%m-%d"))
+    db_data = dc.table_options().wind_cu_option(dt.strftime("%Y-%m-%d"))
+    # db_data = dc.table_options().wind_data_50etf_option(dt.strftime("%Y-%m-%d"))
     if len(db_data) == 0: print('no data')
     for res in db_data:
         try:

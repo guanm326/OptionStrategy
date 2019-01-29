@@ -5,7 +5,9 @@ from typing import List, Union
 import math
 import datetime
 import typing
-
+from sklearn.linear_model import LassoCV, RidgeCV
+import statsmodels.api as sm
+import QuantLib as ql
 
 class FrequentType(Enum):
     DAILY = 1
@@ -597,7 +599,8 @@ class OptionFilter:
                        'cu_1909': datetime.date(2019, 8, 26),
                        'cu_1910': datetime.date(2019, 9, 24),
                        'cu_1911': datetime.date(2019, 10, 25),
-                       'cu_1912': datetime.date(2019, 11, 25)
+                       'cu_1912': datetime.date(2019, 11, 25),
+                       'cu_2001': datetime.date(2019, 12, 25),
                        }
 
     @staticmethod
@@ -760,13 +763,6 @@ class Calendar(object):
             return last_business_day_this_month
 
 
-# dl = [datetime.date(2017, 1, 4), datetime.date(2017, 1, 2), datetime.date(2018, 1, 1), datetime.date(2018, 1, 2),datetime.date(2017, 2, 6),
-#       datetime.date(2017, 3, 6), datetime.date(2017, 3, 3), datetime.date(2017, 3, 5), datetime.date(2017, 4, 2),
-#       datetime.date(2017, 4, 5)]
-# c = Calendar(dl, 2018)
-# c.init()
-# print(c.firstBusinessDayNextMonth(datetime.date(2017,1,1)))
-
 class PricingUtil:
     @staticmethod
     def payoff(spot: float, strike: float, option_type: OptionType):
@@ -831,7 +827,6 @@ class PricingUtil:
             date = ql.Date(1, int(month), int(year))
             maturity_date = calendar.advance(calendar.advance(date, ql.Period(-1, ql.Months)), ql.Period(-5, ql.Days))
         return maturity_date
-
 
 class Util:
     """database column names"""
@@ -1083,10 +1078,6 @@ class Util:
             else:
                 continue
 
-
-import QuantLib as ql
-
-
 class QuantlibUtil:
     @staticmethod
     def to_dt_dates(ql_dates):
@@ -1199,13 +1190,47 @@ class Statistics:
         low = Statistics.moving_average(df_series, n) - nbr_std * Statistics.standard_deviation(df_series, n)
         return low
 
+    @staticmethod
+    def linear_regression(x, y):
+        reg = sm.OLS(y, x).fit()
+        return reg
+
+    @staticmethod
+    def ridge_regression(x, y):
+        n_alphas = 100
+        alphas = np.logspace(-2, 4, n_alphas)
+
+        r = RidgeCV(alphas=alphas).fit(x.values, y.values)
+        coef = pd.Series(r.coef_.copy(), index=x.columns)
+        select = coef.abs().nlargest(10).index.tolist()
+        reg = sm.OLS(y, x[select]).fit()
+
+        return select, reg
+
+    @staticmethod
+    def lasso_regression(x, y):
+        n_alphas = 100
+        alphas = np.logspace(-4, 4, n_alphas)
+
+        r = LassoCV(alphas=alphas).fit(x.values, y.values)
+        coef = pd.Series(r.coef_.copy(), index=x.columns)
+        select = coef[coef != 0].abs().index.tolist()
+        reg = sm.OLS(y, x[select]).fit()
+
+        return select, reg
 
 class HistoricalVolatility:
 
     @staticmethod
-    def hist_yield_daily(closes,n=20):
-        series = np.log(closes).diff()
-        res_series = series.rolling(window=n).mean()
+    def log_yield(closes,n=1):
+        res_series = np.log(closes).diff(n)
+        return res_series
+
+    @staticmethod
+    def arithmetic_yield(closes,n=1):
+        series = closes.diff(n)
+        series1 = closes.shift(n)
+        res_series = series/series1
         return res_series
 
     @staticmethod
@@ -1247,11 +1272,6 @@ class HistoricalVolatility:
     def fun_garman_klass(df: pd.Series) -> float:
         return 0.5 * HistoricalVolatility.fun_squred_log_high_low(df) - (2 * math.log(2) - 1) * HistoricalVolatility.fun_squred_log_close_open(df)
 
-
-
-
-
-
 class CdTimingStatus(Enum):
     STAY_MID = 1
     STAY_UPPER = 3
@@ -1259,8 +1279,6 @@ class CdTimingStatus(Enum):
     BREAK_TO_UPPER = -1
     BREAK_TO_LOWER = -2
     BREAK_TO_MID = -4
-
-
 
 class Timing:
 
