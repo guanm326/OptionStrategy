@@ -1,14 +1,15 @@
-from sqlalchemy import create_engine, MetaData, Table, Column, TIMESTAMP
-from sqlalchemy.orm import sessionmaker
-from data_access.db_tables import DataBaseTables as dbt
-from WindPy import w
 import datetime
-import pandas as pd
-import numpy as np
-from data_access import db_utilities as du
 import math
+
+import numpy as np
+import pandas as pd
+from WindPy import w
+from sqlalchemy import create_engine, MetaData, Table
+from sqlalchemy.orm import sessionmaker
+
 import Utilities.admin_util as admin_read
-import Utilities.admin_write_util as admin_write
+from data_access.db_tables import DataBaseTables as dbt
+from data_access.deprecated import db_utilities as du
 
 
 class DataCollection():

@@ -1,15 +1,13 @@
 # encoding: utf-8
 
 import datetime
+
+import numpy as np
+import pandas as pd
 from WindPy import w
-from data_access import spider_api_dce as dce
-from data_access import spider_api_sfe as sfe
-from data_access import spider_api_czce as czce
-from data_access.db_data_collection import DataCollection
+
 from Utilities import admin_write_util as admin
 from back_test.model.constant import Util
-import pandas as pd
-import numpy as np
 
 """
 金融期货
