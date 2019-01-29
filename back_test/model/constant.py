@@ -1212,9 +1212,11 @@ class Statistics:
         low = Statistics.moving_average(df_series, n) - nbr_std * Statistics.standard_deviation(df_series, n)
         return low
 
+
+class Regression:
     @staticmethod
     def linear_regression(x, y):
-        reg = sm.OLS(y, x).fit()
+        reg = sm.OLS(y, sm.add_constant(x)).fit()
         return reg
 
     @staticmethod
@@ -1225,7 +1227,7 @@ class Statistics:
         r = RidgeCV(alphas=alphas).fit(x.values, y.values)
         coef = pd.Series(r.coef_.copy(), index=x.columns)
         select = coef.abs().nlargest(10).index.tolist()
-        reg = sm.OLS(y, x[select]).fit()
+        reg = sm.OLS(y, sm.add_constant(x[select])).fit()
 
         return select, reg
 
@@ -1237,7 +1239,7 @@ class Statistics:
         r = LassoCV(alphas=alphas).fit(x.values, y.values)
         coef = pd.Series(r.coef_.copy(), index=x.columns)
         select = coef[coef != 0].abs().index.tolist()
-        reg = sm.OLS(y, x[select]).fit()
+        reg = sm.OLS(y, sm.add_constant(x[select])).fit()
 
         return select, reg
 
