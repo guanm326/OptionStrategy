@@ -4,7 +4,7 @@ import datetime
 import statsmodels.api as sm
 from Utilities.PlotUtil import PlotUtil
 from back_test.model.constant import HistoricalVolatility as hv
-from back_test.model.constant import Statistics
+from back_test.model.constant import Regression
 
 def flag_t_test(pvalues):
     for p in pvalues:
@@ -63,7 +63,7 @@ data_reg['y'] = hv.arithmetic_yield(data_reg['steel_index_bysales'])
 data_reg = data_reg[['y', 'BETA_S', 'SMB_S', 'HC_S']].dropna()
 x_s = data_reg[['BETA_S', 'SMB_S', 'HC_S']]
 y = data_reg['y']
-reg = Statistics.linear_regression(x_s, y)
+reg = Regression.linear_regression(x_s, y)
 print(reg.params)
 print(reg.pvalues)
 print(reg.rsquared)
@@ -98,14 +98,14 @@ def steel_stock_factoring():
         data_reg_s = data_reg[['y','BETA_S', 'SMB_S', 'HC_S']].dropna()
         x_s = data_reg_s[['BETA_S', 'SMB_S', 'HC_S']]
         y = data_reg_s['y']
-        reg_s = Statistics.linear_regression(x_s, y)
+        reg_s = Regression.linear_regression(x_s, y)
         rsd_s = reg_s.resid
         df_res1['cum_rsd_s_'+id_stock] = (1 + rsd_s).cumprod()
 
         data_reg_f = data_reg[['y','BETA_F', 'SMB_F', 'HC_F']].dropna()
         x_f = data_reg_f[['BETA_F', 'SMB_F', 'HC_F']]
         y = data_reg_f['y']
-        reg_f = Statistics.linear_regression(x_f, y)
+        reg_f = Regression.linear_regression(x_f, y)
         rsd_f = reg_f.resid
         df_res2['cum_rsd_f_'+id_stock] = (1 + rsd_f).cumprod()
 
