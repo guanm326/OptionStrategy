@@ -729,7 +729,7 @@ class DataCollection():
                 db_data.append(db_row)
             return db_data
 
-        def wind_index_future_daily(self, datestr, id_instrument, windcode):
+        def wind_index_future_daily(self, start, end, id_instrument, windcode):
             db_data = []
             datasource = 'wind'
             flag_night = -1
@@ -737,14 +737,15 @@ class DataCollection():
             name_code = id_instrument[0:2]
             tickdata = w.wsd(windcode,
                              "pre_close,open,high,low,close,volume,amt,oi,pre_settle,settle",
-                             datestr, datestr, "")
+                             start, end, "")
             if tickdata.ErrorCode != 0:
-                print('wind get data error ', datestr, ',errorcode : ', tickdata.ErrorCode)
+                print('wind get data error ', end, ',errorcode : ', tickdata.ErrorCode)
                 return []
             df = pd.DataFrame()
             for i, f in enumerate(tickdata.Fields):
                 df[f] = tickdata.Data[i]
             df['dt_datetime'] = tickdata.Times
+            df = df.dropna(subset=['CLOSE'])
             df = df.fillna(0.0)
             for (idx, row) in df.iterrows():
                 dt = row['dt_datetime']
@@ -756,7 +757,6 @@ class DataCollection():
                 volume = row['VOLUME']
                 amt = row['AMT']
                 amt_holding_volume = row['OI']
-
                 amt_last_close = row['PRE_CLOSE']
                 amt_last_settlement = row['PRE_SETTLE']
                 amt_settlement = row['SETTLE']
@@ -974,15 +974,13 @@ class DataCollection():
 
     class table_future_contracts():
 
-        def get_future_contract_ids(self, datestr):
-            engine = create_engine('mysql+pymysql://root:liz1128@101.132.148.152/mktdata',
-                                   echo=False)
+        def get_future_contract_ids(self, start, end=None):
+            if end is None: end=start
+            engine = admin_read.engine
             FutureContracts = dbt.Futures
             Session = sessionmaker(bind=engine)
             sess = Session()
-            query = sess.query(FutureContracts.id_instrument, FutureContracts.windcode) \
-                .filter(datestr >= FutureContracts.dt_listed) \
-                .filter(datestr <= FutureContracts.dt_maturity)
+            query = sess.query(FutureContracts.id_instrument, FutureContracts.windcode, FutureContracts.name_code,FutureContracts.dt_listed,FutureContracts.dt_maturity)
             df_windcode = pd.read_sql(query.statement, query.session.bind)
             return df_windcode
 
@@ -996,11 +994,14 @@ class DataCollection():
                 db_data.extend( self.wind_future_contracts(category_code,nbr_multiplier))
             return db_data
 
-        def wind_future_contracts(self, category_code, nbr_multiplier):
+        def wind_future_contracts(self, category_code, nbr_multiplier,start=None,end=None):
             db_data = []
 
             cd_exchange = 'cfe'
-            data = w.wset("futurecc", "wind_code=" + category_code)
+            if start is not None:
+                data = w.wset("futurecc", "startdate="+start+";enddate="+end+";wind_code=" + category_code)
+            else:
+                data = w.wset("futurecc", "wind_code=" + category_code)
             df_contracts = pd.DataFrame()
             for i1, f1 in enumerate(data.Fields):
                 df_contracts[f1] = data.Data[i1]

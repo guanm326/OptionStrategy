@@ -7,7 +7,7 @@ from scipy.stats.stats import pearsonr
 
 dt_start = datetime.date(2010, 1, 1)
 dt_end = datetime.date(2018, 12, 31)
-name_code = Util.STR_IH
+name_code = Util.STR_IF
 df_daily = get_mktdata_future_c1_daily(dt_start, dt_end, name_code)
 df_daily['vol'] = HistoricalVolatility.hist_vol(df_daily[Util.AMT_CLOSE], 20)
 df_daily.loc[:, 'vwap'] = df_daily.loc[:, Util.AMT_TRADING_VALUE] / df_daily.loc[:, Util.AMT_TRADING_VOLUME] / 300.0
