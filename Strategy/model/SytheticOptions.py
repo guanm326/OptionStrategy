@@ -5,7 +5,7 @@ import back_test.model.constant as c
 from back_test.model.base_account import BaseAccount
 from PricingLibrary.BlackCalculator import BlackCalculator
 from PricingLibrary.Options import EuropeanOption
-from OptionStrategyLib.VolatilityModel.historical_volatility import HistoricalVolatilityModels as histvol
+from back_test.model.constant import HistoricalVolatility as histvol
 from Utilities.PlotUtil import PlotUtil
 import matplotlib.pyplot as plt
 import datetime
@@ -42,6 +42,7 @@ class SytheticOption(object):
         self.H = None
         self.delta_upper_bound = 0.99
         self.flag_fix_ttm = True
+        self.rho = 0.01
 
     def _prepare_data(self):
         days_1y = 252
@@ -100,7 +101,7 @@ class SytheticOption(object):
         # print(vol)
         black = BlackCalculator(self.ttm, self.target_option.strike,
                                 self.target_option.option_type, spot, vol, self.rf)
-        gamma = black.Gamma()
+        gamma = black.Gamma_1pct()
 
         return gamma
 
@@ -132,10 +133,9 @@ class SytheticOption(object):
             else:
                 return False
 
-    def whalley_wilmott(self, eval_date, spot, gamma,dt_maturity, rho=0.01):
+    def whalley_wilmott(self, eval_date, spot, gamma,dt_maturity):
         fee = self.slippage_date
-        # ttm = c.PricingUtil.get_ttm(eval_date, dt_maturity)
-        H = (1.5 * math.exp(-self.rf * self.ttm) * fee * spot * (gamma ** 2) / rho) ** (1 / 3)
+        H = (1.5 * math.exp(-self.rf * self.ttm) * fee * spot * (gamma ** 2) / self.rho) ** (1 / 3)
         return H
 
     def close_out(self):
@@ -147,7 +147,6 @@ class SytheticOption(object):
 
     def excute(self, sythetic_delta):
         if sythetic_delta == 0.0: return
-        # sythetic_unit = np.floor(self.account.portfolio_total_value * sythetic_delta / self.base.mktprice_close())
         sythetic_unit = np.floor((self.hold_unit*self.base.mktprice_close()+self.account.cash) * sythetic_delta / self.base.mktprice_close())
         unit = sythetic_unit - self.hold_unit
         if unit > 0:
@@ -257,10 +256,11 @@ class SytheticOption(object):
 # df_simulation_analysis.to_csv('../../accounts_data/df_simulation_analysis_1000_2008.csv')
 
 
-df_base = pd.read_excel('../../data/中证500收盘价.xlsx')
+df_base = pd.read_excel('../../data/中证全指日收盘价.xlsx')
 df_base[c.Util.DT_DATE] = df_base['日期'].apply(lambda x: x.date())
 # df_base = df_base.rename(columns={'000985.CSI': c.Util.AMT_CLOSE})
-df_base = df_base.rename(columns={'000905.SH': c.Util.AMT_CLOSE})
+df_base = df_base.rename(columns={'000985.CSI': c.Util.AMT_CLOSE}) # 基于收盘价序列
+# df_base.loc[:,c.Util.AMT_CLOSE] = df_base.loc[:,'000985.CSI']/df_base.iloc[0]['000985.CSI'] # 基于净值序列
 id_instrument = '000985.CSI'
 df_base[c.Util.ID_INSTRUMENT] = id_instrument
 end_date = df_base[c.Util.DT_DATE].values[-1]
@@ -292,15 +292,17 @@ fix_maturity = [False, True, True, True, True]
 delta_upper_bounds = [None, None, None, None, 0.99]
 delta_criterians = [0.1, 0.1, 0.1, None, None]
 cd_models = ['fixed_criterian', 'fixed_criterian', 'fixed_criterian', 'ww', 'ww']
-methods = ['method1','method2','method3','method4','method5']
-
+# methods = ['method1','method2','method3','method4','method5']
+methods = []
 npvs = []
 df_yield_d = pd.DataFrame()
 df_mdd_d = pd.DataFrame()
 df_res_d = pd.DataFrame()
 # for i in np.arange(0,5,1):
-for i in [4]:
-    method = methods[i]
+i = 4
+for rho in np.logspace(-4, -1, 20):
+    method = 'rho'+str(round(rho,5))
+    methods.append(method)
     sythetic = SytheticOption(df_index=df_base)
     sythetic.k = strikes[i]
     sythetic.ttm = 40.0/252.0
@@ -308,38 +310,39 @@ for i in [4]:
     sythetic.cd_model = cd_models[i]
     sythetic.delta_criterian = delta_criterians[i]
     sythetic.delta_upper_bound = delta_upper_bounds[i]
+    sythetic.rho = rho
     print(method, ' ', sythetic.k, ' ', sythetic.ttm, ' ', sythetic.flag_fix_ttm,
           ' ', sythetic.cd_model, ' ', sythetic.delta_criterian,' ',sythetic.delta_upper_bound)
     account = sythetic.back_test()
     npvs.append(list(account.account[c.Util.PORTFOLIO_NPV]))
-    df_yearly =account.annual_analyis()[0]
+    df_yearly =account.annual_analyis()
     df_yield_d[method] = df_yearly['accumulate_yield']
     df_mdd_d[method] = df_yearly['max_absolute_loss']
     df_res_d[method] = account.analysis()
-    account.account.to_csv('../sythetic_account.csv')
-    account.trade_records.to_csv('../sythetic_records.csv')
+    # account.account.to_csv('../sythetic_account.csv')
+    # account.trade_records.to_csv('../sythetic_records.csv')
 
-    print(account.analysis())
-    print('-'*50)
-    print(account.account.iloc[-3,:])
-    print('-'*50)
-    print(account.account.iloc[-2,:])
-    print('-'*50)
-    print(account.account.iloc[-1,:])
-    print('-'*50)
+    # print(account.analysis())
+    # print('-'*50)
+    # print(account.account.iloc[-3,:])
+    # print('-'*50)
+    # print(account.account.iloc[-2,:])
+    # print('-'*50)
+    # print(account.account.iloc[-1,:])
+    # print('-'*50)
 
-df_res_d.to_csv('../df_res_methods5.csv')
-df_mdd_d.to_csv('../df_mdd_methods5.csv')
-df_yield_d.to_csv('../df_yield_methods5.csv')
+df_res_d.to_csv('../data/df_res_close.csv')
+df_mdd_d.to_csv('../data/df_mdd_close.csv')
+df_yield_d.to_csv('../data/df_yield_close.csv')
 pu = PlotUtil()
 dates = list(account.account.index)
 npvs.append(list(account.account['benchmark']))
 methods.append('benchmark')
 deltas = list(account.account['position_delta'])
-# pu.plot_line_chart(dates, npvs, methods)
+pu.plot_line_chart(dates, npvs, methods)
 # pu.plot_line_chart(dates, [deltas], ['仓位占比'])
-#
-# plt.show()
+
+plt.show()
 
 
 

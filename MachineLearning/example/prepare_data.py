@@ -60,7 +60,7 @@ for index, row in df_daily.iterrows():
 df_daily['alpha3'] = pd.Series(alpha3)
 
 """
-alpha_量价背离
+alpha_my0 : 量价背离
 """
 alpha4 = {}
 for index, row in df_daily.iterrows():
@@ -69,22 +69,22 @@ for index, row in df_daily.iterrows():
         continue
     r, _ = pearsonr(df_daily.iloc[index - 6:index]['vwap'], df_daily.iloc[index - 6:index][Util.AMT_TRADING_VOLUME])
     alpha4[index] = -1 * r
-df_daily['alpha_量价背离'] = pd.Series(alpha4)
+df_daily['alpha_my0'] = pd.Series(alpha4)
 
 """
-alpha_开盘缺口
+alpha_my1 : 开盘缺口
 """
 tmp = df_daily[Util.AMT_CLOSE].shift()  # 前收盘
-df_daily.loc[:, 'alpha_开盘缺口'] = df_daily.loc[:, Util.AMT_OPEN] / tmp
+df_daily.loc[:, 'alpha_my1'] = df_daily.loc[:, Util.AMT_OPEN] / tmp
 
 """
-alpha_异常交易量
+alpha_my2 : 异常交易量
 """
 tmp = df_daily[Util.AMT_TRADING_VOLUME].rolling(window=6).mean().shift()  # 前6天成交量均值
-df_daily.loc[:, 'alpha_异常交易量'] = -1 * df_daily.loc[:, Util.AMT_TRADING_VOLUME] / tmp
+df_daily.loc[:, 'alpha_my2'] = -1 * df_daily.loc[:, Util.AMT_TRADING_VOLUME] / tmp
 
 """
-alpha_量幅背离
+alpha_my3 : 量幅背离
 """
 alpha5 = {}
 for index, row in df_daily.iterrows():
@@ -95,17 +95,17 @@ for index, row in df_daily.iterrows():
     v = df_daily.iloc[index - 6:index][Util.AMT_TRADING_VOLUME]
     r, _ = pearsonr(t, v)
     alpha4[index] = -1 * r
-df_daily['alpha_量幅背离'] = pd.Series(alpha4)
+df_daily['alpha_my3'] = pd.Series(alpha4)
 
 """
-alpha_my0: (turnover)日度的交易量/持仓量
+alpha_my4 : (turnover)日度的交易量/持仓量
 """
-df_daily.loc[:,'alpha_my0'] = df_daily.loc[:,Util.AMT_TRADING_VOLUME]/df_daily.loc[:,Util.AMT_HOLDING_VOLUME]
+df_daily.loc[:,'alpha_my4'] = df_daily.loc[:,Util.AMT_TRADING_VOLUME]/df_daily.loc[:,Util.AMT_HOLDING_VOLUME]
 """
-alpha_my1:日持仓量增减/成交量
+alpha_my5 :日持仓量增减/成交量
 """
 d_holding = df_daily[Util.AMT_HOLDING_VOLUME].diff()
-df_daily.loc[:,'alpha_my1'] = d_holding/df_daily.loc[:,Util.AMT_TRADING_VOLUME]
+df_daily.loc[:,'alpha_my5'] = d_holding/df_daily.loc[:,Util.AMT_TRADING_VOLUME]
 df_data = df_daily.dropna().reset_index(drop=True)
 print(df_data)
 df_data.to_csv('data.csv', index=False)

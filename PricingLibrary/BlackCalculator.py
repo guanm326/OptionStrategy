@@ -1,7 +1,7 @@
 import math
-import datetime
 from scipy.stats import norm
-from back_test.model.constant import OptionType,PricingUtil
+from back_test.model.constant import OptionType
+from back_test.model.constant_pricing import OptionType,PricingUtil
 
 """ European Option Pricing and Metrics """
 
@@ -15,6 +15,9 @@ class BlackCalculator(object):
                  spot: float,
                  vol: float,
                  rf: float = 0.03):
+        self.rf = rf
+        self.vol = vol
+        self.option_type = type
         if type == OptionType.CALL:
             self.iscall = True
         else:
@@ -118,6 +121,9 @@ class BlackCalculator(object):
             delta = self.discount * temp2
         return delta
 
+    """ 
+    Gamma计算基于标的价格变化的绝对量（而不是百分点），即Delta
+    """
     def Gamma(self):
         spot = self.spot
         if spot <= 0.0:
@@ -136,6 +142,11 @@ class BlackCalculator(object):
         # gamma1 = self.dAlpha_dD1/self.spot/self.stdDev
         return gamma
 
+    def Gamma_1pct(self):
+        black1 = BlackCalculator(self.ttm,self.strike,self.option_type,self.spot*1.01,self.vol,self.rf)
+        black2 = BlackCalculator(self.ttm,self.strike,self.option_type,self.spot*0.99,self.vol,self.rf)
+        effective_gamma = (black1.Delta()-black2.Delta())/2
+        return effective_gamma
 
 ###########Sythetic Option 2019-1-7#############
 # dt_eval = datetime.date.today()
@@ -152,14 +163,14 @@ class BlackCalculator(object):
 # H = (1.5 * math.exp(-0.03*tao) * (1.0/1000.0) * spot * (gamma ** 2) / rho) ** (1 / 3)
 # print(H)
 
-##########Sythetic Option 2019-1-9#############
+#########Sythetic Option 2019-1-9#############
 # dt_eval = datetime.date.today()
 # mdt = datetime.date.today() + datetime.timedelta(days=50)
 # tao = 40.0/252.0
-# k = 4376.44
+# k = 1.05
 # # vol = 0.251319
 # vol = 0.253768
-# spot = 4288.7717
+# spot = 1
 # call = BlackCalculator(tao,k,OptionType.CALL,spot,vol)
 # print('d1 : ',call.D1)
 # print('Delta : ',call.Delta())
