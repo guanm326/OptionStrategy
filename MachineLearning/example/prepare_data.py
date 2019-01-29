@@ -60,7 +60,7 @@ for index, row in df_daily.iterrows():
 df_daily['alpha3'] = pd.Series(alpha3)
 
 """
-(alpha_量价背离)
+alpha_量价背离
 """
 alpha4 = {}
 for index, row in df_daily.iterrows():
@@ -82,6 +82,7 @@ alpha_异常交易量
 """
 tmp = df_daily[Util.AMT_TRADING_VOLUME].rolling(window=6).mean().shift()  # 前6天成交量均值
 df_daily.loc[:, 'alpha_异常交易量'] = -1 * df_daily.loc[:, Util.AMT_TRADING_VOLUME] / tmp
+
 """
 alpha_量幅背离
 """
@@ -95,6 +96,16 @@ for index, row in df_daily.iterrows():
     r, _ = pearsonr(t, v)
     alpha4[index] = -1 * r
 df_daily['alpha_量幅背离'] = pd.Series(alpha4)
+
+"""
+alpha_my0: (turnover)日度的交易量/持仓量
+"""
+df_daily.loc[:,'alpha_my0'] = df_daily.loc[:,Util.AMT_TRADING_VOLUME]/df_daily.loc[:,Util.AMT_HOLDING_VOLUME]
+"""
+alpha_my1:日持仓量增减/成交量
+"""
+d_holding = df_daily[Util.AMT_HOLDING_VOLUME].diff()
+df_daily.loc[:,'alpha_my1'] = d_holding/df_daily.loc[:,Util.AMT_TRADING_VOLUME]
 df_data = df_daily.dropna().reset_index(drop=True)
 print(df_data)
 df_data.to_csv('data.csv', index=False)

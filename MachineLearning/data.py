@@ -24,7 +24,7 @@ def get_mktdata_future_c1_daily(start_date, end_date, name_code):
     table_cf = admin.table_futures_mktdata()
     query = admin.session_mktdata().query(table_cf.c.dt_date, table_cf.c.id_instrument,
                                           table_cf.c.amt_open, table_cf.c.amt_close, table_cf.c.amt_high,
-                                          table_cf.c.amt_low,
+                                          table_cf.c.amt_low,table_cf.c.amt_holding_volume,
                                           table_cf.c.amt_trading_volume,table_cf.c.amt_trading_value). \
         filter((table_cf.c.dt_date >= start_date) & (table_cf.c.dt_date <= end_date)). \
         filter(table_cf.c.name_code == name_code).filter(table_cf.c.flag_night != 1)
