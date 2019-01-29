@@ -74,7 +74,7 @@ for db_data in db_datas:
 #### 2. Get trading futures market data(IF/IH/IC) :  INTO MKTDATA.FUTURES_MKTDATA
 df = dc.table_future_contracts().get_future_contract_ids(dt_date)
 for (idx, row) in df.iterrows():
-    db_data = dc.table_futures().wind_index_future_daily(dt_date, row['id_instrument'], row['windcode'])
+    db_data = dc.table_futures().wind_index_future_daily(dt_date, dt_date, row['id_instrument'], row['windcode'])
     try:
         conn.execute(futures_mktdata.insert(), db_data)
         print('equity index futures -- inserted into data base succefully')
