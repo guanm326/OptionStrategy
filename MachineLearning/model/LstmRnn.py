@@ -11,11 +11,13 @@ import matplotlib.pyplot as plt
 class LstmRnn:
 
     def __init__(self, train_length=10, predict_length=1, split_rate=0.6, droprate=0., activation='relu',
-                 model_path='model_weight.dat', verbose=False):
+                 feature_nbr=16, model_path='model_weight.dat', loss='mean_squared_error', verbose=False):
         self.train_lenth = train_length
         self.predict_lenth = predict_length
         self.split_rate = split_rate
         self.droprate = droprate
+        self.loss = loss
+        self.feature_nbr = feature_nbr
         self.activation = activation
         self.model_path = model_path
         self.verbose = verbose
@@ -36,28 +38,31 @@ class LstmRnn:
         df_ret["amt_low"] = min_max_scaler.fit_transform(df.loc[:, "amt_low"].values.reshape(-1, 1))
         df_ret["amt_trading_volume"] = min_max_scaler.fit_transform(
             df.loc[:, "amt_trading_volume"].values.reshape(-1, 1))
+        df_ret["amt_holding_volume"] = min_max_scaler.fit_transform(
+            df.loc[:, "amt_holding_volume"].values.reshape(-1, 1))
         df_ret["amt_trading_value"] = min_max_scaler.fit_transform(df.loc[:, "amt_trading_value"].values.reshape(-1, 1))
         df_ret["alpha2"] = min_max_scaler.fit_transform(df.loc[:, "alpha2"].values.reshape(-1, 1))
         df_ret["alpha3"] = min_max_scaler.fit_transform(df.loc[:, "alpha3"].values.reshape(-1, 1))
-        df_ret["alpha_量价背离"] = min_max_scaler.fit_transform(df.loc[:, "alpha_量价背离"].values.reshape(-1, 1))
-        df_ret["alpha_开盘缺口"] = min_max_scaler.fit_transform(df.loc[:, "alpha_开盘缺口"].values.reshape(-1, 1))
-        df_ret["alpha_异常交易量"] = min_max_scaler.fit_transform(df.loc[:, "alpha_异常交易量"].values.reshape(-1, 1))
-        df_ret["alpha_量幅背离"] = min_max_scaler.fit_transform(df.loc[:, "alpha_量幅背离"].values.reshape(-1, 1))
         df_ret["alpha_my0"] = min_max_scaler.fit_transform(df.loc[:, "alpha_my0"].values.reshape(-1, 1))
         df_ret["alpha_my1"] = min_max_scaler.fit_transform(df.loc[:, "alpha_my1"].values.reshape(-1, 1))
+        df_ret["alpha_my2"] = min_max_scaler.fit_transform(df.loc[:, "alpha_my2"].values.reshape(-1, 1))
+        df_ret["alpha_my3"] = min_max_scaler.fit_transform(df.loc[:, "alpha_my3"].values.reshape(-1, 1))
+        df_ret["alpha_my4"] = min_max_scaler.fit_transform(df.loc[:, "alpha_my4"].values.reshape(-1, 1))
+        df_ret["alpha_my5"] = min_max_scaler.fit_transform(df.loc[:, "alpha_my5"].values.reshape(-1, 1))
         df_ret["normalized_vol"] = min_max_scaler.fit_transform(df.loc[:, "vol"].values.reshape(-1, 1))
         return df_ret[
-            ["amt_open", "amt_close", "amt_high", "amt_low", "amt_trading_volume", "amt_trading_value",
-             "alpha2", "alpha3", "alpha_量价背离", "alpha_开盘缺口", "alpha_异常交易量", "alpha_量幅背离", "alpha_my0", "alpha_my1",
+            ["amt_open", "amt_close", "amt_high", "amt_low", "amt_trading_volume", "amt_holding_volume",
+             "amt_trading_value",
+             "alpha2", "alpha3", "alpha_my0", "alpha_my1", "alpha_my2", "alpha_my3", "alpha_my4", "alpha_my5",
              "normalized_vol", "vol"]]
 
     def generate(self, df: pd.DataFrame, train_length=5, predict_length=3):
         data_x, data_y = [], []
         values = df.values
         m, n = df.shape
-        for i in range(0, m - max(train_length, predict_length)):
-            x = values[i:i + train_length, 0:15]
-            y = values[i:i + predict_length, 15]
+        for i in range(0, m - (train_length + predict_length) + 1):
+            x = values[i:i + train_length, 0:self.feature_nbr]
+            y = values[i + train_length:i + train_length + predict_length, -1]
             data_x.append(x)
             data_y.append(y)
         return np.array(data_x), np.array(data_y)
@@ -65,13 +70,15 @@ class LstmRnn:
     """
     load data from csv file and pre precessed for process latter
     """
+
     def load(self, path='data.csv'):
         df_data = pd.read_csv(path)
         df = df_data[
             ["amt_open", "amt_close", "amt_high", "amt_low", "amt_trading_volume", "amt_trading_value",
-             "alpha2", "alpha3", "alpha_量价背离", "alpha_开盘缺口", "alpha_异常交易量", "alpha_量幅背离", "alpha_my0", "alpha_my1",
-             "vol"]]
+             "amt_holding_volume", "alpha2", "alpha3", "alpha_my0", "alpha_my1", "alpha_my2", "alpha_my3",
+             "alpha_my4", "alpha_my5", "vol"]]
         df_normalize = self.normalize(df)
+        df_normalize.to_csv('norm_data.csv', encoding='utf-8')
         self.data_x, self.data_y = self.generate(df_normalize, self.train_lenth, self.predict_lenth)
         l, _, _ = self.data_x.shape
         _, m = self.data_y.shape
@@ -100,7 +107,7 @@ class LstmRnn:
 
     def build_three_lay_lstm_rnn(self):
         self.model = Sequential()
-        self.model.add(GRU(512, input_shape=(self.train_lenth, 15), dropout=self.droprate,
+        self.model.add(GRU(512, input_shape=(self.train_lenth, self.feature_nbr), dropout=self.droprate,
                            recurrent_dropout=self.droprate, activation=self.activation, return_sequences=True))
         self.model.add(LSTM(256, activation=self.activation, dropout=self.droprate, recurrent_dropout=self.droprate,
                             return_sequences=True))
@@ -108,7 +115,7 @@ class LstmRnn:
         self.model.add(Dense(64, activation=self.activation))
         self.model.add(Dropout(self.droprate))
         self.model.add(Dense(self.predict_lenth))
-        self.model.compile(loss='mean_squared_error', optimizer=Adam(lr=0.001), metrics=['mean_squared_error'])
+        self.model.compile(loss=self.loss, optimizer=Adam(lr=0.001), metrics=[self.loss])
         if self.verbose:
             print("#####DataPreview#####")
             print(self.model.summary())
@@ -120,7 +127,7 @@ class LstmRnn:
 
     def build_four_lay_lstm_rnn(self):
         self.model = Sequential()
-        self.model.add(GRU(1024, input_shape=(self.train_lenth, 15), dropout=self.droprate,
+        self.model.add(GRU(1024, input_shape=(self.train_lenth, self.feature_nbr), dropout=self.droprate,
                            recurrent_dropout=self.droprate, activation=self.activation, return_sequences=True))
         self.model.add(LSTM(512, activation=self.activation, dropout=self.droprate, recurrent_dropout=self.droprate,
                             return_sequences=True))
@@ -130,7 +137,7 @@ class LstmRnn:
         self.model.add(Dense(64, activation=self.activation))
         self.model.add(Dropout(self.droprate))
         self.model.add(Dense(self.predict_lenth))
-        self.model.compile(loss='mean_squared_error', optimizer=Adam(lr=0.001), metrics=['mean_squared_error'])
+        self.model.compile(loss=self.loss, optimizer=Adam(lr=0.001), metrics=[self.loss])
         if self.verbose:
             print("#####DataPreview#####")
             print(self.model.summary())
@@ -139,9 +146,10 @@ class LstmRnn:
     Build a toy rnn with four layers of GRU, LSTM, LSTM, LSTM network
     Best performance loss: 2.7992e-04 - mean_squared_error: 2.7992e-04 - val_loss: 5.9941e-04 - val_mean_squared_error: 5.9941e-04
     """
+
     def build_five_lay_lstm_rnn(self):
         self.model = Sequential()
-        self.model.add(GRU(2048, input_shape=(self.train_lenth, 15), dropout=self.droprate,
+        self.model.add(GRU(2048, input_shape=(self.train_lenth, self.feature_nbr), dropout=self.droprate,
                            recurrent_dropout=self.droprate, activation=self.activation, return_sequences=True))
         self.model.add(LSTM(1024, activation=self.activation, dropout=self.droprate, recurrent_dropout=self.droprate,
                             return_sequences=True))
@@ -153,17 +161,18 @@ class LstmRnn:
         self.model.add(Dense(64, activation=self.activation))
         self.model.add(Dropout(self.droprate))
         self.model.add(Dense(self.predict_lenth))
-        self.model.compile(loss='mean_squared_error', optimizer=Adam(lr=0.001), metrics=['mean_squared_error'])
+        self.model.compile(loss=self.loss, optimizer=Adam(lr=0.001), metrics=[self.loss])
         if self.verbose:
             print("#####DataPreview#####")
             print(self.model.summary())
+
     """
     Train the model
     """
 
     def train(self, epochs=100, batch_size=64):
         self.check()
-        lr_reduce = ReduceLROnPlateau(monitor="val_loss", factor=0.1, min_lr=10e-10, patience=3, verbose=1)
+        lr_reduce = ReduceLROnPlateau(monitor="val_loss", factor=0.9, min_lr=10e-10, patience=3, verbose=1)
         self.model.fit(self.train_x, self.train_y, epochs=epochs, batch_size=batch_size, callbacks=[lr_reduce],
                        validation_data=(self.test_x, self.test_y))
 
@@ -199,6 +208,16 @@ class LstmRnn:
         plt.plot(train_date, predict_train_value, 'b')
         plt.plot(test_date, predict_test_value, 'y')
         plt.show()
+
+    def win_ratio(self):
+        predict_test = self.model.predict(self.test_x)
+        win = []
+        for (idx, x) in enumerate(self.test_x):
+            pdct = predict_test[idx][self.predict_lenth - 1]
+            tdy = x[19][16]
+            act = self.test_y[idx][self.predict_lenth - 1]
+            win.append((pdct - tdy) * (act - tdy) >= 0)
+        return sum(win) / len(win)
 
     """
     Make a plot of sequence prediction comparing ground truth (data_y) with prediction on training set and testing set
