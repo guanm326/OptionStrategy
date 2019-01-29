@@ -1,14 +1,12 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from bs4 import BeautifulSoup
-from WindPy import *
-from data_access import db_utilities as du
-import requests
-import random
-import pandas as pd
-import time
 import json
+import random
+import time
+
+import requests
+from WindPy import *
 
 w.start()
 
