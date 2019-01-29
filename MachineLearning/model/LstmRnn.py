@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn import preprocessing
 from keras.callbacks import ReduceLROnPlateau
-from keras.models import Sequential
+from keras.models import Sequential, load_model
 from keras.layers import Dense, Dropout, LSTM, GRU
 from keras.optimizers import Adam
 import matplotlib.pyplot as plt
@@ -115,7 +115,20 @@ class LstmRnn:
         lr_reduce = ReduceLROnPlateau(monitor="val_loss", factor=0.1, min_lr=10e-10, patience=3, verbose=1)
         self.model.fit(self.train_x, self.train_y, epochs=epochs, batch_size=batch_size, callbacks=[lr_reduce],
                        validation_data=(self.test_x, self.test_y))
+
+    """
+    Save model to file
+    """
+
+    def save(self):
         self.model.save(self.model_path)
+
+    """
+    Restore model from file
+    """
+
+    def restore(self):
+        self.model = load_model(self.model_path)
 
     """
     Make a plot of single value prediction comparing ground truth (data_y) with prediction on training set and testing set
