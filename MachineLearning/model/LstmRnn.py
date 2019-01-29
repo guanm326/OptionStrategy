@@ -43,18 +43,21 @@ class LstmRnn:
         df_ret["alpha_开盘缺口"] = min_max_scaler.fit_transform(df.loc[:, "alpha_开盘缺口"].values.reshape(-1, 1))
         df_ret["alpha_异常交易量"] = min_max_scaler.fit_transform(df.loc[:, "alpha_异常交易量"].values.reshape(-1, 1))
         df_ret["alpha_量幅背离"] = min_max_scaler.fit_transform(df.loc[:, "alpha_量幅背离"].values.reshape(-1, 1))
+        df_ret["alpha_my0"] = min_max_scaler.fit_transform(df.loc[:, "alpha_my0"].values.reshape(-1, 1))
+        df_ret["alpha_my1"] = min_max_scaler.fit_transform(df.loc[:, "alpha_my1"].values.reshape(-1, 1))
         df_ret["normalized_vol"] = min_max_scaler.fit_transform(df.loc[:, "vol"].values.reshape(-1, 1))
         return df_ret[
             ["amt_open", "amt_close", "amt_high", "amt_low", "amt_trading_volume", "amt_trading_value",
-             "alpha2", "alpha3", "alpha_量价背离", "alpha_开盘缺口", "alpha_异常交易量", "alpha_量幅背离", "normalized_vol", "vol"]]
+             "alpha2", "alpha3", "alpha_量价背离", "alpha_开盘缺口", "alpha_异常交易量", "alpha_量幅背离", "alpha_my0", "alpha_my1",
+             "normalized_vol", "vol"]]
 
     def generate(self, df: pd.DataFrame, train_length=5, predict_length=3):
         data_x, data_y = [], []
         values = df.values
         m, n = df.shape
         for i in range(0, m - max(train_length, predict_length)):
-            x = values[i:i + train_length, 0:13]
-            y = values[i:i + predict_length, 13]
+            x = values[i:i + train_length, 0:15]
+            y = values[i:i + predict_length, 15]
             data_x.append(x)
             data_y.append(y)
         return np.array(data_x), np.array(data_y)
@@ -63,7 +66,8 @@ class LstmRnn:
         df_data = pd.read_csv(path)
         df = df_data[
             ["amt_open", "amt_close", "amt_high", "amt_low", "amt_trading_volume", "amt_trading_value",
-             "alpha2", "alpha3", "alpha_量价背离", "alpha_开盘缺口", "alpha_异常交易量", "alpha_量幅背离", "vol"]]
+             "alpha2", "alpha3", "alpha_量价背离", "alpha_开盘缺口", "alpha_异常交易量", "alpha_量幅背离", "alpha_my0", "alpha_my1",
+             "vol"]]
         df_normalize = self.normalize(df)
         self.data_x, self.data_y = self.generate(df_normalize, self.train_lenth, self.predict_lenth)
         l, _, _ = self.data_x.shape
@@ -93,8 +97,29 @@ class LstmRnn:
 
     def build_three_lay_lstm_rnn(self):
         self.model = Sequential()
-        self.model.add(GRU(512, input_shape=(self.train_lenth, 13), dropout=self.droprate,
+        self.model.add(GRU(512, input_shape=(self.train_lenth, 15), dropout=self.droprate,
                            recurrent_dropout=self.droprate, activation=self.activation, return_sequences=True))
+        self.model.add(LSTM(256, activation=self.activation, dropout=self.droprate, recurrent_dropout=self.droprate,
+                            return_sequences=True))
+        self.model.add(LSTM(128, activation=self.activation, dropout=self.droprate, recurrent_dropout=self.droprate))
+        self.model.add(Dense(64, activation=self.activation))
+        self.model.add(Dropout(self.droprate))
+        self.model.add(Dense(self.predict_lenth))
+        self.model.compile(loss='mean_squared_error', optimizer=Adam(lr=0.001), metrics=['mean_squared_error'])
+        if self.verbose:
+            print("#####DataPreview#####")
+            print(self.model.summary())
+
+    """
+    Build a toy rnn with four layers of GRU, LSTM, LSTM, LSTM network
+    """
+
+    def build_four_lay_lstm_rnn(self):
+        self.model = Sequential()
+        self.model.add(GRU(1024, input_shape=(self.train_lenth, 15), dropout=self.droprate,
+                           recurrent_dropout=self.droprate, activation=self.activation, return_sequences=True))
+        self.model.add(LSTM(512, activation=self.activation, dropout=self.droprate, recurrent_dropout=self.droprate,
+                            return_sequences=True))
         self.model.add(LSTM(256, activation=self.activation, dropout=self.droprate, recurrent_dropout=self.droprate,
                             return_sequences=True))
         self.model.add(LSTM(128, activation=self.activation, dropout=self.droprate, recurrent_dropout=self.droprate))
